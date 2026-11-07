@@ -59,3 +59,9 @@ Polish direction (frontend-design primary, unslop critique, dithercn engine):
 Preserve all section/content/trust boundaries. Add real locally served NEAR/dithercn marks to the previously reviewed four tool marks; source/use attribution and public brand review remain explicit, not a partner claim. One hero shader only; scroll-linked public heading ink and word reveals, sticky header/menu feedback, static financial text. User explicitly authorized these changes; V1 will be delivered for review, not presented as final visual approval.
 
 Unslop critique guidance by Damir Sokolovsky (@heydamir), CC-BY4.0; no third-party scene/template/code asset copied.
+
+## Registered-quote observation inspector (section43)
+
+The local `/demo` extension reuses this day's live-reference audit and re-reviewed actual desktop/mobile captures; it is not a new live Roster inspection or a redesign. Use the existing paper/ink/lime tokens, Space Grotesk/Inter/IBM Plex Mono roles, fine rules and terms-led progressive disclosure. One semantic purchase tree serves mobile and desktop; long hashes wrap rather than duplicate tables. No extra shader, texture, dependency or borrowed reference asset is added.
+
+The inspector's primary action is explicit local file selection. All monetary text is exact integer yoctoNEAR, with input-derived ledger labels. Distinct payment/provisioning/check/owner-action rows prevent a generic green “success” treatment from hiding paid failure. Browser fixtures remain untouched below the import boundary. BUILD_LOG.md section43 records73/73 Chromium checks including expanded-record keyboard/axe/no-overflow at320/390/768/1440px in both themes, adverse/race/no-JS checks and all three actual LOCAL imports. Four actual1440/390 light/dark captures were inspected. This is automated/local review evidence, not manual assistive-technology/device coverage or human visual approval; full human visual review remains deferred.

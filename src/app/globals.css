@@ -936,6 +936,60 @@ button:not(.button), select, input { transition: border-color var(--motion-fast)
   .report-totals { gap: 14px; }
   .report-totals dd { font-size: 16px; }
 }
+/* LOCAL observation inspector: one semantic record tree at every viewport size. */
+.contract-observation { padding-block: 32px 48px; margin-bottom: 48px; border-block: 1px solid var(--color-line); }
+.contract-observation h2 { font-size: clamp(27px, 3vw, 36px); }
+.contract-observation h3 { font-size: 22px; margin-top: 28px; }
+.contract-observation h4 { font-size: 18px; }
+.contract-observation p { max-width: 78ch; margin-block: 12px; font-size: 14px; line-height: 1.65; }
+.contract-observation code, .contract-observation dd { overflow-wrap: anywhere; }
+.observation-import { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 24px; padding-block: 24px; }
+.observation-import > div { flex: 1 1 340px; min-width: 0; }
+.observation-import label { display: block; font-size: 14px; margin-bottom: 10px; }
+.observation-import input { width: 100%; max-width: 560px; min-height: 44px; padding: 8px; font-size: 14px; }
+.observation-import input::file-selector-button { padding: 8px 12px; margin-right: 12px; border: 1px solid var(--color-muted); border-radius: 4px; background: var(--color-panel); color: var(--color-ink); cursor: pointer; }
+.observation-import .button { margin-top: 30px; }
+.observation-notice { color: var(--color-muted); }
+#observation-import-error:not(:empty), #observation-draft-error:not(:empty) { padding: 12px; border-left: 3px solid var(--color-danger); color: var(--color-ink); }
+.observation-records { padding-top: 20px; }
+.observation-source { padding: 18px 20px; border: 1px solid var(--color-line); background: var(--color-panel); border-radius: 6px; }
+.observation-source .status { font-size: 14px; }
+.observation-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 28px; margin-block: 24px; }
+.observation-fields dt, .observation-balances dt { font-size: 13px; color: var(--color-muted); }
+.observation-fields dd { font-size: 14px; margin: 6px 0 0; }
+.observation-balances { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; padding-block: 24px; border-block: 1px solid var(--color-line); }
+.observation-balances dd { font-family: var(--font-mono), monospace; font-size: 22px; margin: 8px 0 0; }
+.observation-capsules, .observation-purchases { list-style: none; margin: 0; padding: 0; }
+.observation-capsules li { display: grid; gap: 8px; margin-block: 16px; font-size: 14px; }
+.observation-purchases > li { border-bottom: 1px solid var(--color-line); }
+.contract-observation summary { min-height: 52px; padding-block: 16px; font-size: 14px; }
+.observation-purchases summary { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 14px; list-style: none; }
+.observation-purchases summary::-webkit-details-marker { display: none; }
+.observation-purchases summary > span:first-child { min-width: 0; flex: 1 1 180px; }
+.observation-purchases summary code { font-size: 15px; }
+.observation-purchases summary small { display: block; margin-top: 6px; color: var(--color-muted); font-size: 13px; }
+.observation-purchases summary > span:first-child::before { content: "+"; display: inline-block; margin-right: 10px; }
+.observation-purchases details[open] > summary > span:first-child::before { content: "−"; }
+.contract-observation pre { padding: 16px; margin-block: 16px; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; border: 1px solid var(--color-line); background: var(--color-panel); border-radius: 6px; }
+.observation-provider { padding-block: 20px; border-top: 1px solid var(--color-line); }
+.observation-proposal, .observation-attempts { margin-top: 20px; border-top: 1px solid var(--color-line); }
+.observation-proposal form { max-width: 640px; }
+.observation-proposal label { display: block; font-size: 14px; margin-block: 16px 8px; }
+.observation-proposal input, .observation-proposal select { display: block; width: 100%; min-height: 44px; font-size: 14px; }
+.observation-attempts ol { padding-left: 24px; }
+.observation-attempts li { padding-block: 16px; }
+.observation-attempts strong { font-size: 14px; }
+.observation-review { margin-block: 24px; }
+.observation-network { margin-top: 32px; padding-top: 12px; border-top: 1px solid var(--color-line); }
+.observation-network-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-block: 20px; }
+@media (max-width: 700px) {
+  .observation-fields { grid-template-columns: 1fr; gap: 16px; }
+  .observation-balances { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 16px; }
+  .observation-import { gap: 12px; }
+  .observation-import .button { margin-top: 0; }
+  .observation-network-actions { flex-direction: column; align-items: stretch; }
+  .observation-source { padding: 16px; }
+}
 /* Human review: centred proposition, compact interactive passage and directional ink. */
 .hero { display: flex; flex-direction: column; align-items: center; gap: 24px; padding-block: 56px 32px; }
 .hero-copy { width: 100%; max-width: 940px; text-align: center; }

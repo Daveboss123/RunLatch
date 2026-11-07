@@ -725,6 +725,157 @@ fn payment_fixture(threshold: Option<u128>, price: u128) -> RunLatch {
     contract
 }
 
+#[test]
+fn frontend_flow_recipient_copy_hash_cannot_route_the_canonical_transfer() {
+    let mut c = payment_fixture(None, 100);
+    let original = c.get_quote("search-q1".into()).unwrap();
+    let mut altered = original.terms.clone();
+    altered.input.recipient_id = account("intruder.testnet");
+    let mut request = proposal(&c, "search-q1");
+    request.expected_quote_hash = hashing::hash_record(
+        "runlatch.quote.v2",
+        "testnet",
+        &account("contract.testnet"),
+        &altered,
+    );
+    context(AGENT, 0, 20);
+    let near_sdk::PromiseOrValue::Value(response) = c.submit_purchase(request) else {
+        panic!("altered recipient authorized");
+    };
+    assert_eq!(response.reason_codes, vec!["QUOTE_TERMS_MISMATCH"]);
+    assert_eq!(
+        response.request.unwrap().canonical_quote.unwrap(),
+        original.terms
+    );
+    assert_eq!(c.get_capsule("capsule-one".into()).unwrap().reserved.0, 0);
+    assert!(near_sdk::test_utils::get_created_receipts().is_empty());
+}
+
+#[test]
+fn frontend_flow_expired_quote_returns_a_denial_not_a_payment() {
+    let mut c = payment_fixture(None, 100);
+    let request = proposal(&c, "search-q1");
+    context(AGENT, 0, 50_000);
+    let near_sdk::PromiseOrValue::Value(response) = c.submit_purchase(request) else {
+        panic!("expired quote authorized");
+    };
+    assert!(response.reason_codes.contains(&"QUOTE_EXPIRED".into()));
+    assert_eq!(response.request.unwrap().status, PurchaseStatus::Denied);
+    assert!(!c.get_quote("search-q1".into()).unwrap().consumed);
+    assert_eq!(c.get_capsule("capsule-one".into()).unwrap().reserved.0, 0);
+}
+
+#[test]
+fn frontend_flow_replay_response_keeps_original_settled_dto() {
+    let mut c = payment_fixture(None, 100);
+    drop(submit(&mut c, "search-q1", "request-one"));
+    callback_context(vec![near_sdk::PromiseResult::Successful(Vec::new())]);
+    c.resolve_purchase("capsule-one:request-one".into());
+    let original =
+        serde_json::to_value(c.get_purchase("capsule-one".into(), "request-one".into())).unwrap();
+    let near_sdk::PromiseOrValue::Value(response) = submit(&mut c, "search-q1", "request-one")
+    else {
+        panic!("replay authorized");
+    };
+    assert_eq!(response.source, "CONTRACT_REJECTED_ATTEMPT");
+    assert_eq!(response.decision, "DENIED");
+    assert_eq!(serde_json::to_value(response.request).unwrap(), original);
+    assert_eq!(c.get_capsule("capsule-one".into()).unwrap().spent.0, 100);
+    assert!(near_sdk::test_utils::get_created_receipts().is_empty());
+}
+
+#[test]
+fn frontend_flow_cumulative_limit_counts_both_settled_and_reserved() {
+    let mut c = payment_fixture(None, 400);
+    publish(&mut c, quote_input("second", 400));
+    publish(&mut c, quote_input("third", 300));
+    drop(submit(&mut c, "search-q1", "request-one"));
+    callback_context(vec![near_sdk::PromiseResult::Successful(Vec::new())]);
+    c.resolve_purchase("capsule-one:request-one".into());
+    drop(submit(&mut c, "second", "request-two"));
+    let near_sdk::PromiseOrValue::Value(response) = submit(&mut c, "third", "request-three") else {
+        panic!("cumulative overspend authorized");
+    };
+    assert!(
+        response
+            .reason_codes
+            .contains(&"INSUFFICIENT_AVAILABLE_BUDGET".into())
+    );
+    let capsule = c.get_capsule("capsule-one".into()).unwrap();
+    assert_eq!(
+        (capsule.spent.0, capsule.reserved.0, capsule.available().0),
+        (400, 400, 200)
+    );
+    assert!(!c.get_quote("third".into()).unwrap().consumed);
+}
+
+#[test]
+fn frontend_flow_revocation_blocks_new_request_not_existing_callback() {
+    let mut c = payment_fixture(None, 100);
+    publish(&mut c, quote_input("second", 100));
+    drop(submit(&mut c, "search-q1", "request-one"));
+    context(OPERATOR, 1, 21);
+    c.revoke_capsule("capsule-one".into());
+    let near_sdk::PromiseOrValue::Value(response) = submit(&mut c, "second", "request-two") else {
+        panic!("revoked authority reused");
+    };
+    assert_eq!(response.reason_codes, vec!["CAPSULE_INACTIVE"]);
+    assert_eq!(c.get_capsule("capsule-one".into()).unwrap().reserved.0, 100);
+    callback_context(vec![near_sdk::PromiseResult::Successful(Vec::new())]);
+    c.resolve_purchase("capsule-one:request-one".into());
+    let capsule = c.get_capsule("capsule-one".into()).unwrap();
+    assert_eq!(capsule.status, CapsuleStatus::Revoked);
+    assert_eq!((capsule.spent.0, capsule.reserved.0), (100, 0));
+}
+
+#[test]
+fn frontend_flow_approval_hash_and_current_provider_are_both_required() {
+    let mut c = payment_fixture(Some(99), 100);
+    drop(submit(&mut c, "search-q1", "request-one"));
+    let request = c
+        .get_purchase("capsule-one".into(), "request-one".into())
+        .unwrap();
+    context(OPERATOR, 1, 21);
+    let near_sdk::PromiseOrValue::Value(wrong) =
+        c.approve_purchase("capsule-one".into(), "request-one".into(), "00".repeat(32))
+    else {
+        panic!("wrong approval authorized");
+    };
+    assert_eq!(wrong.reason_codes, vec!["APPROVAL_BINDING_MISMATCH"]);
+    c.set_provider_status("search".into(), false);
+    let near_sdk::PromiseOrValue::Value(stale) = c.approve_purchase(
+        "capsule-one".into(),
+        "request-one".into(),
+        request.request_hash,
+    ) else {
+        panic!("suspended provider authorized");
+    };
+    assert!(stale.reason_codes.contains(&"PROVIDER_SUSPENDED".into()));
+    assert_eq!(c.get_capsule("capsule-one".into()).unwrap().reserved.0, 0);
+    assert!(!c.get_quote("search-q1".into()).unwrap().consumed);
+}
+
+#[test]
+fn frontend_flow_confirmed_failure_releases_once_but_keeps_quote_consumed() {
+    let mut c = payment_fixture(None, 100);
+    drop(submit(&mut c, "search-q1", "request-one"));
+    callback_context(vec![near_sdk::PromiseResult::Failed]);
+    let failed = c.resolve_purchase("capsule-one:request-one".into());
+    assert_eq!(
+        failed.request.unwrap().status,
+        PurchaseStatus::SettlementFailed
+    );
+    assert_eq!(c.get_capsule("capsule-one".into()).unwrap().reserved.0, 0);
+    callback_context(vec![near_sdk::PromiseResult::Successful(Vec::new())]);
+    let duplicate = c.resolve_purchase("capsule-one:request-one".into());
+    assert_eq!(
+        duplicate.request.unwrap().status,
+        PurchaseStatus::SettlementFailed
+    );
+    assert_eq!(c.get_capsule("capsule-one".into()).unwrap().spent.0, 0);
+    assert!(c.get_quote("search-q1".into()).unwrap().consumed);
+}
+
 fn submit(
     contract: &mut RunLatch,
     quote_id: &str,

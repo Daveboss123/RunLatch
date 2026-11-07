@@ -36,6 +36,7 @@ impl Harness {
             script,
             "scripts/validation/validate-resource-output.ts"
                 | "scripts/workflow/export-project-local.ts"
+                | "scripts/web/inspect-local-observation.ts"
         ) {
             return Err("Unsupported LOCAL agency tool".into());
         }
@@ -118,7 +119,59 @@ impl Harness {
             transfer.map(|_| "resolve_purchase"),
         )
         .await?;
+        self.agency_frontend_attempt(proposal, response.clone(), &result)
+            .await?;
         Ok(response)
+    }
+
+    /// Export only reviewed IDs/DTOs and actual FINAL action outcomes, never keys
+    /// or raw provider data. An imported file still is not independent chain proof.
+    async fn agency_frontend_attempt(
+        &mut self,
+        proposal: Value,
+        response: Value,
+        result: &ExecutionFinalResult,
+    ) -> TestResult<()> {
+        let mut initial = Value::Null;
+        let mut transfer = Value::Null;
+        let mut callback = Value::Null;
+        for outcome in result.receipt_outcomes() {
+            let raw = Transaction::receipt(outcome.transaction_hash)
+                .fetch_from(&self.network)
+                .await?;
+            let raw = serde_json::to_value(raw)?;
+            let Some(actions) = raw["receipt"]["Action"]["actions"].as_array() else {
+                continue;
+            };
+            for action in actions {
+                let observation = json!({"receipt_id":outcome.transaction_hash.to_string(),"succeeded":outcome.is_success()});
+                if raw["predecessor_id"] == self.agent.id.as_str()
+                    && raw["receiver_id"] == self.contract.0.as_str()
+                    && action["FunctionCall"]["method_name"] == "submit_purchase"
+                {
+                    assert!(initial.is_null(), "Duplicate initiating receipt");
+                    initial = observation.clone();
+                }
+                if raw["predecessor_id"] != self.contract.0.as_str() {
+                    continue;
+                }
+                if let Some(payment) = action.get("Transfer") {
+                    assert!(transfer.is_null(), "Duplicate native transfer");
+                    transfer = json!({"receipt_id":outcome.transaction_hash.to_string(),"succeeded":outcome.is_success(),
+                        "receiver":raw["receiver_id"],"amount":payment["deposit"]});
+                }
+                if action["FunctionCall"]["method_name"] == "resolve_purchase" {
+                    assert_eq!(raw["receiver_id"], self.contract.0.as_str());
+                    assert!(callback.is_null(), "Duplicate resolution callback");
+                    callback = observation;
+                }
+            }
+        }
+        assert!(!initial.is_null(), "Missing initiating execution receipt");
+        self.evidence.push(json!({"case":"agency_frontend_attempt","observation":{
+            "transaction_id":result.outcome().transaction_hash.to_string(),"finality":"FINAL",
+            "proposal":proposal,"response":response,"initial":initial,"transfer":transfer,"callback":callback}}));
+        Ok(())
     }
 
     pub(super) async fn agency_checks(&mut self) -> TestResult<()> {
@@ -379,6 +432,72 @@ impl Harness {
                 serde_json::to_vec_pretty(&json!({"source":"LOCAL_NEAR_SANDBOX_OBSERVATION",
                 "contract_id":self.contract.0,"network_tag":"testnet","block_hash":block.to_string(),"project_id":id,"snapshots":[canonical.data]}))?,
             )?;
+            // Same finalized block as the snapshot; never mix cached registry views.
+            let mut providers = Vec::new();
+            let mut quotes = Vec::new();
+            for provider_id in ["database-fixture", "hosting-fixture", "failure-fixture"] {
+                let provider = self
+                    .contract
+                    .call_function("get_provider", json!({"provider_id":provider_id}))
+                    .read_only::<Value>()
+                    .at(Reference::AtBlockHash(block))
+                    .fetch_from(&self.network)
+                    .await?;
+                assert_eq!(provider.block_hash, block);
+                providers.push(provider.data);
+                for from_index in [0, 20] {
+                    let page = self
+                        .contract
+                        .call_function(
+                            "get_quotes",
+                            json!({"provider_id":provider_id,"from_index":from_index,"limit":20}),
+                        )
+                        .read_only::<Value>()
+                        .at(Reference::AtBlockHash(block))
+                        .fetch_from(&self.network)
+                        .await?;
+                    assert_eq!(page.block_hash, block);
+                    quotes.extend(
+                        page.data
+                            .as_array()
+                            .ok_or("Invalid canonical quote page")?
+                            .iter()
+                            .filter(|q| {
+                                q["terms"]["input"]["quote_id"]
+                                    .as_str()
+                                    .is_some_and(|quote_id| quote_id.starts_with(&id))
+                            })
+                            .cloned(),
+                    );
+                }
+            }
+            let final_block = Chain::block()
+                .at(Reference::AtBlockHash(block))
+                .fetch_from(&self.network)
+                .await?;
+            let attempts = self
+                .evidence
+                .iter()
+                .filter(|e| {
+                    e["case"] == "agency_frontend_attempt"
+                        && e["observation"]["proposal"]["project_id"] == id
+                })
+                .map(|e| e["observation"].clone())
+                .collect::<Vec<_>>();
+            std::fs::write(
+                directory.join("observation.json"),
+                serde_json::to_vec_pretty(&json!({
+                "schema_version":1,"source":"LOCAL_NEAR_SANDBOX_OBSERVATION","public_testnet":false,"network_tag":"testnet",
+                "contract_id":self.contract.0,"block_hash":block.to_string(),"observed_at_ns":final_block.header.timestamp_nanosec.to_string(),
+                "project_id":id,"providers":providers,"quotes":quotes,"snapshots":[canonical.data],"attempts":attempts}))?,
+            )?;
+            let adapter = self
+                .agency_node("scripts/web/inspect-local-observation.ts", &[&id], 0)
+                .await?;
+            assert_eq!(adapter["result"], "LOCAL_OBSERVATION_ADAPTER_CHECKED");
+            assert_eq!(adapter["public_testnet"], false);
+            self.evidence
+                .push(json!({"case":"agency_frontend_adapter_readback","result":adapter}));
             let report = self
                 .agency_node(
                     "scripts/workflow/export-project-local.ts",

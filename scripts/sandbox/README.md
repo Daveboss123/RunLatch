@@ -36,6 +36,8 @@ Do X -> see Y: three source-labelled scenarios: database+hosting settled70, reso
 
 Each generated `.local/projects/<project-id>/` contains actual LOCAL canonical snapshots pinned to a final block plus `resource.json` when a service fixture ran, `receipt.json`, and selected `report.json`. These files are ignored, not served/uploaded. `latest.json` lists only current completed local cases; failed runs are not represented as passing.
 
+The requested frontend/agent connection adds an explicit `observation.json` with same-final-block provider/quote records and actual FINAL submit/transfer/callback outcomes. The harness checks it with the frontend-safe LOCAL file adapter, never serves it or uses it to sign. An imported source label is not independent chain proof; missing callback evidence does not confirm settlement. Current verification and remaining browser work: [observation demo](../../docs/CONTRACT_OBSERVATION_DEMO.md), BUILD_LOG.md section43.
+
 ```powershell
 node scripts/workflow/export-project-local.ts <actual-generated-project-id>
 node scripts/workflow/export-project-local.ts <actual-generated-project-id> --budget --expenses --evidence
