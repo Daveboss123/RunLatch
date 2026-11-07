@@ -1,6 +1,6 @@
 # Third-party notices — development foundation
 
-This is an initial dependency/tool record, **not a complete distribution license inventory**. No public release is authorized. Collect the exact transitive notices for a release artifact before publication; do not imply that listing a direct dependency audits all 283 resolved Cargo packages.
+This is a dependency/tool and reuse record, **not legal or binary-distribution clearance**. The [release-hardening record](docs/release/RELEASE_STATUS.md), [exact lock inventory](docs/release/DEPENDENCY_INVENTORY.json), [npm notices](licenses/npm-transitive-NOTICES.txt) and [cached Linux Cargo notices](licenses/cargo-linux-transitive-NOTICES.txt) record coverage and unresolved cases. No public release has occurred. Do not imply direct-dependency listings audit every platform/bundled component.
 
 | Component | Version / source | Terms checked / use |
 | --- | --- | --- |
@@ -46,7 +46,7 @@ SOFTWARE.
 | --- | --- | --- |
 | Next.js / React / React DOM |16.4.5 /19.3.1 /19.3.1; npm lockfile | One web root, server rendering and isolated browser controls; MIT |
 | Tailwind / @tailwindcss/postcss / PostCSS |4.3.5 /4.3.5 /8.5.32 | Development CSS build; MIT |
-| shadcn / cn |4.23.0 /0.5.2 | Reviewed registry source installer / class utility; MIT. No full UI catalogue installed |
+| shadcn / cn |Historical installer4.23.0 / current utility0.5.2 | MIT. Unused one-time shadcn installer removed during release hardening; installed registry engine/skills/source retained. No full UI catalogue installed |
 | TypeScript |5.9.3 | Development type checks; Apache-2.0 |
 | ESLint / eslint-config-next |9.39.5 /16.4.5 | Development-only source lint; MIT |
 | @types/node / @types/react / @types/react-dom |24.19.2 /19.3.0 /19.3.0 | Development-only declarations; MIT |
@@ -58,7 +58,7 @@ SOFTWARE.
 
 Roster Finance is a live visual reference only. No Roster logos, screenshots, text or proprietary UI assets are incorporated into the RunLatch website. Original RunLatch latch SVG/CSS/preview code is MIT. Source installer-generated defaults are reviewed against the local palette and boundaries.
 
-The complete npm development audit initially reported13 advisories (2 low/11 moderate), rooted in shadcn/deepmerge/minimatch and typescript-eslint. Production-only audit reports0. No forced downgrades or broad dependency-security claim; review the transitive distribution inventory and current advisories again before any release. ESLint9.39.5 emitted an unsupported-version notice; it is retained for the saved compatible setup rather than silently migrating to10. This is not production-readiness evidence.
+The full npm audit initially reported13 advisories (2 low/11 moderate). Removing the unused installer and overriding only typescript-estree's matcher to minimatch11.0.1 (BlueOak-1.0.0) produces **0 current advisories**; legacy minimatch3 retains ISC. The new regression test proves parent scoping and the actual glob API. Production-only audit was already0. No forced framework downgrade, global override or broad security claim. ESLint9.39.5's earlier unsupported-version notice is retained in history; no migration to10. This is not production-readiness or licensing clearance.
 
 ### Brand-reference source and limits
 

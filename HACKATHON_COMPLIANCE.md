@@ -1,7 +1,7 @@
 # RunLatch — NEAR HACKATHON compliance record
 
 **Checked:** 7 November 2026 (live HACKATHON.md re-check; earlier audit below preserved). All event times below are UTC.  
-**Stage:** schema2 local backend140 Rust/SDK and recorded all-mode Sandbox checks pass, including storage/bounds and agency/report cases. Current application115 backend Node/35 frontend Node/42 Chromium browser tests, six-width captures and16 read-only canonical export checks pass. BUILD_LOG.md sections38–40 record final fresh-source/build evidence and failures honestly. Public testnet evidence and human UI approval absent; no release/submission acceptance implied.  
+**Stage:** local release hardening. Current115 backend Node/36 frontend Node/42 Chromium browser tests, type/lint/build/15parity and headed Edge/Chrome hidden-tab/route checks pass;140 Rust/SDK/all-mode LOCAL Sandbox is separately recorded backend evidence. [Release record](docs/release/RELEASE_STATUS.md) distinguishes clone reproduction, licence/privacy blockers and missing manual/device checks. Public evidence/targeted publication consent and human UI approval remain absent; no submission acceptance implied.  
 **Product name:** RunLatch is provisional.  
 **Authority:** live organizer rules override the newer product-direction brief and compatible original blueprint.
 
@@ -167,7 +167,7 @@ Official API: POST https://nearhackathon.com/api/applications, JSON body up to12
 - [x] Native-NEAR testnet MVP proposed; optional integrations evaluated without claims of implementation.
 - [x] Initial audit preserved non-RunLatch work and performed no installs/Git setup/public actions; later local setup is separately recorded in BUILD_LOG.
 - [x] Human authorized specification/M2 and autonomous local development; public/fund/secret actions remain protected.
-- [x] Local source control initialized on main; accurate checkpoints recorded, no commits/remotes/publication yet. Reviewed commit history remains a release requirement.
+- [x] Local source control initialized on main; baselineef0b767 preserves existing prototype with neutral local-only author/actual timestamps. Later hardening/clone checkpoints are in BUILD_LOG.md. No public remote/publication; never re-date reuse.
 - [ ] Resolve approved contract-build and Linux integration-test environment.
 - [ ] Pin and test dependency versions; resolve connector/key-plugin compatibility.
 - [ ] Implement and test contract authorization, canonical quotes, funding, reservations, exact approvals, revocation, replay, callbacks, storage bounds, and receipts.

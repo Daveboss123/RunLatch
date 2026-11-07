@@ -42,8 +42,12 @@
     "eslint": "9.39.5",
     "eslint-config-next": "16.4.5",
     "postcss": "8.5.32",
-    "shadcn": "4.23.0",
     "tailwindcss": "4.3.5",
     "typescript": "5.9.3"
+  },
+  "overrides": {
+    "@typescript-eslint/typescript-estree": {
+      "minimatch": "11.0.1"
+    }
   }
 }
