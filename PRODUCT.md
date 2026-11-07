@@ -7,6 +7,8 @@
 
 **8 November implementation addition:** read-only `/intelligence` projects selected LOCAL receipt axes, exact evidence-matched provider spend/finished-run cohorts/failed costs/blocked attempts/comparable canonical quote changes, plus an explicitly UNATTESTED manual fixture validator. Illustrative data is separately selected and labelled. [Reproduction and limits](docs/OUTCOME_RECEIPTS_AND_INTELLIGENCE.md); exact checks/failures in BUILD_LOG.md section44. Earlier counts above cover the earlier observation candidate only; no independent chain/provider truth, public wallet or release clearance added.
 
+**Next explicit request,8 November:** build the Working testnet MVP first, then stop before a separately approved new Replay Lab. [Plan and exact gates](docs/WORKING_TESTNET_MVP_PLAN.md). Preserve the narrow fictional agency purchase-to-outcome workflow and existing contract; finish public-network readback, human-reviewed signing and restricted local agent rather than add a marketplace/hosted signer. First bounded read-only RPC module is locally tested but not integrated into the browser or actually connected to a public contract. No working testnet MVP completion is claimed yet.
+
 RunLatch is **outcome-bound purchasing and financial accountability for AI-powered businesses**: delegate a project task, bind purchases to current human authority and full commercial terms, and inspect what was approved, paid, received and checked.
 
 **Beachhead:** small owner-led AI-native software/automation agencies and digital/creative studios delivering client work. This is an unvalidated customer hypothesis, not adoption/market evidence. The MVP is one operator/fictional organisation, not a hosted multi-tenant service.
