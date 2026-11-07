@@ -1,7 +1,7 @@
 # RunLatch — NEAR HACKATHON compliance record
 
 **Checked:** 7 November 2026 (live HACKATHON.md re-check; earlier audit below preserved). All event times below are UTC.  
-**Stage:** local release hardening. Current115 backend Node/36 frontend Node/42 Chromium browser tests, type/lint/build/15parity and headed Edge/Chrome hidden-tab/route checks pass;140 Rust/SDK/all-mode LOCAL Sandbox is separately recorded backend evidence. [Release record](docs/release/RELEASE_STATUS.md) distinguishes clone reproduction, licence/privacy blockers and missing manual/device checks. Public evidence/targeted publication consent and human UI approval remain absent; no submission acceptance implied.  
+**Stage:** requested policy workshop/local release verification. Current115 backend Node/54 frontend Node/55 Chromium browser/type/lint/build/15parity pass;26 additional policy cases pass across installed automated Edge/Chrome. Prior headed true-visibility,140 Rust/SDK and LOCAL Sandbox evidence stay separate from the historical timed-out all-mode clone. [Release record](docs/release/RELEASE_STATUS.md)/BUILD_LOG.md sections41–42 distinguish exact checkout coverage, privacy/licence/platform gaps and pending gates. Full human visual/public release approval remain absent; this status edit is not a new live-rule check.
 **Product name:** RunLatch is provisional.  
 **Authority:** live organizer rules override the newer product-direction brief and compatible original blueprint.
 
@@ -215,3 +215,10 @@ Official API: POST https://nearhackathon.com/api/applications, JSON body up to12
 
 - HACKATHON.md read-only HTTP200 at18:31:56Z.19October eligible baseline,14November23:59UTC deadline, testnet eligibility/no mandatory protocols, public repository/LICENSE through judging, human X post and local-only video, single-submission/requestId and exact consent rules unchanged in the checked source. Organizer community channels not comprehensively checked.
 - Local UI QA and isolated headless performance are review evidence, not public deployment, real supplier provisioning, authenticated client report access or overall hackathon readiness. All publication/signing/private-disclosure/submission gates remain.
+
+## 12. Policy/release verification boundary — 7 November2026
+
+- The human's new explicit policy request authorizes a local editor/compiler only. Browser-reviewed in-memory versions are not authenticated capsule activation, LLM inference or public-network evidence. Rust/locks/backend sources are unchanged in candidate01f1963.
+- New local tests and actual checkout outcomes are recorded in BUILD_LOG.md sections41–42 and the release status. The earlier all-mode clone timed out; subsequent agency and fresh web verification are distinct runs, not an erased failure or fabricated full pass.
+- Genuine219-file clone01f1963 now passes all15 `--web-only` steps: fresh installation/type/lint/115backend+54frontendNode/15parity/build/audit0/scanner/55browser and clean final Git status. It does not rerun the full SDK/WASM/Sandbox suite or provide public-network evidence. Final evidence-only docs do not change the tested source identity; overall release readiness remains partial.
+- A fresh catalog/live-rules/brand check remains unperformed: kpass/ksearch are absent and installing the remote scripts requires explicit consent. No installer/authentication/payment/private disclosure occurred; the last actual official HTTP rule check remains section11. Organizer community clarifications, eligibility, name/marks, public links/targets and separate publication/submission consent still require final review before external release.
