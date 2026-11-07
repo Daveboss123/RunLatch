@@ -1,6 +1,6 @@
 # RunLatch — product specification
 
-**Prepared:**3 November2026; reconciled7 November. **Stage:** requested local policy workshop and release verification;115 backend Node/54 frontend Node/55 Chromium browser/type/lint/build/15parity pass. Recorded140 Rust/SDK and LOCAL Sandbox evidence remain separate from browser fixtures and the historical timed-out clone run. [Release record](docs/release/RELEASE_STATUS.md) and BUILD_LOG.md sections41–42 distinguish exact clone/licence/privacy/channel results. Full human visual review deferred; no public release/testnet evidence.
+**Prepared:**3 November2026; reconciled7 November. **Stage:** registered-quote LOCAL contract observation and the preserved policy workshop;147 Rust/SDK,115 backend Node/67 frontend Node/73 Chromium browser/type/lint/build/15parity pass. Actual LOCAL agency bundles and their browser imports remain separate from synthetic fixtures, public-testnet evidence and the historical timed-out all-mode clone. [Release record](docs/release/RELEASE_STATUS.md) and BUILD_LOG.md sections41–43 distinguish exact checkout/licence/privacy/channel results. Full human visual review deferred; no public release/testnet evidence.
 **Authority:** [direction brief](RUNLATCH_PRODUCT_DIRECTION_CHANGE_BRIEF.md) governs product changes; [original blueprint](RUNLATCH_PROJECT_BLUEPRINT.md) retains compatible security/NEAR/visual constraints. Live rules take priority.
 
 ## 1. Product and target user
@@ -29,6 +29,8 @@ RunLatch is **outcome-bound purchasing and financial accountability for AI-power
 | Replay Lab | Repeatable adverse requests and settlement tests, with their execution source visible |
 
 Rulebook, notifications, and provider reputation are later concepts, not required empty navigation pages. The explicit 7 November request authorizes a local [policy compiler/editor](docs/POLICY_WORKSHOP.md): deterministic instructions/manual terms, typed validation, exact owner review and immutable local versions. It is not a new spending-authority path or a connected LLM/signing service.
+
+The subsequent [contract observation demo](docs/CONTRACT_OBSERVATION_DEMO.md) connects `/demo` to explicitly imported LOCAL agency records. The scoped scripted agent reads registered quotes and submits only bound IDs/hash; Rust loads canonical payment terms. The browser checks internal record/evidence consistency, prepares unsigned drafts and shows separate payment/provisioning/check/acceptance axes. It does not execute purchases, independently establish chain truth or enable owner signing. Public-testnet integration remains unavailable.
 
 ## 3. MVP scope and ordering
 

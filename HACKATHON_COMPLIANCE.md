@@ -1,7 +1,7 @@
 # RunLatch — NEAR HACKATHON compliance record
 
 **Checked:** 7 November 2026 (live HACKATHON.md re-check; earlier audit below preserved). All event times below are UTC.  
-**Stage:** requested policy workshop/local release verification. Current115 backend Node/54 frontend Node/55 Chromium browser/type/lint/build/15parity pass;26 additional policy cases pass across installed automated Edge/Chrome. Prior headed true-visibility,140 Rust/SDK and LOCAL Sandbox evidence stay separate from the historical timed-out all-mode clone. [Release record](docs/release/RELEASE_STATUS.md)/BUILD_LOG.md sections41–42 distinguish exact checkout coverage, privacy/licence/platform gaps and pending gates. Full human visual/public release approval remain absent; this status edit is not a new live-rule check.
+**Stage:** registered-quote LOCAL contract observation and preserved policy workshop verification. Current115 backend Node/67 frontend Node/73 Chromium browser/type/lint/build/15parity and147 Rust/SDK pass; earlier26 policy cases across installed automated Edge/Chrome remain separate. Actual LOCAL agency artifacts/imports, prior headed true-visibility and the historical timed-out all-mode clone retain their exact boundaries. [Release record](docs/release/RELEASE_STATUS.md)/BUILD_LOG.md sections41–43 distinguish exact checkout coverage, privacy/licence/platform gaps and pending gates. Full human visual/public release approval remain absent; this status edit is not a new live-rule check.
 **Product name:** RunLatch is provisional.  
 **Authority:** live organizer rules override the newer product-direction brief and compatible original blueprint.
 
