@@ -32,6 +32,8 @@
 
 ## Actual clean-checkout reproduction
 
-Pending at this saved candidate checkpoint. `node scripts/web/check-release-checkout.mjs` clones the committed local tree into approved temporary storage, verifies excluded/private paths and lockfiles, installs from the lock, tests/builds and checks the clone's Git status. It uses shared approved Ubuntu tool/registry/target caches, not a clean OS. It creates its own loopback production server for clone browser tests, without replacing the original preview or copying private artifacts. Exact result/commit and remaining limits will be recorded here and in BUILD_LOG.md.
+The first actual clone of candidate `4c8fde6` correctly stopped before installation: Windows Git converted Cargo.lock LF to CRLF, failing exact-byte comparison despite identical normalized contents. Failure and original clone are preserved. A targeted `*.lock text eol=lf` rule now preserves exact lock bytes; no dependency change or bypass. Fresh reproduction is pending at this saved checkpoint.
+
+`node scripts/web/check-release-checkout.mjs` clones the committed local tree into approved temporary storage, verifies excluded/private paths and lockfiles, installs from the lock, tests/builds and checks the clone's Git status. It uses shared approved Ubuntu tool/registry/target caches, not a clean OS. It creates its own loopback production server for clone browser tests, without replacing the original preview or copying private artifacts. Exact result/commit and remaining limits will be recorded here and in BUILD_LOG.md.
 
 Private evidence stays under `.local/release-hardening/`; the original full-audit review remains `.local/ui/full-audit/review/REVIEW.md`. Nothing is uploaded.
