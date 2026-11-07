@@ -9,6 +9,8 @@ import { setTimeout } from "node:timers/promises";
 
 if (process.platform !== "win32") throw new Error("This runner documents the approved Windows/Ubuntu host; use README commands on other hosts");
 const source = process.cwd();
+if (process.argv.slice(2).some(arg => arg !== "--web-only") || process.argv.length > 3) throw new Error("Only --web-only is supported");
+const webOnly = process.argv.includes("--web-only");
 const checkout = await mkdtemp(path.join(os.homedir(), "AppData/Local/Temp/opencode/runlatch-git-checkout-"));
 const evidence = path.join(source, ".local/release-hardening");
 await mkdir(evidence, { recursive: true });
@@ -45,14 +47,16 @@ try {
   npm("run build");
   npm("audit --json");
   run("source/privacy candidate scan in clone", process.execPath, ["scripts/web/check-release-source.mjs"]);
-  const linuxRoot = checkout.replace(/^([A-Z]):/u, (_, drive) => `/mnt/${drive.toLowerCase()}`).replaceAll("\\", "/");
-  const wsl = (script, args = [], timeout = 300_000) => run(`LOCAL Ubuntu: ${script} ${args.join(" ")}`.trim(), "wsl.exe", ["--distribution", "Ubuntu-24.04", "--user", "runlatch", "--exec", "sh", `${linuxRoot}/${script}`, ...args], timeout);
-  wsl("scripts/setup/test-contract-linux.sh");
-  // Shared reviewed host tool/registry/target caches are reused. This is not a
-  // fresh OS/toolchain installation or a new public-network deployment.
-  wsl("scripts/setup/build-sandbox-artifacts-linux.sh", [], 600_000);
-  npm("run prepare:sandbox-reports");
-  wsl("scripts/setup/test-sandbox-linux.sh", ["all"], 600_000);
+  if (!webOnly) {
+    const linuxRoot = checkout.replace(/^([A-Z]):/u, (_, drive) => `/mnt/${drive.toLowerCase()}`).replaceAll("\\", "/");
+    const wsl = (script, args = [], timeout = 300_000) => run(`LOCAL Ubuntu: ${script} ${args.join(" ")}`.trim(), "wsl.exe", ["--distribution", "Ubuntu-24.04", "--user", "runlatch", "--exec", "sh", `${linuxRoot}/${script}`, ...args], timeout);
+    wsl("scripts/setup/test-contract-linux.sh");
+    // Shared reviewed host tool/registry/target caches are reused. This is not a
+    // fresh OS/toolchain installation or a new public-network deployment.
+    wsl("scripts/setup/build-sandbox-artifacts-linux.sh", [], 600_000);
+    npm("run prepare:sandbox-reports");
+    wsl("scripts/setup/test-sandbox-linux.sh", ["all"], 600_000);
+  }
   const probe = net.createServer();
   await new Promise((resolve, reject) => { probe.once("error", reject); probe.listen(0, "127.0.0.1", resolve); });
   const address = probe.address();
@@ -78,7 +82,7 @@ try {
 } catch (caught) { error = caught.message; process.exitCode = 1; }
 finally {
   server?.kill();
-  const result = { label: "Actual local Git clone and fresh npm install/build/tests; approved Ubuntu with shared tool/registry/target caches, not a virgin environment or public testnet", checkout, testedCommit, trackedFiles, finalStatus, error, results };
-  await writeFile(path.join(evidence, "clean-checkout.json"), JSON.stringify(result, null, 2));
+  const result = { label: webOnly ? "Actual local Git clone and fresh npm install/build/Node/parity/browser tests only; Rust/WASM/Sandbox not rerun" : "Actual local Git clone and fresh npm install/build/tests; approved Ubuntu with shared tool/registry/target caches, not a virgin environment or public testnet", checkout, testedCommit, trackedFiles, finalStatus, error, results };
+  await writeFile(path.join(evidence, webOnly ? "clean-checkout-web.json" : "clean-checkout.json"), JSON.stringify(result, null, 2));
   console.log(JSON.stringify({ checkout, testedCommit, trackedFiles, commands: results.length, error }, null, 2));
 }

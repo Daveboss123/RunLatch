@@ -1,6 +1,6 @@
 # RunLatch — requirements and acceptance cases
 
-**Prepared:**3 November2026; reconciled7 November. **Status:**140 Rust/SDK and recorded all-mode LOCAL Sandbox checks pass, including maximum/bounds and agency/report cases. Current115 backend Node,35 frontend Node and42 Chromium browser tests pass; six-width captures/four homepage axe audits and16 read-only generated canonical export checks pass. Final fresh-source/build evidence is in BUILD_LOG.md sections38–40. The original37/42 browser failure is preserved; no adverse tests were dropped. Human UI review pending; public testnet/release evidence absent. Counts are not whole acceptance-row counts or universal accessibility/security proof.
+**Prepared:**3 November2026; reconciled7 November. **Status:** current115 backend Node/54 frontend Node/55 Chromium browser/type/lint/build/15parity pass, including the requested policy workshop.140 Rust/SDK and recorded LOCAL Sandbox evidence remain separate from browser fixtures and the timed-out historical all-mode clone. Headed Edge/Chrome genuine hidden-tab evidence, prior captures/exports and failures are preserved. [Release record](docs/release/RELEASE_STATUS.md)/BUILD_LOG.md sections41–42 distinguish exact clone coverage and unresolved manual/device/licence/privacy gates. Full human visual review deferred; counts are not whole acceptance-row counts or universal accessibility/security proof.
 
 **Offline update:**55 validator/CLI,3 quote goldens,11 preparation,5 workflow CLI and12 exact cohort tests passed. Actual LOCAL Sandbox workflow separately proves constrained payments before delivery/produced-file validation/owner report/receipts/cost facts. No browser/tsc/public-chain proof implied; CLI unit tests alone are not payment evidence.
 
@@ -183,6 +183,8 @@ Assert `available=A-S-R`, `S+R<=A<=B`, `A+F=B`, and reservation/operation sums a
 | D-26 | MVP M/B | Final visual critique against brief and reference | Fix and recheck three highest-impact weaknesses; no generic template approval without evidence |
 
 ## 11. Technical correctness, secrets, and operations
+
+**7 November explicit policy-workshop extension:** O-01/O-02 now apply to `/policy` and `tests/frontend/policy.test.ts` / `browser/policy.spec.ts`. Required adverse cases include malformed/repeated JSON, missing limits, conflicting rules, unknown provider, unrecognized language, explicit review/versioning, changed-registry/stale-project rejection and prior-version preservation. Approval is explicitly local demo state, not authenticated capsule creation. The optional adapter is a mocked draft-only integration seam; no real LLM inference or automatic activation is claimed. See [policy workshop](docs/POLICY_WORKSHOP.md) and BUILD_LOG.md section42 for exact verification.
 
 | ID | Priority / level | Requirement and case | Expected evidence / result |
 | --- | --- | --- | --- |

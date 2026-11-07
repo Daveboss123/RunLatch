@@ -1,5 +1,54 @@
 @import "tailwindcss";
 
+/* Policy workshop: scoped operational forms, no additional animation or shaders. */
+.policy-page { padding-block: 64px 96px; }
+.policy-editor { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); gap: 40px; align-items: start; }
+.policy-editor section { min-width: 0; }
+.policy-editor h2 { font-size: 30px; margin-bottom: 16px; }
+.policy-editor h3 { font-size: 19px; margin-block: 20px 12px; }
+.policy-draft > p { margin-bottom: 16px; max-width: 70ch; }
+.policy-review { border: 1px solid var(--color-line); border-radius: 10px; padding: 28px; background: var(--color-panel); }
+.policy-label, .policy-field > label { display: block; font-weight: 500; margin-bottom: 6px; }
+.policy-draft > select { width: 100%; font-size: 16px; }
+.policy-field { margin-top: 24px; }
+.policy-field input, .policy-field select, .policy-field textarea { width: 100%; font: inherit; color: var(--color-ink); background: var(--color-panel); border: 1px solid var(--color-muted); border-radius: 6px; min-height: 48px; padding: 12px; }
+.policy-field textarea { resize: vertical; line-height: 1.6; }
+.policy-field > .fine-print { margin-bottom: 8px; }
+.policy-field [aria-invalid="true"] { border-color: var(--color-danger); }
+.policy-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.policy-errors { margin-top: 24px; padding: 16px; border: 1px solid var(--color-danger); border-radius: 6px; }
+.policy-errors h3 { margin-top: 0; }
+.policy-errors ul { margin: 0; padding-left: 20px; }
+.policy-errors a { text-decoration: underline; text-underline-offset: 3px; }
+.policy-errors li { margin-top: 8px; }
+.policy-scope { margin-top: 24px; padding: 16px; border: 1px solid var(--color-line); border-radius: 6px; }
+.policy-scope legend { padding-inline: 6px; font-weight: 500; }
+.policy-scope label, .policy-approval label { display: flex; align-items: start; gap: 12px; padding-block: 12px; min-height: 44px; }
+.policy-scope input, .policy-approval input { width: 20px; height: 20px; flex: none; margin-top: 3px; accent-color: var(--color-ink); }
+.policy-rules { margin: 24px 0; }
+.policy-rules > div { border-bottom: 1px solid var(--color-line); padding-block: 14px; display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 16px; }
+.policy-rules dt { color: var(--color-muted); }
+.policy-rules dd { margin: 0; overflow-wrap: anywhere; }
+.policy-providers { padding: 0; list-style: none; }
+.policy-providers li { display: grid; gap: 4px; padding-block: 12px; border-top: 1px solid var(--color-line); }
+.policy-providers span { overflow-wrap: anywhere; }
+.policy-editor summary { min-height: 44px; padding-block: 12px; cursor: pointer; }
+.policy-editor pre { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 13px; padding: 16px; border: 1px solid var(--color-line); border-radius: 6px; }
+.policy-approval { border-top: 1px solid var(--color-line); margin-top: 24px; padding-top: 12px; }
+.policy-approval .fine-print { margin-top: 16px; }
+.policy-notice { margin-top: 20px; overflow-wrap: anywhere; }
+.policy-notice:empty { display: none; }
+.policy-versions { margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--color-line); }
+.policy-versions > .fine-print { margin-top: 16px; }
+.policy-entry { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 24px; margin-block: 20px; }
+@media (max-width: 960px) { .policy-editor { grid-template-columns: 1fr; gap: 32px; } }
+@media (max-width: 600px) {
+  .policy-page { padding-top: 40px; }
+  .policy-review { padding: 20px 16px; }
+  .policy-rules > div { grid-template-columns: 1fr; gap: 4px; }
+  .policy-actions .button { width: 100%; }
+}
+
 @custom-variant dark (&:is(.dark *));
 
 :root {

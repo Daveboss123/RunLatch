@@ -115,14 +115,15 @@ test("P-19 selected disclosure and local JSON export", async ({ page }) => {
 
 test("D-18 static dither and reduced motion, no hidden animation or storage", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
-  const state = await page.evaluate(() => ({
+  await expect(page.locator('[data-dither="hero"]')).toHaveAttribute("data-state", "static");
+  const state = () => page.evaluate(() => ({
     canvases: document.querySelectorAll("canvas").length,
     animations: document.getAnimations().filter(animation => animation.playState === "running").length,
     scroll: getComputedStyle(document.documentElement).scrollBehavior,
     motion: matchMedia("(prefers-reduced-motion: reduce)").matches,
     storage: localStorage.length + sessionStorage.length,
   }));
-  expect(state).toEqual({ canvases: 1, animations: 0, scroll: "auto", motion: true, storage: 0 });
+  await expect.poll(state).toEqual({ canvases: 1, animations: 0, scroll: "auto", motion: true, storage: 0 });
   await expect(page.locator('[data-dither="hero"]')).toHaveAttribute("data-state", "static");
   expect(await page.locator("[data-dither]").count()).toBeGreaterThanOrEqual(4);
 });
@@ -493,11 +494,11 @@ test("Full audit: shared proposal state, uncapped denial and linked receipt sele
   await expect(page.locator(".lifecycle-record")).toContainText("Not evidenced / not checked");
 });
 
-test("Full audit: 200-percent-equivalent reflow and actionable focus stays visible", async ({browser})=>{
+test("Full audit: 200-percent-equivalent reflow and actionable focus stays visible", async ({browser}, testInfo)=>{
   // 1280×900 at 200% browser zoom gives a 640×450 CSS viewport.
   // This checks equivalent reflow/density, not desktop OS zoom controls.
   const context=await browser.newContext({viewport:{width:640,height:450},deviceScaleFactor:2});
-  const page=await context.newPage(); await page.goto("http://127.0.0.1:3000/gate");
+  const page=await context.newPage(); await page.goto(new URL("/gate", testInfo.project.use.baseURL).href);
   await expect(page.getByText("Inside the boundary.",{exact:true})).toBeVisible();
   expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
   const button=page.getByRole("button",{name:"Alter recipient",exact:true});
@@ -518,9 +519,14 @@ test("Full audit: hover, press, focus and disabled states retain readable select
   await expect.poll(()=>primary.evaluate(n=>getComputedStyle(n).boxShadow)).not.toBe(before);
   await primary.focus();
   expect(await primary.evaluate(n=>getComputedStyle(n).outlineStyle)).toBe("solid");
-  const selected=page.getByRole("button",{name:"Story step 1: Give the agent a job.",exact:true});
-  await selected.click(); await selected.hover();
-  expect(await selected.evaluate(n=>getComputedStyle(n).backgroundColor)).toBe("rgb(198, 243, 107)");
+  // Scrolling to sticky controls can legitimately change the selected row.
+  // Test the real current selection, not a step that the scroll observer replaced.
+  await page.locator(".story-controls").scrollIntoViewIfNeeded();
+  const selected=page.locator('.story-controls button[aria-pressed="true"]');
+  await expect(selected).toHaveCount(1);
+  await selected.hover();
+  await expect(selected).toHaveAttribute("aria-pressed", "true");
+  await expect(selected).toHaveCSS("background-color", "rgb(198, 243, 107)");
   await page.emulateMedia({reducedMotion:"reduce"});
   const disabled=page.getByRole("button",{name:"Motion reduced",exact:true});
   await expect(disabled).toBeDisabled(); await expect(disabled).toHaveCSS("opacity","1");
@@ -531,7 +537,8 @@ test("D-08/D-23 screenshots, clean console and measured load", async ({ page }) 
   const errors: string[] = [], external: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
   page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
-  page.on("request", request => { if (!request.url().startsWith("http://127.0.0.1:3000") && !request.url().startsWith("blob:")) external.push(request.url()); });
+  const origin = new URL(page.url()).origin;
+  page.on("request", request => { if (/^https?:/u.test(request.url()) && new URL(request.url()).origin !== origin) external.push(request.url()); });
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: width === 390 ? 844 : 1000 });
     await page.goto("/"); await page.evaluate(() => document.fonts.ready);
@@ -558,9 +565,9 @@ test("D-08/D-23 screenshots, clean console and measured load", async ({ page }) 
   await writeFile(".local/ui/browser-performance.json", JSON.stringify(performanceData, null, 2));
 });
 
-test("D-18 no-JavaScript fallback retains semantic page and static dither", async ({ browser }) => {
+test("D-18 no-JavaScript fallback retains semantic page and static dither", async ({ browser }, testInfo) => {
   const context = await browser.newContext({ javaScriptEnabled: false, viewport: { width: 390, height: 844 } });
-  const page = await context.newPage(); await page.goto("http://127.0.0.1:3000/");
+  const page = await context.newPage(); await page.goto(new URL("/", testInfo.project.use.baseURL).href);
   await expect(page.locator("#hero-heading")).toBeVisible();
   await expect(page.locator("h1")).toHaveCount(1);
   await expect(page.locator("html")).toHaveClass(/dark/u);
@@ -571,7 +578,7 @@ test("D-18 no-JavaScript fallback retains semantic page and static dither", asyn
   await page.screenshot({ path: ".local/ui/no-javascript-mobile.png" }); await context.close();
 });
 
-test("Motion brief: WebGL unavailable retains composed dark-first SVG and semantics", async ({ browser }) => {
+test("Motion brief: WebGL unavailable retains composed dark-first SVG and semantics", async ({ browser }, testInfo) => {
   const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
   await context.addInitScript(() => {
     const original = HTMLCanvasElement.prototype.getContext;
@@ -581,7 +588,7 @@ test("Motion brief: WebGL unavailable retains composed dark-first SVG and semant
     } as typeof original;
   });
   const page = await context.newPage();
-  await page.goto("http://127.0.0.1:3000/");
+  await page.goto(new URL("/", testInfo.project.use.baseURL).href);
   await expect(page.locator("html")).toHaveClass(/dark/u);
   const shader = page.locator('[data-dither="hero"]');
   await expect(shader).toHaveAttribute("data-state", "fallback");

@@ -1,5 +1,13 @@
 # RunLatch UI V1 — actual changes
 
+## Explicit policy-workshop extension
+
+The later human request adds `/policy`, linked from the existing demo, with explicit instructions/manual/JSON drafting, bounded typed validation, actionable errors, complete rule/fixture-recipient review and immutable local-only approved versions. No hosted LLM, wallet/activation path, Rust edit, dependency or new shader. Tests and grammar/authority limits are documented in [POLICY_WORKSHOP.md](POLICY_WORKSHOP.md) and BUILD_LOG.md section42. This feature does not complete or replace the deferred full human visual review. The release-hardening entry below records its preceding36-frontend/42-browser checkpoint.
+
+## Release hardening — no UI changes
+
+Item1 human visual review is deferred. Item2 removes only the unused shadcn installer, applies a parent-scoped matcher override and adds offline licence/privacy/actual-clone/branded-browser tooling. Current42 browser/36 frontend Node/115 backend Node/type/lint/build/15parity and headed Edge/Chrome genuine hidden-tab checks pass. Full npm audit0, not legal/security clearance. [Release record](release/RELEASE_STATUS.md) and BUILD_LOG.md section41 track actual clone results and unresolved release/manual/device gates. Local baselineef0b767 preserves the existing full-audit work; no public release or interface/engine/contract redesign. The section below records the earlier full-audit checkpoint, including its35test/13advisory state.
+
 ## Latest full product audit — local review
 
 The full1652-line `RUNLATCH_FULL_PRODUCT_UX_MOTION_AND_TECHNICAL_AUDIT.md`/Section14 and newer human corrections supersede the historical inventories below. Current source-backed boundaries: [FULL_PRODUCT_TRUTH_MAP.md](FULL_PRODUCT_TRUTH_MAP.md); exact outcomes: BUILD_LOG.md sections38–40.

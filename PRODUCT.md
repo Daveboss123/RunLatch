@@ -1,6 +1,6 @@
 # RunLatch — product specification
 
-**Prepared:**3 November2026; reconciled7 November. **Stage:** schema2 backend and primary LOCAL agency/report workflow implemented/tested;140 Rust/SDK,115 backend Node,35 frontend Node and42 Chromium browser tests pass, with the recorded all-mode LOCAL Sandbox regression separate from browser fixtures. Full audit retains centred hero, scroll-linked budget, shared proposal/linked receipt state and explicit provenance; six-width captures and16 read-only canonical export checks pass. Final fresh-source results/limits are in BUILD_LOG.md sections38–40. Ready for human UI review, not public release; no public testnet evidence.  
+**Prepared:**3 November2026; reconciled7 November. **Stage:** requested local policy workshop and release verification;115 backend Node/54 frontend Node/55 Chromium browser/type/lint/build/15parity pass. Recorded140 Rust/SDK and LOCAL Sandbox evidence remain separate from browser fixtures and the historical timed-out clone run. [Release record](docs/release/RELEASE_STATUS.md) and BUILD_LOG.md sections41–42 distinguish exact clone/licence/privacy/channel results. Full human visual review deferred; no public release/testnet evidence.
 **Authority:** [direction brief](RUNLATCH_PRODUCT_DIRECTION_CHANGE_BRIEF.md) governs product changes; [original blueprint](RUNLATCH_PROJECT_BLUEPRINT.md) retains compatible security/NEAR/visual constraints. Live rules take priority.
 
 ## 1. Product and target user
@@ -28,7 +28,7 @@ RunLatch is **outcome-bound purchasing and financial accountability for AI-power
 | Project intelligence | Transparent project expense/commitment totals; prior cost-per-success remains a secondary research-regression measure |
 | Replay Lab | Repeatable adverse requests and settlement tests, with their execution source visible |
 
-Rulebook, policy compilation, notifications, and provider reputation are later concepts, not required empty navigation pages.
+Rulebook, notifications, and provider reputation are later concepts, not required empty navigation pages. The explicit 7 November request authorizes a local [policy compiler/editor](docs/POLICY_WORKSHOP.md): deterministic instructions/manual terms, typed validation, exact owner review and immutable local versions. It is not a new spending-authority path or a connected LLM/signing service.
 
 ## 3. MVP scope and ordering
 
@@ -53,7 +53,7 @@ Rulebook, policy compilation, notifications, and provider reputation are later c
 
 - Mainnet, real money, stablecoins, swaps, Intents, Chain Signatures, bridging, recurring collection, or conditional payment for overall task success.
 - A general provider marketplace, external vendor acceptance claims, multi-agent negotiation, hosted signer/relay, multi-tenant accounts, or database/indexer infrastructure.
-- Mandatory paid AI inference, private inference/TEE, policy compiler, reputation/opaque success scores, automatic policy activation, SaaS cancellation/renewal execution, subscription-management suite, ERP/invoicing/client portal or extensive analytics.
+- Mandatory paid AI inference, private inference/TEE, reputation/opaque success scores, automatic policy activation, SaaS cancellation/renewal execution, subscription-management suite, ERP/invoicing/client portal or extensive analytics. The newly requested local policy workshop is the explicit exception to the earlier compiler deferral; Rust authorization and immutable-capsule boundaries do not change.
 - Production custody guarantees, delivery guarantees, refunds for poor output, formal security audits, comprehensive fraud detection, or factual verification of arbitrary research.
 - Heavy 3D, chart widgets, stock assets as product evidence, decorative metrics, or overlapping animation/design packages.
 
