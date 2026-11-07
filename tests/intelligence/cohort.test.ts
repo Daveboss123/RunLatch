@@ -14,6 +14,7 @@ const analyze = (facts: readonly RunCostFact[]) => analyzeRunCosts(JSON.stringif
 test("I-01/I-02: failure/error spend stays in numerator; returns/storage excluded", () => {
   const result = analyze([run("pass"), run("fail", "VALIDATION_FAILED"), run("error", "VALIDATION_ERROR", "100")]);
   assert.equal(result.cohorts[0].settled_spend, "700");
+  assert.equal(result.cohorts[0].failed_run_cost, "400");
   assert.deepEqual(result.cohorts[0].cost_per_success, { numerator: "700", denominator: "1", floor_yocto: "700" });
   assert.equal(result.cohorts[0].completed_runs, 3);
   assert.equal(result.cohorts[0].error_runs, 1);

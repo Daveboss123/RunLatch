@@ -1,5 +1,6 @@
 /** Fixed, offline resource-fixture checks. No HTTP, database or provider-signature proof. */
 import { digestHex } from "../purchasing/hashing.ts";
+import { parseBoundedJson } from "../near/records.ts";
 export const RESOURCE_CRITERIA = "runlatch.resource-fixture.v1|manifest-project-resource-binding|provisioned-fixture-health-200-https|fixture-route-health-body-ok|no-network-no-provider-signature";
 export const RESOURCE_CHECK_IDS = ["MANIFEST_BINDING", "FIXTURE_HEALTH", "FIXTURE_ROUTE"] as const;
 export type ResourceCheckStatus = "VALIDATION_PASSED" | "VALIDATION_FAILED" | "VALIDATION_ERROR";
@@ -21,7 +22,7 @@ export async function validateResourceFixture(bytes: Uint8Array | null, binding:
   const snapshot = bytes === null ? null : new Uint8Array(bytes);
   if (snapshot && snapshot.length > 16384) throw new Error("RESOURCE_ARTIFACT_SIZE_LIMIT");
   let value: unknown = null;
-  try { if (snapshot) value = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(snapshot)); } catch { /* Invalid bytes become explicit failed checks, not execution. */ }
+  try { if (snapshot) value = parseBoundedJson(new TextDecoder("utf-8", { fatal: true }).decode(snapshot), 16384); } catch { /* Invalid/duplicate/deep JSON becomes explicit failed checks, not execution. */ }
   const expected = ["fixture_version", "project_id", "resource_key", "fixture_provider_id", "provisioning_status", "health_status", "https_fixture", "route", "health_body", "observed_at_ns"];
   const manifest = value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
   const shape = manifest !== null && Object.keys(manifest).length === expected.length && Object.keys(manifest).every(key => expected.includes(key))

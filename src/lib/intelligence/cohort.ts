@@ -59,7 +59,7 @@ function fact(value: unknown): RunCostFact {
 }
 interface Group {
   key: string[]; runs: number; passed: number; failed: number; errors: number; spent: bigint;
-  providers: Map<string, bigint>; first: bigint | null; last: bigint | null;
+  providers: Map<string, bigint>; first: bigint | null; last: bigint | null; failedCost: bigint;
 }
 /** Serialized input avoids supplied getters/mutable model objects. Facts' source
  * labels are assertions from an upstream observer; this reducer authenticates none. */
@@ -89,11 +89,12 @@ export function analyzeRunCosts(serialized: string) {
     if (reason) { excluded.push({ capsule_id: run.capsule_id, reason }); continue; }
     const key = [run.source, run.network_tag, run.contract_id, run.workflow_id, run.criteria_hash, run.validator_id, run.validator_version, run.asset];
     const groupId = JSON.stringify(key);
-    const group = groups.get(groupId) ?? { key, runs: 0, passed: 0, failed: 0, errors: 0, spent: 0n, providers: new Map<string, bigint>(), first: null, last: null };
+    const group = groups.get(groupId) ?? { key, runs: 0, passed: 0, failed: 0, errors: 0, spent: 0n, providers: new Map<string, bigint>(), first: null, last: null, failedCost: 0n };
     group.runs += 1; group.spent += amount(run.spent);
     if (run.validation_status === "VALIDATION_PASSED") group.passed += 1;
     else if (run.validation_status === "VALIDATION_FAILED") group.failed += 1;
     else group.errors += 1;
+    if (run.validation_status !== "VALIDATION_PASSED") group.failedCost += amount(run.spent);
     const time = BigInt(run.recorded_at_ns!);
     group.first = group.first === null || time < group.first ? time : group.first;
     group.last = group.last === null || time > group.last ? time : group.last;
@@ -103,7 +104,7 @@ export function analyzeRunCosts(serialized: string) {
   return { source: "DERIVED_FROM_INPUT_FACTS_NOT_INDEPENDENT_CHAIN_PROOF" as const,
     input_count: input.length, unique_count: seen.size, duplicate_count: duplicates, excluded,
     cohorts: [...groups.values()].map(group => ({ key: group.key, completed_runs: group.runs, passed_runs: group.passed,
-      failed_runs: group.failed, error_runs: group.errors, settled_spend: group.spent.toString(),
+      failed_runs: group.failed, error_runs: group.errors, settled_spend: group.spent.toString(), failed_run_cost: group.failedCost.toString(),
       provider_spend: [...group.providers.entries()].sort(([a], [b]) => compare(a, b)).map(([provider_id, spent]) => ({ provider_id, spent: spent.toString() })),
       completion_range_ns: { first: group.first!.toString(), last: group.last!.toString() },
       cost_per_success: group.passed ? { numerator: group.spent.toString(), denominator: group.passed.toString(), floor_yocto: (group.spent / BigInt(group.passed)).toString() } : null })) };

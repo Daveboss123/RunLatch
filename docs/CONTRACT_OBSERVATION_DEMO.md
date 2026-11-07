@@ -34,6 +34,8 @@ Expand the provider catalogue for canonical commercial terms and hashes. Expand 
 
 ## Lifecycle and evidence rules
 
+The inspector links to [`/intelligence`](OUTCOME_RECEIPTS_AND_INTELLIGENCE.md) for bounded multi-file Outcome Receipts and record-derived provider/finished-run costs. Select files explicitly again; memory-only imports are not carried between pages or saved. Illustrative samples and local manual objective checks are separately labelled, not newly authenticated execution evidence.
+
 - `REQUESTED`, `AUTHORIZED`, `RESERVED` and scheduling are event milestones, not artificial timed durable states. Authorization/reservation/scheduling happen atomically in the initiating contract receipt.
 - Approval-pending holds no money/quote/resource. Rejection, cancellation and stored expiry release nothing there. A read does not secretly write an expired record.
 - `SETTLED` or `SETTLEMENT_FAILED` in the adapter's payment-evidence axis requires both the matching initial transfer outcome and a successful private callback, consistent with the canonical record. Missing callback evidence leaves `SETTLEMENT_UNVERIFIED`; reported ledger totals remain explicitly input-derived, not independently proven totals.

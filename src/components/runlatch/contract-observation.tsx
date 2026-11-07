@@ -143,6 +143,7 @@ export function ContractObservation() {
   }
   return <section id="contract-observation" className="contract-observation" aria-labelledby="observation-heading">
     <header><h2 id="observation-heading">Inspect the local contract run.</h2><p>Import the agent harness’s canonical quote and purchase records. Read only: no signer, live vendor or public network is connected.</p></header>
+    <p><a href="/intelligence">Open Outcome Receipts and Run Intelligence</a> to select local run files and inspect record-derived costs. Files are not carried between pages or saved.</p>
     <div className="observation-import"><div><label htmlFor="observation-file">LOCAL observation JSON</label><input ref={fileRef} id="observation-file" type="file" accept=".json,application/json" aria-describedby="observation-import-help observation-import-error" aria-invalid={Boolean(error)} onChange={load} />
       <p id="observation-import-help">Select <code>.local/projects/&lt;project-id&gt;/observation.json</code> from a completed agency Sandbox run. Maximum 1 MiB. Explicit file selection only; nothing is uploaded, saved or auto-opened.</p></div>
       <button type="button" className="button button-secondary" onClick={clear} disabled={!observation && !busy && !error}>Clear imported view</button></div>

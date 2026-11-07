@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 import { LatchMark, ArrowIcon } from "./icons";
 import { ThemeToggle } from "./display-settings";
 
-const links = [{ href: "/demo", label: "Product" }, { href: "/gate", label: "The Gate" }, { href: "/#proof", label: "Evidence" }, { href: "/docs", label: "Docs" }];
+const links = [{ href: "/demo", label: "Product" }, { href: "/gate", label: "The Gate" }, { href: "/intelligence", label: "Intelligence" }, { href: "/#proof", label: "Evidence" }, { href: "/docs", label: "Docs" }];
 export function Header() {
   const menu = useRef<HTMLDetailsElement>(null);
   const [compact, setCompact] = useState(false);

@@ -1,6 +1,6 @@
 # RunLatch — NEAR HACKATHON compliance record
 
-**Checked:** 7 November 2026 (live HACKATHON.md re-check; earlier audit below preserved). All event times below are UTC.  
+**Checked:** 8 November 2026 (live HACKATHON.md re-check; earlier audit below preserved). All event times below are UTC.
 **Stage:** registered-quote LOCAL contract observation and preserved policy workshop verification. Current115 backend Node/67 frontend Node/73 Chromium browser/type/lint/build/15parity and147 Rust/SDK pass; earlier26 policy cases across installed automated Edge/Chrome remain separate. Actual LOCAL agency artifacts/imports, prior headed true-visibility and the historical timed-out all-mode clone retain their exact boundaries. [Release record](docs/release/RELEASE_STATUS.md)/BUILD_LOG.md sections41–43 distinguish exact checkout coverage, privacy/licence/platform gaps and pending gates. Full human visual/public release approval remain absent; this status edit is not a new live-rule check.
 **Product name:** RunLatch is provisional.  
 **Authority:** live organizer rules override the newer product-direction brief and compatible original blueprint.
@@ -222,3 +222,9 @@ Official API: POST https://nearhackathon.com/api/applications, JSON body up to12
 - New local tests and actual checkout outcomes are recorded in BUILD_LOG.md sections41–42 and the release status. The earlier all-mode clone timed out; subsequent agency and fresh web verification are distinct runs, not an erased failure or fabricated full pass.
 - Genuine219-file clone01f1963 now passes all15 `--web-only` steps: fresh installation/type/lint/115backend+54frontendNode/15parity/build/audit0/scanner/55browser and clean final Git status. It does not rerun the full SDK/WASM/Sandbox suite or provide public-network evidence. Final evidence-only docs do not change the tested source identity; overall release readiness remains partial.
 - A fresh catalog/live-rules/brand check remains unperformed: kpass/ksearch are absent and installing the remote scripts requires explicit consent. No installer/authentication/payment/private disclosure occurred; the last actual official HTTP rule check remains section11. Organizer community clarifications, eligibility, name/marks, public links/targets and separate publication/submission consent still require final review before external release.
+
+## 13. Receipt/intelligence milestone live recheck — 8 November2026
+
+- Complete official HACKATHON.md read-only fetch succeeded at this milestone.14November23:59UTC deadline,19October eligible baseline, testnet eligibility/no mandatory integrations, public repository/LICENSE through judging, human X media/local-only video, one submission/exact payload consent and no unapproved push/signature remain consistent with prior findings. No submission, publication, deployment, post or signing occurred.
+- The newly requested receipt/intelligence work uses labelled LOCAL/imported/illustrative records, existing objective fixture checks and integer cost cohorts. It does not grant spending authority, establish independent external truth or supply public-testnet evidence. Fresh code/tests remain pending in BUILD_LOG.md section44; earlier passing counts cover earlier code only.
+- Passport catalog checks remain unavailable (CLIs absent; remote install unapproved). This successful official-rule fetch is separate from unresolved catalog/brand/eligibility/community/public-link checks; it is not full final release/submission QA or publication consent.

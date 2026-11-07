@@ -5,6 +5,8 @@ Read with PRODUCT.md/ARCHITECTURE.md/ACCEPTANCE_TESTS.md and the newer [directio
 
 ## 1. Direction and first impression
 
+**8 November receipt/intelligence addition:** `/intelligence` extends existing paper/ink/lime/dark-first tokens/type with explicit evidence/source selection, direct labelled provider bars using static installed-dithercn masks and semantic tables, exact finished-run cost details, sample/time/exclusion facts and expandable multi-axis receipts. No chart/animation package or redesign of existing landing/policy surfaces. Roster precision/overflow/control observations and limitations are retained in BUILD_LOG.md section44.390/1440 light/dark keyboard/axe/reflow/mask-fallback checks pass in bounded Chromium tests, with ignored private captures. Initial definition-list/heading errors were corrected without weakening axe. Full human visual/manual-device review remains deferred, not approved.
+
 **7 November policy-editor extension:** the human explicitly requested this new local interface and received the required UI heads-up. `/policy` retains existing tokens/type/header/footer, with a left-aligned draft pane and exact-rule review pane stacked on mobile, labelled inputs, linked focusable errors, quiet immutable version details and no added shader/motion. No landing-page redesign or final visual approval is implied. Human full-audit review remains deferred. Details and capture/test evidence: [policy workshop](docs/POLICY_WORKSHOP.md), BUILD_LOG.md section42.
 
 ### 7 November motion / dither reconstruction
