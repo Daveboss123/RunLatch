@@ -1,0 +1,30 @@
+# Dependencies and generated builds
+node_modules/
+.next/
+out/
+dist/
+target/
+**/target/
+.tools/
+.cache/
+playwright-report/
+test-results/
+
+# Private runtime material: never publish or serve
+.local/
+.env
+.env.*
+!.env.example
+.near-credentials/
+credentials.json
+*.key
+*.pem
+*.p12
+*.pfx
+
+# Editor/OS files
+.DS_Store
+Thumbs.db
+*.log
+*.tsbuildinfo
+.playwright-mcp/

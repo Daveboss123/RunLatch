@@ -1,0 +1,25 @@
+{
+  "topic": "RunLatch controlled research fixture — not factual research",
+  "sources": [
+    { "id": "fixture-01", "url": "https://sources.example/research/01", "title": "Demo source 01", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." },
+    { "id": "fixture-02", "url": "https://sources.example/research/02", "title": "Demo source 02", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." },
+    { "id": "fixture-03", "url": "https://sources.example/research/03", "title": "Demo source 03", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." },
+    { "id": "fixture-04", "url": "https://sources.example/research/04", "title": "Demo source 04", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." },
+    { "id": "fixture-05", "url": "https://sources.example/research/05", "title": "Demo source 05", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." },
+    { "id": "fixture-06", "url": "https://sources.example/research/06", "title": "Demo source 06", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." },
+    { "id": "fixture-07", "url": "https://sources.example/research/07", "title": "Demo source 07", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." },
+    { "id": "fixture-08", "url": "https://sources.example/research/08", "title": "Demo source 08", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." },
+    { "id": "fixture-09", "url": "https://sources.example/research/09", "title": "Demo source 09", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." },
+    { "id": "fixture-10", "url": "https://sources.example/research/10", "title": "Demo source 10", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." },
+    { "id": "fixture-11", "url": "https://sources.example/research/11", "title": "Demo source 11", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." },
+    { "id": "fixture-12", "url": "https://sources.example/research/12", "title": "Demo source 12", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." },
+    { "id": "fixture-13", "url": "https://sources.example/research/13", "title": "Demo source 13", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." },
+    { "id": "fixture-14", "url": "https://sources.example/research/14", "title": "Demo source 14", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." },
+    { "id": "fixture-15", "url": "https://sources.example/research/15", "title": "Demo source 15", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." },
+    { "id": "fixture-16", "url": "https://sources.example/research/16", "title": "Demo source 16", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." },
+    { "id": "fixture-17", "url": "https://sources.example/research/17", "title": "Demo source 17", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." },
+    { "id": "fixture-18", "url": "https://sources.example/research/18", "title": "Demo source 18", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." },
+    { "id": "fixture-19", "url": "https://sources.example/research/19", "title": "Demo source 19", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." },
+    { "id": "fixture-20", "url": "https://sources.example/research/20", "title": "Demo source 20", "summary": "Controlled fixture record; no factual accuracy or network reachability is claimed." }
+  ]
+}

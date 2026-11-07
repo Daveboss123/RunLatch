@@ -1,0 +1,4 @@
+# near-sdk >=5.27 requires the on-chain host path for contract WASM.
+# cargo-near also enforces this flag and the SDK protocol/compiler checks.
+[target.wasm32-unknown-unknown]
+rustflags = ["--cfg", "near"]

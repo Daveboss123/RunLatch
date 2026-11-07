@@ -1,0 +1,11 @@
+{
+  "topic": "Deliberately incomplete offline fixture — not factual research",
+  "sources": [
+    {
+      "id": "incomplete-fixture-01",
+      "url": "https://sources.example/incomplete/01",
+      "title": "One demo source is insufficient",
+      "summary": "Controlled failure fixture: the validator requires at least 20 distinct records. No payment or real research is represented."
+    }
+  ]
+}

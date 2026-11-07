@@ -1,0 +1,17 @@
+[
+  { "id": "valid", "decision": "APPROVED", "reasons": [] },
+  { "id": "tamper", "decision": "DENIED", "reasons": ["QUOTE_TERMS_MISMATCH"] },
+  { "id": "over-budget", "decision": "DENIED", "reasons": ["INSUFFICIENT_AVAILABLE_BUDGET", "INSUFFICIENT_COMMITMENT_BUDGET"] },
+  { "id": "stale", "decision": "DENIED", "reasons": ["STALE_PROJECT_REVISION"] },
+  { "id": "recurring", "decision": "DENIED", "reasons": ["INSUFFICIENT_COMMITMENT_BUDGET"] },
+  { "id": "recurring-review", "decision": "APPROVAL_REQUIRED", "reasons": [] },
+  { "id": "revoked", "decision": "DENIED", "reasons": ["CAPSULE_INACTIVE"] },
+  { "id": "replay", "decision": "DENIED", "reasons": ["REQUEST_REPLAY"] },
+  { "id": "duplicate", "decision": "DENIED", "reasons": ["DUPLICATE_RESOURCE"] },
+  { "id": "wrong-agent", "decision": "DENIED", "reasons": ["UNAUTHORIZED_AGENT"] },
+  { "id": "missing-quote", "decision": "DENIED", "reasons": ["UNKNOWN_QUOTE"] },
+  { "id": "unbounded", "decision": "DENIED", "reasons": ["UNBOUNDED_COMMITMENT"] },
+  { "id": "threshold-equal", "decision": "APPROVED", "reasons": [] },
+  { "id": "threshold-above", "decision": "APPROVAL_REQUIRED", "reasons": [] },
+  { "id": "expired", "decision": "DENIED", "reasons": ["QUOTE_EXPIRED"] }
+]

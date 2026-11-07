@@ -1,0 +1,5 @@
+# Preserve portable shell scripts and exact UTF-8 fixture bytes on checkout.
+*.sh text eol=lf
+*.ts text eol=lf
+*.json text eol=lf
+*.rs text eol=lf

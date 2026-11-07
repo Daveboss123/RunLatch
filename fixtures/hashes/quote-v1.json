@@ -1,0 +1,26 @@
+{
+  "source": "LOCAL_HASH_FIXTURE_NOT_DEPLOYED",
+  "encoding": "typed-borsh/runlatch.quote.v1",
+  "domain": "runlatch.quote.v1",
+  "network": "testnet",
+  "contract": "contract.testnet",
+  "terms": {
+    "input": {
+      "quote_id": "golden-quote",
+      "provider_id": "search",
+      "recipient_id": "provider.testnet",
+      "service_id": "search-batch",
+      "category": "search",
+      "quantity": 20,
+      "price": "9007199254740993",
+      "asset": "near-native",
+      "recurring": false,
+      "expires_at_ns": "50000",
+      "previous_quote_id": null
+    },
+    "publisher_id": "provider.testnet",
+    "schema_version": 1
+  },
+  "expected_hash": "e2fddfec2f6a3d6edf9e05097005f9d7950f1aed84771567001d96c482894583",
+  "expected_bytes_hex": "1100000072756e6c617463682e71756f74652e763107000000746573746e657410000000636f6e74726163742e746573746e65740c000000676f6c64656e2d71756f7465060000007365617263681000000070726f76696465722e746573746e65740c0000007365617263682d62617463680600000073656172636814000000010000000000200000000000000000000b0000006e6561722d6e61746976650050c3000000000000001000000070726f76696465722e746573746e657401"
+}
