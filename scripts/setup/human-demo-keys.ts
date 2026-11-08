@@ -2,6 +2,7 @@
 import { generateKeyPairSync } from "node:crypto";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
+import { resolve } from "node:path";
 import { encodeBase58_32 } from "../near/base58.ts";
 import { probeHumanCredentialStore, storeGeneratedDemoKey } from "./human-credential-store.ts";
 export { probeHumanCredentialStore } from "./human-credential-store.ts";
@@ -70,6 +71,6 @@ async function main() {
     console.log("LOCAL_KEYS_READY: send only the five STORED_VERIFIED public records. No accounts created or signed.");
   } finally { terminal.close(); }
 }
-if (process.argv[1] && fileURLToPath(import.meta.url) === fileURLToPath(new URL(`file:///${process.argv[1].replaceAll("\\", "/")}`))) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   main().catch(() => { console.error("KEY_SETUP_STOPPED_NO_FALLBACK: retain any public STORE_ATTEMPT records; do not rerun or send secrets."); process.exitCode = 1; });
 }

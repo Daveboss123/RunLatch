@@ -66,9 +66,29 @@ function nativeStore() {
       finally { copy.fill(0); }
     } finally { free(saved[0]); }
   }
-  return { writeNew, removeProbe };
+  function readExactOperator(publicKey: string) {
+    const accountId = "runlatch-demo-1108.testnet", username = `${accountId}:${publicKey}`;
+    const target = `${username}.near-testnet-${accountId}`, saved: unknown[] = [null];
+    if (read(target, 1, 0, saved) === 0) throw Error("HUMAN_STORE_UNAVAILABLE_NO_FALLBACK");
+    try {
+      const record = ffi.decode(saved[0], credential) as Record<string, unknown>;
+      const size = record.CredentialBlobSize;
+      if (record.Type !== 1 || record.Persist !== 2 || record.UserName !== username
+        || typeof size !== "number" || !Number.isSafeInteger(size) || size < 2 || size > 2048 || size % 2) throw Error("HUMAN_STORE_BINDING_INVALID");
+      const bytes = ffi.decode(record.CredentialBlob, "uint8_t", size);
+      if (!(bytes instanceof Uint8Array) && !(Array.isArray(bytes) && bytes.every(b => Number.isInteger(b) && b >= 0 && b <= 255))) throw Error("HUMAN_STORE_BINDING_INVALID");
+      return Buffer.from(bytes);
+    } finally { free(saved[0]); }
+  }
+  return { writeNew, removeProbe, readExactOperator };
 }
 function store() { return loaded ??= nativeStore(); }
+
+/** Fixed newly-created operator target only. Never call from agent/noninteractive execution. */
+export function readHumanOperatorCredential(publicKey: string) {
+  if (!process.stdin.isTTY || !process.stdout.isTTY || !/^ed25519:[1-9A-HJ-NP-Za-km-z]{32,44}$/u.test(publicKey)) throw Error("HUMAN_TERMINAL_REQUIRED");
+  return store().readExactOperator(publicKey);
+}
 
 export function probeHumanCredentialStore() {
   const target = `RunLatch.storage-probe.${randomUUID().replaceAll("-", "")}`;

@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { createInterface } from "node:readline/promises";
 import { fileURLToPath } from "node:url";
 import { readFile, lstat, open } from "node:fs/promises";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 import { decodeBase58_32 } from "../near/base58.ts";
 import { demoKeyRoles } from "./human-demo-keys.ts";
 import { amount, object, parseBoundedJson } from "../../src/lib/near/records.ts";
@@ -132,6 +132,6 @@ async function main() {
     console.log(JSON.stringify(await observeParent(owner.public_key, fetch), null, 2));
   } catch { console.log("FAUCET_OUTCOME_UNCERTAIN: run --check only; do not resend, delete the marker or generate replacement keys."); process.exitCode = 1; }
 }
-if (process.argv[1] && fileURLToPath(import.meta.url) === fileURLToPath(new URL(`file:///${process.argv[1].replaceAll("\\", "/")}`))) {
+if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   main().catch(() => { console.error("PARENT_SETUP_STOPPED: no fallback/retry. Keep public outputs and use --check for readback."); process.exitCode = 1; });
 }

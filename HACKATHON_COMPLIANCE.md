@@ -260,3 +260,9 @@ OfficialHACKATHON.md read-only at2026-11-08T01:31:49.415Z:22199bytes/SHA25690379
 ## 20. Restricted process-key injection — 8 November2026
 
 OfficialHACKATHON.md read-only at2026-11-08T01:45:31.830Z:22199bytes/SHA256903794f4b656b456eaee087941517d024a33633641d167b90c3f060d381d9aed byte-identicaltosection19. No detecteddeadline/consent change or comprehensiveeligibility/community/publiclinkreview. Keyinjectiontests generateephemeralmaterialinmemoryonly; offlineRustchecks2signatures/24wirevectors, notSandbox/publicexecution. No realcredentialread, publicsignature/account/keyinstallation/deployment/transaction/provisioning/post/publish/submission/privateprojectdisclosure/feedback. Publicscope/WorkingMVPcompletion/ReplayLabgo-ahead remainabsent.
+
+## 21. Human child-account preparation — 8 November2026
+
+Official HACKATHON.md read-only check completed at **2026-11-08T17:28:14.623Z**: 22199 bytes, SHA256 `903794f4b656b456eaee087941517d024a33633641d167b90c3f060d381d9aed`, byte-identical to the prior complete reads. Deadline, testnet eligibility, public-repository/media and exact external-action/consent gates are unchanged in this source. No comprehensive community, personal eligibility or final submission review is implied.
+
+The human created the parent testnet account; independent RPC observed its expected key and 10 testnet NEAR. The website is deployed from private source at `a0d2c17`, but the contract/purchase/outcome MVP remains incomplete. The new local child helper uses typed exact testnet scope and explicit human selection of a local Node signer; local tests and unsigned public preflight do not authorize or execute the three child transactions. Public GitHub visibility, contract deployment, later key/setup/purchase/acceptance calls, posts and submission remain separately gated. No mainnet, paid service, human credential read or signature by the agent occurred.

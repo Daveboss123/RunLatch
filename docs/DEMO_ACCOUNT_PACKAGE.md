@@ -1,6 +1,6 @@
 # New demo accounts — proposed scope, not execution approval
 
-**8 November 2026.** The human selected new demo accounts. No account/key has been created and no human secret has been read. This is the smallest four-role proposal for the existing readers, not a request for private keys.
+**8 November 2026.** The human selected new demo accounts, generated/stored five keys locally and created the parent. Independent read-only RPC observed its expected sole FullAccess key and 10 testnet NEAR. The agent has not read human secrets or signed. Child creation, deployment and the remaining calls below are still proposed, not performed or approved by this document.
 
 | Proposed account | Role | Human-controlled key |
 | --- | --- | --- |
@@ -13,7 +13,7 @@ Read-only official RPC at finalized block `FJ9MLe8UXnyqwXDE2g1EUXsVWt4vWQT7qcZAp
 
 ## Proposed native amounts
 
-These are **testnet NEAR**, not fiat equivalents. The faucet grant has not been observed and cannot be promised. Stop if the confirmed initial balance cannot cover the package; never substitute real funds or another account.
+These are **testnet NEAR**, not fiat equivalents. The parent grant was observed as 10 testnet NEAR; recheck current available balance before each approved step. Stop if it cannot cover the package; never substitute real funds or another account.
 
 - Parent-created initial balances: contract4.5 NEAR, provider0.3 NEAR, agent0.1 NEAR; total4.9 NEAR.
 - One project/capsule: budget ceiling/funded purchase allocation0.30 NEAR, immediate purchase cap0.05 NEAR, full commitment cap0.30 NEAR, autonomy threshold0.05 NEAR, recurring policy REQUIRE_APPROVAL.
@@ -39,6 +39,6 @@ Callbacks are contract-scheduled receipts, not additional human signatures. No a
 
 The default artifact was rechecked locally:415910 bytes, SHA256 `d0397fc992cb8f0624076c59314dbe1339461f38ea4c66980dd3d39720c57964`, NEAR code hash `F1pev22VSu86qxxWicXpCixtzzNoQxEi1FHRF2eGXjGP`. It is not deployed.
 
-Human-only local generation must yield **five public keys** without printing/writing private material: four full-access keys and one restricted key. The local Windows Credential Manager helper is now implemented and tested with generated in-memory keys and a nonsensitive native storage probe. [Run these human-only key steps](HUMAN_DEMO_KEY_STEPS.md). It refuses secure-store failure and never uses the stock CLI auto-generator/plaintext fallback. The agent has not generated/read real human keys. No wallet/platform or Windows policy change is needed.
+Human-only local generation yielded **five public keys**, bound in an ignored public-record file: four full-access keys and one restricted key. Do not repeat [the completed key steps](HUMAN_DEMO_KEY_STEPS.md) or parent faucet request. [The next human-only child command](HUMAN_DEMO_CHILD_STEPS.md) explicitly selects narrow local Node signing with the verified Windows store helper and a typed exact batch review; it does not admit stock CLI defaults. No real human private key has been accessed by the agent. No new dependency or Windows security-policy change accompanies this step.
 
 After human-only generation, bind those public keys, the exact opaque project/task/quote IDs, fixture criteria hashes, chain-derived expiry times, all arguments/deposits and fresh nonce/block values to one final human-reviewed package. **This document alone does not authorize account creation, key installation, deployment, signatures or acceptance.** Website hosting proceeds separately with honest absent-testnet labels.
