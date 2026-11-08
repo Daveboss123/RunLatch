@@ -244,3 +244,7 @@ Official API: POST https://nearhackathon.com/api/applications, JSON body up to12
 ## 16. Owner/outcome review milestone — 8 November2026
 
 OfficialHACKATHON.md fetched again read-only at2026-11-08T00:52:40.476Z:22199bytes, SHA256903794f4b656b456eaee087941517d024a33633641d167b90c3f060d381d9aed, byte-identical to section15completechecked source. No changedrules/deadline detected in this source; community/personaleligibility/publiclinks still not comprehensively checked. Exact publicsignature/publication/submissionconsent still absent. Newowner/outcome reviews are unsigned/synthetic; fresh147RustSDK tests are localhostmocks. No publiccontract/account/transaction/fixtureprovisioning/evidence or ReplayLab/publicaction occurred.
+
+## 17. Codec/localcrypto milestone — 8 November2026
+
+OfficialHACKATHON.md read-only at2026-11-08T01:11:09.621Z:22199bytes/SHA256903794f4b656b456eaee087941517d024a33633641d167b90c3f060d381d9aed byte-identical to section16. No deadline/consent change detected in this source; no community/eligibility/publiclink completeness. Newwire/signature checks are offline and generate ephemerallocaltestkeys only, not registered publicaccounts/keys or testnettransactions. No publicsigning/deployment/payment/provisioning/publication/submission occurred; firsttaskstillincomplete and ReplayLab remainsseparatelygated.
