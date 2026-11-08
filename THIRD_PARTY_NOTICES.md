@@ -6,6 +6,7 @@ This is a dependency/tool and reuse record, **not legal or binary-distribution c
 | --- | --- | --- |
 | near-sdk | 5.30.0; https://github.com/near/near-sdk-rs | MIT OR Apache-2.0; source contract/build/test dependency, crates.io checksum in Cargo.lock |
 | cargo-near | 0.22.0 official Windows release | MIT OR Apache-2.0; local development tool only, ignored `.tools/` retains its packaged license files |
+| near-cli-rs candidate | 0.31.1; official release/tree5cdedc38e09b23b84ae9d69f6abbb26568dda579 | MIT OR Apache-2.0; human-operated tool source review/private restriction attempt only. [MIT notice](licenses/near-cli-rs-MIT.txt), both upstream notices in ignored source. Windows build blocked by Application Control; no executable/admission/distribution or full transitive clearance. [Actual boundaries](docs/HUMAN_CLI_SETUP.md) |
 | Rust Gate | Original RunLatch source | MIT; no copied provider UI, external code, or asset in this module |
 | near-sandbox | 0.4.0; https://github.com/near/near-sandbox-rs | MIT OR Apache-2.0; development-only Linux LOCAL node harness, separate manifest/lockfile |
 | near-api | 0.8.7; https://github.com/near/near-api-rs | MIT OR Apache-2.0; development-only LOCAL RPC and in-memory test signing |

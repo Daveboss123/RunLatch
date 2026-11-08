@@ -44,6 +44,8 @@ Ignored captures/logs stay in the isolated QA source, not public evidence. The c
 
 No fixed human-selected, reviewed owner/provider wallet/signing path exists. NEAR Connect's default mutable remote executors, discovery/persistence and earlier notice concerns remain unadmitted; its generic package API is not permission to silently activate a wallet. No SDK/key-plugin/new wallet package was installed or patched.
 
+**Section59 follow-up:** the human selected CLI. [Current review/blocker](HUMAN_CLI_SETUP.md): private0.31.1 source restriction tests pass, but Windows blocked the tool build; no binary/signing admission. An existing global CLI config was found bymetadata and left unread/unchanged. Human config-handling choice is required before the official prebuilt alternative can be checked. This workspace still signs/sends nothing.
+
 The human must identify their testnet wallet (or choose a human-operated NEAR CLI signing flow), without supplying secrets. Review that exact path's current API/source/notice/privacy/capture/retry behavior before adding it. Then obtain exact public accounts/roles/code hash/keys/receiver/methods/arguments/gas/deposits/allowance/funding/call-count approval before any public action. Every actual signature remains a human action; no agent owner/provider key or broader-wallet fallback.
 
 After approved execution, observe native transfer/private callback/final state, run the labelled fixture check, separately record provisioning/task/explicit human acceptance, and generate selected receipt/report evidence. The Working testnet MVP remains incomplete until that network slice and signing QA actually exist. Replay Lab remains unstarted and requires a separate go-ahead after completion.
