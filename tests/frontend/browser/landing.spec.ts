@@ -156,7 +156,9 @@ test("D-19 technology strip pauses for focus/offscreen/reduced motion and has re
   await expect(strip).toHaveAttribute("data-state", "running");
   const links = strip.locator('.build-strip-group:not([aria-hidden="true"]) a');
   expect(await links.count()).toBe(6);
-  expect(await links.locator("img").count()).toBe(6);
+  expect(await links.locator("img").count()).toBe(5);
+  await expect(links.first()).toContainText("NEAR");
+  await expect(links.first().locator("img")).toHaveCount(0);
   const names = await links.evaluateAll(nodes => nodes.map(node => ({ text: node.textContent, href: (node as HTMLAnchorElement).href })));
   expect(names.map(item => new URL(item.href).protocol)).toEqual(Array(6).fill("https:"));
   await links.first().focus();
@@ -265,11 +267,23 @@ test("D-04 demo tampering/recurring review cannot advance into reservations", as
   await expect(walkthrough.getByRole("button", { name: "Preview reservation", exact: true })).toHaveCount(0);
 });
 
-test("D-04 Built with items contain only real logos and names", async ({ page }) => {
+test("D-04 Built with keeps verified artwork and the text-only NEAR reference", async ({ page }) => {
   const group = page.locator('.build-strip-group:not([aria-hidden="true"])');
-  expect(await group.locator("a img").count()).toBe(6);
+  expect(await group.locator("a img").count()).toBe(5);
+  await expect(group.getByRole("link", { name: "NEAR (opens in a new tab)", exact: true }).locator("img")).toHaveCount(0);
   expect(await group.locator("small").count()).toBe(0);
   expect(await group.locator("strong").allTextContents()).toEqual(["NEAR", "Rust", "Next.js", "React", "Tailwind CSS", "dithercn"]);
+});
+
+test("Publication: Docs omit personal paths and footer keeps truthful deployment limits", async ({ page }) => {
+  await page.goto("/docs");
+  await expect(page.locator("main")).not.toContainText("/mnt/c/Users/");
+  await expect(page.locator("main")).not.toContainText("C:\\Users\\");
+  await expect(page.locator("footer")).toContainText("No public NEAR contract");
+  await expect(page.locator("footer")).toContainText("Private source repository");
+  await expect(page.locator("#credits")).toContainText("its unverified logo is not served");
+  const artwork = await page.request.get("/marks/near.svg");
+  expect(artwork.status()).toBe(404);
 });
 
 test("Motion brief: bounded story scroll progression and manual keyboard selection", async ({ page }) => {
