@@ -1,5 +1,9 @@
 # Vercel preview — delivery scope
 
+**Actual delivery:** https://runlatch.vercel.app, deployment `dpl_GGSEzB1vdrvJTTX1U7DbMyRr7Pp8`, project `prj_3y6rgp3LL7HNAchVacKOSgURlyA0`, verified READY on source `a0d2c17e22528b681418ebff95bd47745070a945`. Homepage rendered in the in-app browser with zero observed console errors; same-origin Docs/testnet GETs returned200 and the excluded NEAR artwork404. No personal paths were present in those responses. This browser session is not proof of logged-out access.
+
+The creation tool described a preview, but the subsequent API reports **target production** with `runlatch.vercel.app` and the team/branch aliases. No separate promotion or protection change was performed. The service selected **Node26.x**, not the proposed24.x; the existing >=24.20.0 engine permits it and the cloud build is READY. Project protection reports SSO enabled; no passwords/tokens were read or disclosed. These observed defaults supersede the intended first-delivery wording below, not the prototype's absent public NEAR state.
+
 The human requested GitHub pushing and Vercel deployment on 8 November 2026, then explicitly asked to finish rather than keep the app behind unrelated testnet gates.
 
 - Source: private `Daveboss123/RunLatch`, branch `main`.
