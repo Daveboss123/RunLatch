@@ -2,7 +2,7 @@
  * Reuses the existing transfer/callback inspector; RPC-shaped data is not a light-client proof.
  */
 import { createHash } from "node:crypto";
-import { inspectPurchaseEvidence, parsePurchaseObservationIntent, type EvidenceContext } from "../../src/lib/near/testnet-evidence.ts";
+import { assertTerminalPurchaseEvidence, inspectPurchaseEvidence, parsePurchaseObservationIntent, type EvidenceContext } from "../../src/lib/near/testnet-evidence.ts";
 import { inspectRestrictedAccess, parseRestrictedAgentScope } from "../../src/lib/near/agent-access.ts";
 import { count, fail, object, parseBoundedJson, time } from "../../src/lib/near/records.ts";
 import { parseTestnetTarget } from "../../src/lib/near/testnet-target.ts";
@@ -42,11 +42,7 @@ export function reconcileLocalAgentNonce(input: {
   const observedTx = object(object(input.execution).transaction);
   // NEAR SignedTransactionView reports a numeric nonce; unsafe JSON numbers are refused, never repaired.
   if (count(observedTx.nonce, Number.MAX_SAFE_INTEGER).toString() !== tx.nonce) return fail("PRIOR_TRANSACTION_NONCE_MISMATCH");
-  const terminalPayment = evidence.payment_evidence === "SETTLED" || evidence.payment_evidence === "SETTLEMENT_FAILED";
-  const terminalNoPayment = evidence.payment_evidence === "NOT_ATTEMPTED"
-    && (evidence.actual_decision === "DENIED" || evidence.record_source === "TRANSACTION_EXECUTION_FAILURE");
-  if (!terminalPayment && !terminalNoPayment || evidence.final_record?.status === "SETTLEMENT_PENDING"
-    || evidence.final_record?.reconciliation_required) return fail("PRIOR_PURCHASE_UNRESOLVED");
+  assertTerminalPurchaseEvidence(evidence);
   const block = Object.freeze({ hash: context.block.hash, height: count(context.block.height, Number.MAX_SAFE_INTEGER), timestamp_ns: time(context.block.timestamp_ns) });
   function query(value: unknown) {
     const q = object(value);

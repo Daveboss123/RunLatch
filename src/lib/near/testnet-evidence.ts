@@ -104,6 +104,17 @@ export function unverifiedPurchase(intent: PurchaseObservationIntent, reason: st
     final_record: null as Purchase | null, limitation: reason, grants_payment_authority: false as const, independently_verified: false as const });
 }
 
+/** Terminal evidence for a distinct later attempt, never release/resend or provisioning authority. */
+export function assertTerminalPurchaseEvidence(evidence: Pick<ReturnType<typeof unverifiedPurchase>,
+  "submission" | "payment_evidence" | "actual_decision" | "record_source" | "final_record">) {
+  if (evidence.submission !== "FINAL") return fail("PRIOR_TRANSACTION_NOT_FINAL");
+  const paid = evidence.payment_evidence === "SETTLED" || evidence.payment_evidence === "SETTLEMENT_FAILED";
+  const noPayment = evidence.payment_evidence === "NOT_ATTEMPTED"
+    && (evidence.actual_decision === "DENIED" || evidence.record_source === "TRANSACTION_EXECUTION_FAILURE");
+  if (!paid && !noPayment || evidence.final_record?.status === "SETTLEMENT_PENDING"
+    || evidence.final_record?.reconciliation_required) return fail("PRIOR_PURCHASE_UNRESOLVED");
+}
+
 /** Pure validation is never chain evidence by itself. The reader supplies only pinned RPC records. */
 export function inspectPurchaseEvidence(intent: PurchaseObservationIntent, raw: unknown, context: EvidenceContext) {
   const result = object(raw), tx = object(result.transaction), capsule = object(context.capsule), policy = object(capsule.policy);
