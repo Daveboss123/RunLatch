@@ -38,9 +38,9 @@ The attempted build used `cargo +stable build --locked --release --no-default-fe
 
 The official prebuilt Windows binary is the next candidate, **not yet downloaded/executed/admitted**. Its source defaults above still apply; it cannot be represented as the privately patched build.
 
-Metadata-only inspection found an existing global CLI configuration at `C:\Users\David\AppData\Roaming\near-cli\config.toml`. Its contents were **not read**, copied, overwritten, migrated or disclosed. Because even CLI help can read/migrate it, do not run the stock CLI automatically against it.
+Metadata-only inspection initially found an existing global CLI configuration at `C:\Users\David\AppData\Roaming\near-cli\config.toml`. After explicit human approval, its contents were preserved unread by a same-directory rename and a public-only V5 testnet profile was activated. [Exact state and restore command](REVERSIBLE_CLI_PROFILE.md). Original contents were not copied, overwritten, migrated or disclosed; no CLI or credential-store operation was used.
 
-Before proceeding, obtain the human's choice about handling this existing configuration: keep it entirely human-managed, or explicitly approve a reversible dedicated-testnet profile setup preserving the existing settings. Do not silently alter unrelated config or pretend an environment variable redirects stock CLI configuration. No real keys or API credentials should be pasted into chat or command arguments.
+The configuration-handling gate is now complete for that exact local profile change. Next verify the official prebuilt binary and constrained workflow; the new profile alone does not admit signing or fix the CLI's retry/history/update defaults. No real keys or API credentials should be pasted into chat or command arguments. Further config changes, key handling and public actions require their own applicable scope.
 
 Then finish the exact human unsigned-byte/review, signed-output validation/identity capture and shared one-send connection. These are still unfinished. Before any public action, present the exact accounts/roles/code hash/keys/receiver/methods/arguments/gas/deposits/allowance/funding and call count for approval.
 
