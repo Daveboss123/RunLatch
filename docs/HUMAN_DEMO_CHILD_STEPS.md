@@ -1,5 +1,7 @@
 # Create the three demo child accounts — human-only step
 
+**Completed 8 November:** all three exact child transactions were independently observed FINAL. **Do not rerun this command.** Retain all attempt markers. Next separate step: [Gate deployment/init](HUMAN_DEMO_DEPLOY_STEP.md). The commands below are the historical completed scope, not a request to repeat it.
+
 The parent `runlatch-demo-1108.testnet` was created by the human and independently observed with 10 testnet NEAR and the expected operator FullAccess key. Do not repeat the parent faucet request or generate replacement keys.
 
 ## Exact scope

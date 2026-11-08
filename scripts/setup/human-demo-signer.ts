@@ -7,8 +7,13 @@ import { readHumanOperatorCredential } from "./human-credential-store.ts";
 
 /** Testable with generated in-memory records only; no real store access. */
 export function importGeneratedOperatorRecord(input: Buffer, expectedKey: string) {
+  return importGeneratedHumanRecord(input, expectedKey, parentAccount);
+}
+/** Generated in-memory test records only; no credential access. */
+export function importGeneratedHumanRecord(input: Buffer, expectedKey: string, expectedAccount: string) {
+  if (![parentAccount, `gate.${parentAccount}`].includes(expectedAccount)) throw Error("HUMAN_KEY_BINDING_INVALID");
   const record = object(parseBoundedJson(input.toString("utf16le"), 2048), ["account_id", "public_key", "private_key"]);
-  if (record.account_id !== parentAccount || record.public_key !== expectedKey
+  if (record.account_id !== expectedAccount || record.public_key !== expectedKey
     || typeof record.private_key !== "string" || !/^ed25519:[1-9A-HJ-NP-Za-km-z]{64,88}$/u.test(record.private_key)) throw Error("HUMAN_KEY_BINDING_INVALID");
   const alphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
   const encoded = record.private_key.slice(8), bytes = Buffer.alloc(64);

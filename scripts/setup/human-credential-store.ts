@@ -66,8 +66,8 @@ function nativeStore() {
       finally { copy.fill(0); }
     } finally { free(saved[0]); }
   }
-  function readExactOperator(publicKey: string) {
-    const accountId = "runlatch-demo-1108.testnet", username = `${accountId}:${publicKey}`;
+  function readExact(accountId: string, publicKey: string) {
+    const username = `${accountId}:${publicKey}`;
     const target = `${username}.near-testnet-${accountId}`, saved: unknown[] = [null];
     if (read(target, 1, 0, saved) === 0) throw Error("HUMAN_STORE_UNAVAILABLE_NO_FALLBACK");
     try {
@@ -80,7 +80,9 @@ function nativeStore() {
       return Buffer.from(bytes);
     } finally { free(saved[0]); }
   }
-  return { writeNew, removeProbe, readExactOperator };
+  return { writeNew, removeProbe,
+    readExactOperator: (publicKey: string) => readExact("runlatch-demo-1108.testnet", publicKey),
+    readExactContract: (publicKey: string) => readExact("gate.runlatch-demo-1108.testnet", publicKey) };
 }
 function store() { return loaded ??= nativeStore(); }
 
@@ -88,6 +90,12 @@ function store() { return loaded ??= nativeStore(); }
 export function readHumanOperatorCredential(publicKey: string) {
   if (!process.stdin.isTTY || !process.stdout.isTTY || !/^ed25519:[1-9A-HJ-NP-Za-km-z]{32,44}$/u.test(publicKey)) throw Error("HUMAN_TERMINAL_REQUIRED");
   return store().readExactOperator(publicKey);
+}
+
+/** Separate fixed Gate target, human terminal only. No account selection/fallback/enumeration. */
+export function readHumanContractCredential(publicKey: string) {
+  if (!process.stdin.isTTY || !process.stdout.isTTY || !/^ed25519:[1-9A-HJ-NP-Za-km-z]{32,44}$/u.test(publicKey)) throw Error("HUMAN_TERMINAL_REQUIRED");
+  return store().readExactContract(publicKey);
 }
 
 export function probeHumanCredentialStore() {

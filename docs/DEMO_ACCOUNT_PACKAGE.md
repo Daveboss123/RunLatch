@@ -1,6 +1,6 @@
 # New demo accounts — proposed scope, not execution approval
 
-**8 November 2026.** The human selected new demo accounts, generated/stored five keys locally and created the parent. Independent read-only RPC observed its expected sole FullAccess key and 10 testnet NEAR. The agent has not read human secrets or signed. Child creation, deployment and the remaining calls below are still proposed, not performed or approved by this document.
+**8 November 2026.** The human created the parent and three exact children; independent read-only RPC verified their FINAL creation transactions/keys/initial balances. The agent has not read human secrets or signed. Deployment/init and remaining calls below are still proposed, not performed or approved by this document. Never repeat parent/child creation or key generation.
 
 | Proposed account | Role | Human-controlled key |
 | --- | --- | --- |
@@ -9,7 +9,7 @@
 | `db.runlatch-demo-1108.testnet` | Canonical controlled database publisher/recipient | Full access, outside agent/app |
 | `agent.runlatch-demo-1108.testnet` | Agent account | Retained human full-access recovery key plus one distinct restricted key |
 
-Read-only official RPC at finalized block `FJ9MLe8UXnyqwXDE2g1EUXsVWt4vWQT7qcZApemHbFVA`, height276798927, observed 8 November16:15UTC, reported UNKNOWN_ACCOUNT for all four names. This is not a reservation; recheck immediately before approved creation. Protocol88 and storage price `10000000000000000000` yoctoNEAR/byte were observed at that block.
+Historical RPC at block `FJ9MLe8UXnyqwXDE2g1EUXsVWt4vWQT7qcZApemHbFVA`, height276798927, reported all four absent before creation. Current evidence supersedes that absence: gate4.5 NEAR tx `BxTkx6szB8Adn7v7wt27mYwBWwJpkurdgg25MBL56J2f`; db0.3 tx `9B4RnaMX6WyczGHfMTv98462juUArjng3qfw3WM7NJ36`; agent0.1 tx `5ueNZxf3Vfg35MQ9GMmPPswtWM52giGbfdEU9Lvp7JQF`. See BUILD_LOG.md section68. Account creation is not contract/purchase/outcome evidence.
 
 ## Proposed native amounts
 
@@ -39,6 +39,6 @@ Callbacks are contract-scheduled receipts, not additional human signatures. No a
 
 The default artifact was rechecked locally:415910 bytes, SHA256 `d0397fc992cb8f0624076c59314dbe1339461f38ea4c66980dd3d39720c57964`, NEAR code hash `F1pev22VSu86qxxWicXpCixtzzNoQxEi1FHRF2eGXjGP`. It is not deployed.
 
-Human-only local generation yielded **five public keys**, bound in an ignored public-record file: four full-access keys and one restricted key. Do not repeat [the completed key steps](HUMAN_DEMO_KEY_STEPS.md) or parent faucet request. [The next human-only child command](HUMAN_DEMO_CHILD_STEPS.md) explicitly selects narrow local Node signing with the verified Windows store helper and a typed exact batch review; it does not admit stock CLI defaults. No real human private key has been accessed by the agent. No new dependency or Windows security-policy change accompanies this step.
+Human-only local generation yielded **five public keys**, bound in an ignored public-record file: four full-access keys and one uninstalled restricted key. Do not repeat [completed key steps](HUMAN_DEMO_KEY_STEPS.md), the faucet or [completed children](HUMAN_DEMO_CHILD_STEPS.md). [The next human-only deployment/init command](HUMAN_DEMO_DEPLOY_STEP.md) uses only the Gate's exact Windows store entry after separate typed approval. It does not admit stock CLI defaults or a parent-signing fallback. No real human private key has been accessed by the agent; no new dependency or Windows policy change accompanies this step.
 
 After human-only generation, bind those public keys, the exact opaque project/task/quote IDs, fixture criteria hashes, chain-derived expiry times, all arguments/deposits and fresh nonce/block values to one final human-reviewed package. **This document alone does not authorize account creation, key installation, deployment, signatures or acceptance.** Website hosting proceeds separately with honest absent-testnet labels.
