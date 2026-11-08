@@ -1,39 +1,18 @@
 /** Explicit read-only RPC. No wallet, secret, broadcast, automatic import or payment authority. */
 import { buildProjectReport, type ProjectDisclosure } from "../reporting/project.ts";
 import { inspectPurchaseEvidence, parsePurchaseObservationIntent, unverifiedPurchase } from "./testnet-evidence.ts";
-import { account, amount, count, enumValue, fail, hash, id, list, object, parseBoundedJson,
+import { inspectRestrictedAccess, parseRestrictedAgentScope } from "./agent-access.ts";
+import { parsePurchaseAction, preparePurchaseReview } from "./action-review.ts";
+import { parseTestnetTarget, type FinalBlock } from "./testnet-target.ts";
+export { namedTestnetAccount, parseTestnetTarget, type TestnetTarget, type FinalBlock } from "./testnet-target.ts";
+import { amount, count, enumValue, fail, hash, id, list, object, parseBoundedJson,
   parseProvider, parsePurchase, parseQuote, reference, time } from "./records.ts";
 
-const ENDPOINTS = new Set(["https://rpc.testnet.near.org/", "https://test.rpc.fastnear.com/"]);
 const MAX_BYTES = 1_048_576;
-export interface TestnetTarget {
-  readonly network: "testnet"; readonly rpc_url: string; readonly contract_id: string;
-  readonly operator_id: string; readonly expected_code_hash: string;
-}
-export interface FinalBlock {
-  readonly hash: string; readonly height: number; readonly timestamp_ns: string;
-}
 export interface ProjectSelection {
   readonly project_id: string; readonly capsule_ids: readonly string[];
   readonly provider_ids: readonly string[]; readonly quote_ids: readonly string[];
   readonly disclosure: ProjectDisclosure;
-}
-export function namedTestnetAccount(value: unknown): string {
-  const result = account(value);
-  if (!result.endsWith(".testnet")) return fail("NAMED_TESTNET_ACCOUNT_REQUIRED");
-  return result;
-}
-export function parseTestnetTarget(value: unknown): TestnetTarget {
-  const c = object(value, ["network", "rpc_url", "contract_id", "operator_id", "expected_code_hash"]);
-  if (c.network !== "testnet") return fail("TESTNET_ONLY");
-  let url: URL;
-  try { if (typeof c.rpc_url !== "string" || c.rpc_url.length > 256) return fail("INVALID_TESTNET_RPC"); url = new URL(c.rpc_url); }
-  catch { return fail("INVALID_TESTNET_RPC"); }
-  if (url.username || url.password || url.search || url.hash || !ENDPOINTS.has(url.href)) return fail("TESTNET_RPC_NOT_ALLOWED");
-  const contract = namedTestnetAccount(c.contract_id), operator = namedTestnetAccount(c.operator_id);
-  if (contract === operator) return fail("CONTRACT_OPERATOR_ROLE_CONFLICT");
-  return Object.freeze({ network: "testnet", rpc_url: url.href, contract_id: contract,
-    operator_id: operator, expected_code_hash: reference(c.expected_code_hash) });
 }
 function identifiers(value: unknown, maximum: number) {
   const values = list(value, maximum).map(id);
@@ -119,8 +98,8 @@ export function createTestnetReader(input: unknown, injectedFetch?: typeof fetch
       if (!Object.hasOwn(envelope, "result")) return fail("TESTNET_RPC_EMPTY_RESULT");
       return envelope.result;
     }
-    async function query(block: FinalBlock, params: Record<string, unknown>) {
-      const response = object(await rpc("query", { ...params, block_id: block.hash, account_id: target.contract_id }));
+    async function query(block: FinalBlock, params: Record<string, unknown>, accountId = target.contract_id) {
+      const response = object(await rpc("query", { ...params, block_id: block.hash, account_id: accountId }));
       if (response.block_hash !== block.hash || count(response.block_height, Number.MAX_SAFE_INTEGER) !== block.height) return fail("MIXED_TESTNET_BLOCKS");
       return response;
     }
@@ -161,10 +140,40 @@ export function createTestnetReader(input: unknown, injectedFetch?: typeof fetch
       const state = await query(block, { request_type: "view_account" });
       if (reference(state.code_hash) !== target.expected_code_hash) return fail("EXECUTION_CODE_HASH_MISMATCH");
     }
-    return { preflight, view, rpc, verifyCode };
+    async function restrictedAccess(block: FinalBlock, inputScope: unknown) {
+      const scope = parseRestrictedAgentScope(inputScope, target);
+      const key = await query(block, { request_type: "view_access_key", public_key: scope.public_key }, scope.agent_id);
+      // Nine returned rows are rejected; no incomplete pagination or account-wide unbounded walk.
+      const keys = await query(block, { request_type: "view_access_key_list", limit: 9 }, scope.agent_id);
+      if (keys.next_key !== undefined && keys.next_key !== null) return fail("AGENT_ACCESS_KEY_LIST_INCOMPLETE");
+      return inspectRestrictedAccess(scope, target, { nonce: key.nonce, permission: key.permission }, keys);
+    }
+    return { preflight, view, rpc, verifyCode, restrictedAccess };
   }
   return Object.freeze({ target,
     preflight: (signal?: AbortSignal) => operation(signal).preflight(),
+    async readRestrictedAgent(inputScope: unknown, signal?: AbortSignal) {
+      const scope = parseRestrictedAgentScope(inputScope, target), session = operation(signal), observed = await session.preflight();
+      return Object.freeze({ ...observed, access: await session.restrictedAccess(observed.block, scope) });
+    },
+    async readPurchaseReview(inputAction: unknown, inputScope: unknown | null, signal?: AbortSignal) {
+      const action = parsePurchaseAction(inputAction);
+      const scope = inputScope === null ? null : parseRestrictedAgentScope(inputScope, target);
+      if (action.method === "submit_purchase" ? !scope || scope.agent_id !== action.signer_id || scope.public_key !== action.public_key : scope !== null) return fail("ACTION_ROLE_SCOPE_MISMATCH");
+      const session = operation(signal), observed = await session.preflight(), p = action.proposal;
+      const snapshot = object(await session.view(observed.block, "get_capsule_report_snapshot", { capsule_id: p.capsule_id }));
+      const project = await session.view(observed.block, "get_project", { project_id: p.project_id });
+      if (JSON.stringify(snapshot.project) !== JSON.stringify(project)) return fail("TESTNET_SNAPSHOT_BINDING_MISMATCH");
+      const report = await buildProjectReport(JSON.stringify({ source: "NEAR_TESTNET_OBSERVATION", contract_id: target.contract_id, network_tag: "testnet",
+        block_hash: observed.block.hash, project_id: p.project_id, snapshots: [snapshot] }), { project_id: p.project_id, budget: true, expenses: false, evidence: false });
+      const rawQuote = await session.view(observed.block, "get_quote", { quote_id: p.quote_id });
+      const terms = object(object(rawQuote).terms), providerId = id(object(terms.input).provider_id);
+      const provider = await session.view(observed.block, "get_provider", { provider_id: providerId });
+      const access = scope === null ? null : await session.restrictedAccess(observed.block, scope);
+      const review = await preparePurchaseReview(target, action, { block: observed.block, snapshot, provider, quote: rawQuote, access,
+        transport_source: transportSource, financials: report.financials });
+      return review;
+    },
     async observePurchase(inputIntent: unknown, signal?: AbortSignal) {
       const intent = parsePurchaseObservationIntent(inputIntent), session = operation(signal);
       if (intent.sender_id === target.contract_id) return fail("CONTRACT_CANNOT_BE_PURCHASE_SIGNER");
