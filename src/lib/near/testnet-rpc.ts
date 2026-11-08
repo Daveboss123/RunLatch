@@ -1,5 +1,6 @@
 /** Explicit read-only RPC. No wallet, secret, broadcast, automatic import or payment authority. */
 import { buildProjectReport, type ProjectDisclosure } from "../reporting/project.ts";
+import { inspectPurchaseEvidence, parsePurchaseObservationIntent, unverifiedPurchase } from "./testnet-evidence.ts";
 import { account, amount, count, enumValue, fail, hash, id, list, object, parseBoundedJson,
   parseProvider, parsePurchase, parseQuote, reference, time } from "./records.ts";
 
@@ -76,7 +77,9 @@ function encodedArgs(args: Readonly<Record<string, unknown>>) {
   if (bytes.length > 4096) return fail("TESTNET_VIEW_INPUT_LIMIT");
   return btoa(String.fromCharCode(...bytes));
 }
-const READ_ERRORS = new Set(["UNKNOWN_ACCOUNT", "UNKNOWN_BLOCK", "NO_CONTRACT_CODE", "CONTRACT_EXECUTION_ERROR", "TIMEOUT_ERROR", "DOES_NOT_TRACK_SHARD"]);
+const READ_ERRORS = new Set(["UNKNOWN_ACCOUNT", "UNKNOWN_BLOCK", "NO_CONTRACT_CODE", "CONTRACT_EXECUTION_ERROR", "TIMEOUT_ERROR", "DOES_NOT_TRACK_SHARD", "UNKNOWN_TRANSACTION"]);
+const UNAVAILABLE_EVIDENCE = new Set(["TESTNET_RPC_UNAVAILABLE", "TESTNET_RPC_TIMEOUT", "TESTNET_READ_TIMEOUT", "TESTNET_READ_CANCELLED", "TESTNET_RPC_HTTP_ERROR",
+  "TESTNET_RPC_TIMEOUT_ERROR", "TESTNET_RPC_DOES_NOT_TRACK_SHARD", "TESTNET_RPC_UNKNOWN_TRANSACTION", "TESTNET_RPC_UNKNOWN_BLOCK", "TESTNET_RPC_METHOD_UNAVAILABLE", "TESTNET_RPC_ERROR"]);
 const LOCAL_RESPONSE_ERRORS = new Set(["TESTNET_RPC_HTTP_ERROR", "TESTNET_RPC_CONTENT_TYPE", "TESTNET_RPC_RESPONSE_LIMIT", "TESTNET_RPC_EMPTY_RESPONSE",
   "TESTNET_RPC_INVALID_UTF8", "INVALID_CONTRACT_JSON", "CONTRACT_INPUT_LIMIT", "CONTRACT_JSON_DEPTH", "DUPLICATE_CONTRACT_FIELD"]);
 
@@ -88,7 +91,7 @@ export function createTestnetReader(input: unknown, injectedFetch?: typeof fetch
     let requests = 0;
     const deadline = AbortSignal.timeout(60_000);
     const overall = signal ? AbortSignal.any([signal, deadline]) : deadline;
-    async function rpc(method: "status" | "block" | "query", params: unknown) {
+    async function rpc(method: "status" | "block" | "query" | "tx_status" | "EXPERIMENTAL_tx_status", params: unknown) {
       if (overall.aborted) return fail(signal?.aborted ? "TESTNET_READ_CANCELLED" : "TESTNET_READ_TIMEOUT");
       if (++requests > 40) return fail("TESTNET_RPC_REQUEST_LIMIT");
       const requestId = `runlatch-read-${requests}`;
@@ -109,6 +112,7 @@ export function createTestnetReader(input: unknown, injectedFetch?: typeof fetch
       if (envelope.jsonrpc !== "2.0" || envelope.id !== requestId) return fail("TESTNET_RPC_ENVELOPE_MISMATCH");
       if (Object.hasOwn(envelope, "error")) {
         const error = object(envelope.error), cause = error.cause === undefined ? null : object(error.cause);
+        if (error.code === -32601) return fail("TESTNET_RPC_METHOD_UNAVAILABLE");
         const reason = cause?.name;
         return fail(typeof reason === "string" && READ_ERRORS.has(reason) ? `TESTNET_RPC_${reason}` : "TESTNET_RPC_ERROR");
       }
@@ -133,6 +137,9 @@ export function createTestnetReader(input: unknown, injectedFetch?: typeof fetch
       if (status.chain_id !== "testnet") return fail("RPC_NETWORK_MISMATCH");
       const sync = object(status.sync_info);
       if (sync.syncing !== false) return fail("RPC_NODE_SYNCING");
+      const version = status.version === undefined ? null : object(status.version).version;
+      const match = typeof version === "string" && version.length <= 64 ? /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?:-rc[.\d]*|$)/u.exec(version) : null;
+      const receiptStatusMethod = match && (+match[1] > 2 || +match[1] === 2 && +match[2] >= 14) ? "tx_status" as const : "EXPERIMENTAL_tx_status" as const;
       const header = object(object(await rpc("block", { finality: "final" })).header);
       const block: FinalBlock = Object.freeze({ hash: reference(header.hash), height: count(header.height, Number.MAX_SAFE_INTEGER), timestamp_ns: time(header.timestamp_nanosec) });
       const state = await query(block, { request_type: "view_account" });
@@ -146,13 +153,77 @@ export function createTestnetReader(input: unknown, injectedFetch?: typeof fetch
         provider_credit: amount(raw.provider_credit), quote_credit: amount(raw.quote_credit) });
       if (Object.values(storage).some(v => BigInt(v) === 0n)) return fail("INVALID_STORAGE_REQUIREMENTS");
       return Object.freeze({ target, block, storage, transport_source: transportSource, source: "NEAR_TESTNET_OBSERVATION" as const,
+        receipt_status_method: receiptStatusMethod,
         independently_verified: false as const, grants_payment_authority: false as const,
         limitation: "RPC-reported chain/code/view consistency, not a light-client proof, signing consent or settlement verification." });
     }
-    return { preflight, view };
+    async function verifyCode(block: FinalBlock) {
+      const state = await query(block, { request_type: "view_account" });
+      if (reference(state.code_hash) !== target.expected_code_hash) return fail("EXECUTION_CODE_HASH_MISMATCH");
+    }
+    return { preflight, view, rpc, verifyCode };
   }
   return Object.freeze({ target,
     preflight: (signal?: AbortSignal) => operation(signal).preflight(),
+    async observePurchase(inputIntent: unknown, signal?: AbortSignal) {
+      const intent = parsePurchaseObservationIntent(inputIntent), session = operation(signal);
+      if (intent.sender_id === target.contract_id) return fail("CONTRACT_CANNOT_BE_PURCHASE_SIGNER");
+      const unavailable = (reason: string) => Object.freeze({ ...unverifiedPurchase(intent, reason), transport_source: transportSource,
+        source: "NEAR_TESTNET_OBSERVATION" as const, target });
+      try {
+        const before = await session.preflight();
+        const execution = await session.rpc(before.receipt_status_method, { tx_hash: intent.transaction_hash, sender_account_id: intent.sender_id, wait_until: "FINAL" });
+        const raw = object(execution);
+        const finality = enumValue(raw.final_execution_status, ["NONE", "INCLUDED", "EXECUTED_OPTIMISTIC", "INCLUDED_FINAL", "EXECUTED", "FINAL"]);
+        if (finality !== "FINAL" && raw.transaction === undefined) return Object.freeze({ ...unavailable("TRANSACTION_NOT_FINAL"), submission: "NOT_FINAL" as const });
+        // Pin views AFTER receipt lookup: a pre-lookup block may precede the final callback.
+        const observed = await session.preflight();
+        const snapshot = object(await session.view(observed.block, "get_capsule_report_snapshot", { capsule_id: intent.proposal.capsule_id }));
+        const capsule = object(snapshot.capsule), policy = object(capsule.policy), project = object(snapshot.project), projectInput = object(project.input);
+        if (capsule.capsule_id !== intent.proposal.capsule_id || capsule.owner_id !== target.operator_id || capsule.policy_schema_version !== 2
+          || policy.project_id !== intent.proposal.project_id || projectInput.project_id !== intent.proposal.project_id || project.owner_id !== target.operator_id) return fail("TESTNET_SNAPSHOT_BINDING_MISMATCH");
+        const projectRead = await session.view(observed.block, "get_project", { project_id: intent.proposal.project_id });
+        if (JSON.stringify(projectRead) !== JSON.stringify(project)) return fail("TESTNET_SNAPSHOT_BINDING_MISMATCH");
+        const report = await buildProjectReport(JSON.stringify({ source: "NEAR_TESTNET_OBSERVATION", contract_id: target.contract_id, network_tag: "testnet",
+          block_hash: observed.block.hash, project_id: intent.proposal.project_id, snapshots: [snapshot] }),
+        { project_id: intent.proposal.project_id, budget: true, expenses: false, evidence: false });
+        const purchases = list(snapshot.purchases, 32).map(parsePurchase), p = purchases.find(p => p.proposal.request_id === intent.proposal.request_id) ?? null;
+        let quote = null;
+        if (p?.canonical_quote) {
+          const providerId = p.canonical_quote.input.provider_id;
+          const provider = parseProvider(await session.view(observed.block, "get_provider", { provider_id: providerId }));
+          if (provider.provider_id !== providerId) return fail("TESTNET_PROVIDER_SCOPE_MISMATCH");
+          quote = await parseQuote(await session.view(observed.block, "get_quote", { quote_id: p.proposal.quote_id }), target.contract_id, [provider]);
+        }
+        const hashes = finality === "FINAL" ? [...new Set([object(raw.transaction_outcome).block_hash,
+          ...list(raw.receipts_outcome, 32).map(v => object(v).block_hash)].map(reference))] : [];
+        if (hashes.length > 16) return fail("TESTNET_OUTCOME_BLOCK_LIMIT");
+        const blocks: Record<string, FinalBlock> = Object.create(null);
+        for (const blockHash of hashes) {
+          if (blockHash === observed.block.hash) { blocks[blockHash] = observed.block; continue; }
+          const header = object(object(await session.rpc("block", { block_id: blockHash })).header);
+          const block = Object.freeze({ hash: reference(header.hash), height: count(header.height, Number.MAX_SAFE_INTEGER), timestamp_ns: time(header.timestamp_nanosec) });
+          if (block.hash !== blockHash) return fail("TESTNET_OUTCOME_BLOCK_MISMATCH");
+          blocks[blockHash] = block;
+        }
+        // Current code alone cannot establish which code executed the historical Gate/callback.
+        const executionOutcomes = finality === "FINAL" ? list(raw.receipts_outcome, 32).map(v => object(v)) : [];
+        const initialId = raw.transaction_outcome === undefined ? undefined : object(object(raw.transaction_outcome).outcome).status;
+        const rootId = initialId && typeof initialId === "object" ? object(initialId).SuccessReceiptId : undefined;
+        const initiating = executionOutcomes.find(o => o.id === rootId);
+        const initiatingStatus = initiating === undefined ? undefined : object(initiating.outcome).status;
+        const callbackId = initiatingStatus && typeof initiatingStatus === "object" ? object(initiatingStatus).SuccessReceiptId : undefined;
+        const callback = executionOutcomes.find(o => o.id === callbackId);
+        const codeBlocks = [...new Set([initiating, callback].filter(o => o !== undefined).map(o => reference(o!.block_hash)))];
+        for (const blockHash of codeBlocks) await session.verifyCode(blocks[blockHash]);
+        const evidence = inspectPurchaseEvidence(intent, execution, { contract_id: target.contract_id, operator_id: target.operator_id,
+          block: observed.block, capsule, purchase: p, quote, outcome_blocks: blocks });
+        return Object.freeze({ ...observed, ...evidence, financials: report.financials, execution_code_blocks: Object.freeze(codeBlocks) });
+      } catch (error) {
+        if (error instanceof Error && UNAVAILABLE_EVIDENCE.has(error.message)) return unavailable(error.message);
+        throw error;
+      }
+    },
     async readProject(inputSelection: unknown, signal?: AbortSignal) {
       const selection = parseSelection(inputSelection), session = operation(signal), observed = await session.preflight();
       const rawProject = await session.view(observed.block, "get_project", { project_id: selection.project_id });

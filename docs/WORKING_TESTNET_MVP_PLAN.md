@@ -34,3 +34,7 @@ Catalog CLIs remain absent and their remote installer lacks consent; no catalog 
 ## Second-task stop
 
 After the first task is actually implemented and verified, report exact outputs and remaining limitations. Then tell the human Replay Lab is next and wait for their go-ahead (they may paste the prompt again). Do not silently implement Replay Lab under “anything else necessary.”
+
+## Local progress — 8 November
+
+Stages1/2 now have dependency-free read-only modules and synthetic tests. The [settlement observer](TESTNET_SETTLEMENT_OBSERVER.md) joins exact transaction/actions, transfer data dependency, successful private callback, historical code hashes and pinned canonical state, preserving no-payment/replay/rollback/unknown distinctions. Full116frontendNode/115backendNode/type/lint pass; no public RPC execution or browser connection exists. Human wallet/scoped-agent/fixture vertical slice and complete testnet evidence remain unfinished. Test fixtures never substitute for actual approved network execution.
