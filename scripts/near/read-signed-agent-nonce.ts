@@ -25,6 +25,6 @@ export async function readSignedAgentNonce(reader: Reader, inputIdentity: unknow
   return result;
 }
 export type SignedAgentNonceReadback = Awaited<ReturnType<typeof readSignedAgentNonce>>;
-export function assertIssuedSignedAgentNonce(value: SignedAgentNonceReadback) {
-  if (!issued.has(value)) return fail("UNISSUED_SIGNED_AGENT_NONCE");
+export function assertIssuedSignedAgentNonce(value: unknown): asserts value is SignedAgentNonceReadback {
+  if (value === null || typeof value !== "object" || !issued.has(value)) return fail("UNISSUED_SIGNED_AGENT_NONCE");
 }

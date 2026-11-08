@@ -1,4 +1,5 @@
-/** LOCAL injected-transport byte-send test seam. No default fetch, secret, CLI/public execution or retry.
+/** Shared bounded byte-send mechanics. LOCAL wrapper still requires injected transport and LOCAL review.
+ * Testnet opt-in needs issued exact confirmation. No secret, CLI, generic RPC or retry.
  * This exercises actual RPC request shape; an acknowledgement is NOT inclusion or settlement.
  */
 import { Buffer } from "node:buffer";
@@ -6,7 +7,8 @@ import { fail, object, parseBoundedJson } from "../../src/lib/near/records.ts";
 import type { PurchaseReview } from "../../src/lib/near/action-review.ts";
 import { inspectSignedAgentEnvelope } from "./signature-envelope.ts";
 import { decodeBase58_32 } from "./base58.ts";
-import { assertLocalSignedReview } from "./local-signed-review.ts";
+import { assertSignedReview } from "./local-signed-review.ts";
+import { assertRunnerTransport, type TestnetRunAdmission } from "./runner-admission.ts";
 
 const MAX_RESPONSE = 16_384;
 async function acknowledgement(response: Response, requestId: string, hash: string, signal: AbortSignal) {
@@ -37,16 +39,22 @@ async function acknowledgement(response: Response, requestId: string, hash: stri
 /** Trusted test code supplies transport explicitly. This is NOT an admitted way to call public RPC. */
 export function createLocalBroadcastExercise(review: PurchaseReview, inputBytes: Uint8Array, transport: typeof fetch,
   nowNs: () => bigint, timeoutMs = 15_000) {
+  return createBoundedBroadcast(review, inputBytes, transport, nowNs, timeoutMs);
+}
+export function createBoundedBroadcast(review: PurchaseReview, inputBytes: Uint8Array, transport: typeof fetch,
+  nowNs: () => bigint, timeoutMs = 15_000, admission?: TestnetRunAdmission) {
   // No transport fallback, even on an error; this seam is intentionally local-only.
-  if (typeof transport !== "function" || transport === globalThis.fetch) return fail("LOCAL_INJECTED_TRANSPORT_REQUIRED");
+  assertRunnerTransport(transport, admission);
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 15_000) return fail("LOCAL_BROADCAST_TIMEOUT_INVALID");
   const signed = inspectSignedAgentEnvelope(inputBytes);
-  assertLocalSignedReview(review, signed);
+  assertSignedReview(review, signed, admission);
+  const source = admission ? "RESTRICTED_TESTNET_SINGLE_BROADCAST" as const : "LOCAL_INJECTED_BROADCAST_EXERCISE" as const;
+  const publicExecution = admission ? "NOT_PROVEN" as const : false as const;
   const bytes = signed.signed_bytes, requestId = `runlatch-local-broadcast-${signed.transaction_hash}`;
   const body = JSON.stringify({ jsonrpc: "2.0", id: requestId, method: "broadcast_tx_async", params: [Buffer.from(bytes).toString("base64")] });
   if (Buffer.byteLength(body) > 12_288) return fail("LOCAL_BROADCAST_INPUT_LIMIT");
   let consumed = false;
-  return Object.freeze({ source: "LOCAL_INJECTED_BROADCAST_EXERCISE" as const, transaction_hash: signed.transaction_hash,
+  return Object.freeze({ source, transaction_hash: signed.transaction_hash,
     async invoke(signal: AbortSignal) {
       if (consumed) return fail("LOCAL_BROADCAST_ALREADY_CONSUMED");
       consumed = true; // Includes cancelled/expired starts: never re-enter this identity.
@@ -73,12 +81,12 @@ export function createLocalBroadcastExercise(review: PurchaseReview, inputBytes:
           }
           await acknowledgement(response, requestId, signed.transaction_hash, controller.signal);
         }), interrupted]);
-        return Object.freeze({ source: "LOCAL_INJECTED_BROADCAST_EXERCISE" as const, status: "ACKNOWLEDGED_UNVERIFIED" as const,
-          transaction_hash: signed.transaction_hash, transport_entered: true, public_execution: false as const, payment_evidence: "NOT_OBSERVED" as const });
+        return Object.freeze({ source, status: "ACKNOWLEDGED_UNVERIFIED" as const,
+          transaction_hash: signed.transaction_hash, transport_entered: true, public_execution: publicExecution, payment_evidence: "NOT_OBSERVED" as const });
       } catch {
-        return Object.freeze({ source: "LOCAL_INJECTED_BROADCAST_EXERCISE" as const,
+        return Object.freeze({ source,
           status: entered ? "RESULT_UNKNOWN" as const : "STOPPED_BEFORE_TRANSPORT" as const, transaction_hash: signed.transaction_hash,
-          transport_entered: entered, public_execution: false as const, payment_evidence: "NOT_OBSERVED" as const });
+          transport_entered: entered, public_execution: publicExecution, payment_evidence: "NOT_OBSERVED" as const });
       } finally {
         if (timer) clearTimeout(timer);
         signal.removeEventListener("abort", abort);

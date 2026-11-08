@@ -2,6 +2,7 @@
  * Loading proves public-key consistency only, NOT on-chain restriction or human signing consent.
  */
 import { createPrivateKey, createPublicKey, type KeyObject } from "node:crypto";
+import type { PurchaseReview } from "../../src/lib/near/action-review.ts";
 import { Buffer } from "node:buffer";
 import { types } from "node:util";
 import { parseTestnetTarget, type TestnetTarget } from "../../src/lib/near/testnet-target.ts";
@@ -9,7 +10,8 @@ import { parseRestrictedAgentScope, type RestrictedAgentScope } from "../../src/
 import { fail } from "../../src/lib/near/records.ts";
 import { canonicalReviewContent } from "../../src/lib/near/review-content.ts";
 import { encodeBase58_32 } from "./base58.ts";
-import { createLocalReviewSigner } from "./local-review-signer.ts";
+import { createLocalReviewSigner, createReviewSigner } from "./local-review-signer.ts";
+import { assertTestnetRunAdmission, type TestnetRunAdmission } from "./runner-admission.ts";
 
 const VARIABLE = "RUNLATCH_AGENT_PRIVATE_KEY";
 export interface RestrictedProcessKey {
@@ -18,7 +20,7 @@ export interface RestrictedProcessKey {
   readonly public_signing_enabled: false;
   readonly limitation: string;
 }
-interface State { key: KeyObject | null; signer: ReturnType<typeof createLocalReviewSigner> | null }
+interface State { key: KeyObject | null; signer: ReturnType<typeof createLocalReviewSigner> | null; readonly consumed: Set<string> }
 const states = new WeakMap<RestrictedProcessKey, State>();
 const loaded = new Set<string>(); // Permanent for this process, including after disposal; bounded below.
 
@@ -54,9 +56,9 @@ export function consumeRestrictedProcessKey(inputTarget: unknown, inputScope: un
     const publicKey = `ed25519:${encodeBase58_32(Buffer.from(jwk.x, "base64url"))}`;
     if (publicKey !== scope.public_key) return fail("PROCESS_KEY_PUBLIC_MISMATCH");
     const handle: RestrictedProcessKey = Object.freeze({ source: "EXPLICIT_RESTRICTED_PROCESS_KEY_INJECTION", target, scope, public_key: publicKey,
-      public_signing_enabled: false, limitation: "Key consistency only; no chain restriction/consent proof. Local signing requires issued review; public path is not admitted. Disposal drops references, not guaranteed memory erasure." });
+      public_signing_enabled: false, limitation: "Key consistency only; loading grants no signing authority. Testnet adapter separately requires an exact run confirmation and fresh scoped review. Disposal drops references, not guaranteed memory erasure." });
     loaded.add(identity);
-    states.set(handle, { key, signer: null });
+    states.set(handle, { key, signer: null, consumed: new Set<string>() });
     return handle;
   } catch {
     // Do not expose crypto exceptions, input fragments, stacks/causes or caller-supplied diagnostic values.
@@ -74,12 +76,21 @@ export function createInjectedLocalSigningExercise(handle: RestrictedProcessKey)
   const stored = state(handle);
   if (!stored.key) return fail("PROCESS_KEY_DISPOSED");
   // One shared consumed-request set per handle, even when several adapters are requested.
-  stored.signer ??= createLocalReviewSigner(handle.public_key, () => stored.key ?? fail("PROCESS_KEY_DISPOSED"), review => {
-    const access = review.access ?? fail("PROCESS_KEY_SCOPE_REVIEW_MISMATCH"), scope = handle.scope;
-    if (canonicalReviewContent(review.target) !== canonicalReviewContent(handle.target) || review.action.signer_id !== scope.agent_id
-      || access.agent_id !== scope.agent_id || access.public_key !== scope.public_key || access.recovery_public_key !== scope.recovery_public_key
-      || access.allowance_cap !== scope.max_allowance) return fail("PROCESS_KEY_SCOPE_REVIEW_MISMATCH");
-  });
+  stored.signer ??= createReviewSigner(handle.public_key, () => stored.key ?? fail("PROCESS_KEY_DISPOSED"), review => assertProcessKeyReview(handle, review), undefined, stored.consumed);
   return Object.freeze({ source: "INJECTED_PROCESS_KEY_LOCAL_SIGNING_EXERCISE" as const, public_key: handle.public_key,
     public_signing_enabled: false as const, ...stored.signer });
+}
+function assertProcessKeyReview(handle: RestrictedProcessKey, review: PurchaseReview) {
+  const access = review.access ?? fail("PROCESS_KEY_SCOPE_REVIEW_MISMATCH"), scope = handle.scope;
+  if (canonicalReviewContent(review.target) !== canonicalReviewContent(handle.target) || review.action.signer_id !== scope.agent_id
+    || access.agent_id !== scope.agent_id || access.public_key !== scope.public_key || access.recovery_public_key !== scope.recovery_public_key
+    || access.allowance_cap !== scope.max_allowance) return fail("PROCESS_KEY_SCOPE_REVIEW_MISMATCH");
+}
+/** Node-only admitted adapter. Still no arbitrary-message signer, secret export or owner fallback. */
+export function createInjectedTestnetSigning(handle: RestrictedProcessKey, admission: TestnetRunAdmission) {
+  assertTestnetRunAdmission(admission); const stored = state(handle);
+  if (!stored.key) return fail("PROCESS_KEY_DISPOSED");
+  assertProcessKeyReview(handle, admission.review);
+  return createReviewSigner(handle.public_key, () => stored.key ?? fail("PROCESS_KEY_DISPOSED"),
+    review => assertProcessKeyReview(handle, review), admission, stored.consumed);
 }

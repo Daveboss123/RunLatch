@@ -1,4 +1,6 @@
-/** Bounded LOCAL sequential demo coordinator. Original one-shot key guard is the permanent anchor.
+/** Shared bounded sequential coordinator. LOCAL wrapper still refuses testnet readbacks.
+ * Testnet opt-in requires exact run confirmation + separately issued identity-bound readback.
+ * Original one-shot key guard is the permanent anchor.
  * No adoption of old claims, reset/release, stale-lock timeout, automatic reconciliation or network.
  */
 import { Buffer } from "node:buffer";
@@ -9,20 +11,35 @@ import { confirmFreshPurchaseReview, type PurchaseReview } from "../../src/lib/n
 import { fail, id, object, parseBoundedJson, time } from "../../src/lib/near/records.ts";
 import { canonicalReviewContent as canonical } from "../../src/lib/near/review-content.ts";
 import { createLocalKeyGuard, type LocalKeyLease } from "./local-key-guard.ts";
-import { assertLocalSignedReview } from "./local-signed-review.ts";
+import { assertSignedReview } from "./local-signed-review.ts";
 import { inspectSignedAgentEnvelope } from "./signature-envelope.ts";
 import { encodeUnsignedAgentTransaction } from "./transaction-codec.ts";
 import { assertIssuedLocalReconciliation, localIdentityHash, parseLocalSignedIdentity, type LocalNonceReconciliation } from "./local-nonce-reconciliation.ts";
+import { assertIssuedSignedAgentNonce, type SignedAgentNonceReadback } from "./read-signed-agent-nonce.ts";
+import { assertRunnerNamespace, assertRunnerReview, type TestnetRunAdmission } from "./runner-admission.ts";
 
-const MAX_RUNS = 3, SOURCE = "LOCAL_SEQUENTIAL_KEY_EXERCISE";
+const MAX_RUNS = 3;
 const samePath = (a: string, b: string) => process.platform === "win32" ? normalize(a).toLowerCase() === normalize(b).toLowerCase() : normalize(a) === normalize(b);
 const digest = localIdentityHash;
 interface LeaseState { stage: number; readonly review: PurchaseReview; readonly slot: number; readonly claimHash: string; readonly anchor: LocalKeyLease | null }
 
 export async function createLocalSequentialKey(namespace = "working-mvp") {
-  id(namespace);
+  const coordinator = await createSequentialKey(namespace);
+  // Preserve the LOCAL API and its distinct provenance check; HTTP readbacks cannot unlock it.
+  return Object.freeze({ ...coordinator, forRun(prior: LocalNonceReconciliation | null = null) { return coordinator.forRun(prior); } });
+}
+export async function createSequentialKey(namespace: string, admission?: TestnetRunAdmission) {
+  id(namespace); assertRunnerNamespace(namespace, admission);
+  const SOURCE = admission ? "RESTRICTED_TESTNET_SEQUENTIAL_KEY" : "LOCAL_SEQUENTIAL_KEY_EXERCISE";
+  function assertPrior(prior: LocalNonceReconciliation | SignedAgentNonceReadback) {
+    if (admission) {
+      // Issuance is checked before structural fields, never read a forged object's getters.
+      assertIssuedSignedAgentNonce(prior);
+      if (prior.transport_source !== admission.review.transport_source) return fail("RECONCILIATION_TRANSPORT_MISMATCH");
+    } else assertIssuedLocalReconciliation(prior);
+  }
   // Same directory/domain as legacy guard: a legacy one-shot caller and this coordinator cannot both bootstrap.
-  const anchor = await createLocalKeyGuard(namespace);
+  const anchor = await createLocalKeyGuard(namespace, admission);
   const root = await realpath(fileURLToPath(new URL("../../", import.meta.url)));
   const directory = join(root, ".local", "testnet-mvp", "key-guard", namespace);
   async function safe() {
@@ -63,8 +80,7 @@ export async function createLocalSequentialKey(namespace = "working-mvp") {
     return digest(["runlatch.local-key-guard.v1", "testnet", review.action.signer_id, review.action.public_key]);
   }
   function reviewValid(review: PurchaseReview, confirmation: unknown, nowNs?: bigint) {
-    if (review.transport_source !== "INJECTED_TEST_TRANSPORT_NOT_CHAIN_EVIDENCE" || review.action.method !== "submit_purchase"
-      || !review.access || !review.financials) return fail("PUBLIC_SEQUENTIAL_KEY_NOT_ADMITTED");
+    assertRunnerReview(review, admission, "PUBLIC_SEQUENTIAL_KEY_NOT_ADMITTED");
     confirmFreshPurchaseReview(review, review, confirmation);
     if (nowNs !== undefined && (typeof nowNs !== "bigint" || nowNs < BigInt(review.reviewed_at_ns) || nowNs >= BigInt(review.expires_at_ns))) return fail("SEQUENTIAL_REVIEW_EXPIRED");
   }
@@ -94,7 +110,7 @@ export async function createLocalSequentialKey(namespace = "working-mvp") {
     }
     if (rows.length) {
       const anchored = await read(join(directory, `${key}.0.json`));
-      if (!anchored || anchored.source !== "LOCAL_ONE_SHOT_KEY_GUARD" || anchored.event !== "KEY_CLAIMED"
+      if (!anchored || anchored.source !== (admission ? "RESTRICTED_TESTNET_ONE_SHOT_KEY_GUARD" : "LOCAL_ONE_SHOT_KEY_GUARD") || anchored.event !== "KEY_CLAIMED"
         || anchored.key_guard_id !== key || anchored.nonce !== object(rows[0].claim.transaction).nonce) return fail("SEQUENTIAL_ANCHOR_MISMATCH");
       if (rows[0].identity) {
         const captured = await read(join(directory, `${key}.1.json`));
@@ -114,8 +130,8 @@ export async function createLocalSequentialKey(namespace = "working-mvp") {
     /** An issued fresh reconciliation is supplied explicitly for EVERY advancement, including after restart.
      * Old files are an audit trail, never a persisted boolean that grants a new nonce.
      */
-    forRun(prior: LocalNonceReconciliation | null = null) {
-      if (prior !== null) assertIssuedLocalReconciliation(prior);
+    forRun(prior: LocalNonceReconciliation | SignedAgentNonceReadback | null = null) {
+      if (prior !== null) assertPrior(prior);
       const leases = new WeakMap<LocalKeyLease, LeaseState>();
       return Object.freeze({
         async claim(review: PurchaseReview, confirmation: unknown, nowNs: bigint): Promise<LocalKeyLease> {
@@ -131,7 +147,7 @@ export async function createLocalSequentialKey(namespace = "working-mvp") {
           } else {
             const last = rows.at(-1)!;
             if (!last.identity || !last.signed || prior === null) return fail("PRIOR_KEY_ATTEMPT_UNRESOLVED");
-            assertIssuedLocalReconciliation(prior);
+            assertPrior(prior);
             if (prior.identity_hash !== digest(last.identity) || prior.access.nonce !== review.access!.nonce
               || canonical(prior.access) !== canonical(review.access) || canonical(prior.target) !== canonical(review.target)
               || prior.block.height > review.reviewed_block.height || BigInt(prior.block.timestamp_ns) > BigInt(review.reviewed_at_ns)
@@ -150,7 +166,7 @@ export async function createLocalSequentialKey(namespace = "working-mvp") {
         async capture(lease: LocalKeyLease, bytes: Uint8Array) {
           const state = leases.get(lease) ?? fail("UNISSUED_SEQUENTIAL_LEASE");
           if (state.stage !== 0) return fail("SEQUENTIAL_STAGE_MISMATCH");
-          const signed = inspectSignedAgentEnvelope(bytes); assertLocalSignedReview(state.review, signed);
+          const signed = inspectSignedAgentEnvelope(bytes); assertSignedReview(state.review, signed, admission);
           if (signed.transaction.nonce !== lease.nonce) return fail("SEQUENTIAL_NONCE_MISMATCH");
           state.stage = -1;
           if (state.anchor) await anchor.capture(state.anchor, bytes);

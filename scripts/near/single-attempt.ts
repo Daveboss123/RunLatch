@@ -1,11 +1,12 @@
-/** Offline orchestration seam only. No admitted signer/codec/broadcast or public execution entry point. */
+/** Shared bounded single-attempt mechanics. LOCAL wrapper stays offline; testnet requires exact admission. */
 import { confirmFreshPurchaseReview, type PurchaseReview } from "../../src/lib/near/action-review.ts";
 import type { PurchaseObservationIntent } from "../../src/lib/near/testnet-evidence.ts";
 import type { AttemptJournal } from "./attempt-journal.ts";
+import { assertRunnerReview, type TestnetRunAdmission } from "./runner-admission.ts";
 
 interface PreparedExercise {
   readonly intent: unknown;
-  /** Trusted test code, not a method/URL/command decoded from provider output. No production adapter exists. */
+  /** Trusted local runner code, never a method/URL/command decoded from provider output. */
   readonly invoke: (signal: AbortSignal) => Promise<unknown>;
 }
 export interface SingleAttemptExercisePorts {
@@ -17,10 +18,9 @@ export interface SingleAttemptExercisePorts {
   readonly signal?: AbortSignal;
 }
 const fail = (code: string): never => { throw new Error(code); };
-function eligible(review: PurchaseReview) {
-  if (review.transport_source !== "INJECTED_TEST_TRANSPORT_NOT_CHAIN_EVIDENCE" || review.action.method !== "submit_purchase"
-    || review.call.method !== "submit_purchase" || review.call.attached_deposit !== "0" || !review.access
-    || !review.financials) return fail("PUBLIC_EXECUTION_NOT_ADMITTED");
+function eligible(review: PurchaseReview, admission?: TestnetRunAdmission) {
+  assertRunnerReview(review, admission, "PUBLIC_EXECUTION_NOT_ADMITTED");
+  if (review.call.method !== "submit_purchase" || review.call.attached_deposit !== "0") return fail("PUBLIC_EXECUTION_NOT_ADMITTED");
 }
 function checkTime(review: PurchaseReview, fresh: PurchaseReview, ports: SingleAttemptExercisePorts) {
   if (ports.signal?.aborted) return fail("ATTEMPT_CANCELLED_BEFORE_INVOCATION");
@@ -51,14 +51,19 @@ async function limited<T>(operation: (signal: AbortSignal) => Promise<T>, timeou
 }
 
 export async function exerciseSingleAttempt(review: PurchaseReview, confirmation: unknown, ports: SingleAttemptExercisePorts) {
-  eligible(review);
+  return runSingleAttempt(review, confirmation, ports);
+}
+export async function runSingleAttempt(review: PurchaseReview, confirmation: unknown, ports: SingleAttemptExercisePorts, admission?: TestnetRunAdmission) {
+  eligible(review, admission);
+  const source = admission ? "RESTRICTED_TESTNET_SINGLE_ATTEMPT" as const : "LOCAL_SINGLE_ATTEMPT_EXERCISE" as const;
+  const publicExecution = admission ? "NOT_PROVEN" as const : false as const;
   const timeout = ports.invocationTimeoutMs ?? 15_000;
   if (!Number.isSafeInteger(timeout) || timeout < 1 || timeout > 15_000) return fail("INVALID_INVOCATION_TIMEOUT");
   if (ports.signal?.aborted) return fail("ATTEMPT_CANCELLED_BEFORE_INVOCATION");
   let fresh: PurchaseReview;
   try { fresh = await limited(ports.freshReview, timeout, ports.signal); }
   catch { return fail("FRESH_REVIEW_UNAVAILABLE"); }
-  eligible(fresh);
+  eligible(fresh, admission);
   confirmFreshPurchaseReview(review, fresh, confirmation);
   checkTime(review, fresh, ports);
   const lease = await ports.journal.claim(fresh);
@@ -76,19 +81,19 @@ export async function exerciseSingleAttempt(review: PurchaseReview, confirmation
     // One invocation only. A late return/rejection after timeout is ignored, never a new attempt or settlement fact.
     await limited(prepared.invoke, timeout, ports.signal);
     await ports.journal.finish(lease, "RETURNED_UNVERIFIED");
-    return Object.freeze({ source: "LOCAL_SINGLE_ATTEMPT_EXERCISE" as const, status: "RETURNED_UNVERIFIED" as const,
+    return Object.freeze({ source, status: "RETURNED_UNVERIFIED" as const,
       attempt_id: lease.attempt_id, intent, invocation_entered: true, journal_completion: "RECORDED" as const,
-      payment_evidence: "NOT_OBSERVED" as const, public_execution: false as const });
+      payment_evidence: "NOT_OBSERVED" as const, public_execution: publicExecution });
   } catch {
     let finalMarker = false;
     if (entered) {
       // A failed final marker must not discard identity or invite a resend. The already-written entry still blocks it.
       try { await ports.journal.finish(lease, "RESULT_UNKNOWN"); finalMarker = true; } catch { /* Report missing final marker; retain earlier markers. */ }
     }
-    return Object.freeze({ source: "LOCAL_SINGLE_ATTEMPT_EXERCISE" as const,
+    return Object.freeze({ source,
       status: entered ? "RESULT_UNKNOWN" as const : "STOPPED_BEFORE_INVOCATION" as const,
       attempt_id: lease.attempt_id, intent, invocation_entered: entered,
       journal_completion: finalMarker ? "RECORDED" as const : "NOT_FINALIZED_RETAIN_PRIOR_MARKERS" as const,
-      payment_evidence: "NOT_OBSERVED" as const, public_execution: false as const });
+      payment_evidence: "NOT_OBSERVED" as const, public_execution: publicExecution });
   }
 }

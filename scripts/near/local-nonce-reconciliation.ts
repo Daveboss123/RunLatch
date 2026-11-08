@@ -63,6 +63,6 @@ export function reconcileLocalAgentNonce(input: {
   return result;
 }
 export type LocalNonceReconciliation = ReturnType<typeof reconcileLocalAgentNonce>;
-export function assertIssuedLocalReconciliation(value: LocalNonceReconciliation) {
-  if (!issued.has(value)) return fail("UNISSUED_NONCE_RECONCILIATION");
+export function assertIssuedLocalReconciliation(value: unknown): asserts value is LocalNonceReconciliation {
+  if (value === null || typeof value !== "object" || !issued.has(value)) return fail("UNISSUED_NONCE_RECONCILIATION");
 }
