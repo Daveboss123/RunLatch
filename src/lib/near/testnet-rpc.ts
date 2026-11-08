@@ -5,6 +5,7 @@ import { inspectRestrictedAccess, parseRestrictedAgentScope } from "./agent-acce
 import { parsePurchaseAction, preparePurchaseReview } from "./action-review.ts";
 import { parseTestnetTarget, type FinalBlock } from "./testnet-target.ts";
 import { assertSetupRole, parseSetupAction, prepareSetupReview } from "./setup-review.ts";
+import { assertOwnerRole, parseOwnerAction, prepareOwnerReview, type OwnerArtifact } from "./owner-review.ts";
 export { namedTestnetAccount, parseTestnetTarget, type TestnetTarget, type FinalBlock } from "./testnet-target.ts";
 import { amount, count, enumValue, fail, hash, id, list, object, parseBoundedJson,
   parseProvider, parsePurchase, parseQuote, reference, time } from "./records.ts";
@@ -182,6 +183,29 @@ export function createTestnetReader(input: unknown, injectedFetch?: typeof fetch
       }
       return prepareSetupReview(target, action, { block: observed.block, storage: observed.storage, signer_access: signerAccess,
         existing_record: existing, project, providers, previous_quote: previous, transport_source: transportSource });
+    },
+    async readOwnerReview(inputAction: unknown, evidence?: OwnerArtifact, signal?: AbortSignal) {
+      const action = parseOwnerAction(inputAction); assertOwnerRole(action, target);
+      // Capture artifact before the first asynchronous read. It is never sent to the RPC.
+      let artifact: OwnerArtifact | undefined;
+      if (action.method === "record_task_check") {
+        const e = object(evidence, ["artifact"]);
+        if (e.artifact !== null && !(e.artifact instanceof Uint8Array)) return fail("EXACT_TASK_ARTIFACT_REQUIRED");
+        if (e.artifact instanceof Uint8Array && e.artifact.byteLength > 16384) return fail("RESOURCE_ARTIFACT_SIZE_LIMIT");
+        artifact = { artifact: e.artifact === null ? null : new Uint8Array(e.artifact) };
+      } else if (evidence !== undefined) return fail("UNEXPECTED_OWNER_ARTIFACT");
+      const session = operation(signal), observed = await session.preflight();
+      const signerAccess = await session.humanAccess(observed.block, action.signer_id, action.public_key);
+      let project: unknown = null, provider: unknown = null, snapshot: unknown = null;
+      if (action.method === "set_provider_status") provider = await session.view(observed.block, "get_provider", { provider_id: action.args.provider_id });
+      else if (action.method === "set_project_status" || action.method === "advance_project_revision") project = await session.view(observed.block, "get_project", { project_id: action.args.project_id });
+      else {
+        snapshot = await session.view(observed.block, "get_capsule_report_snapshot", { capsule_id: action.args.capsule_id });
+        const capsule = object(object(snapshot).capsule), policy = object(capsule.policy);
+        project = await session.view(observed.block, "get_project", { project_id: id(policy.project_id) });
+      }
+      return prepareOwnerReview(target, action, { block: observed.block, signer_access: signerAccess, project, provider, snapshot,
+        transport_source: transportSource }, artifact);
     },
     async readPurchaseReview(inputAction: unknown, inputScope: unknown | null, signal?: AbortSignal) {
       const action = parsePurchaseAction(inputAction);
