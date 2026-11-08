@@ -1,5 +1,7 @@
 # Deploy and initialize the Gate — human-only step
 
+**Completed 8 November:** deployment/init transaction `23jZ77SEAK3b4YwW6EjanToSSt1XtbCvvgTPxFXYJqg6` is independently observed FINAL with the exact default code/operator/schema2/testnet. **Do not rerun deployment/init or remove attempt records.** The commands below document the completed scope; subsequent project/setup actions require their own exact approval. See BUILD_LOG.md section70.
+
 **8 November 2026.** The three child accounts are created and independently observed. Do not recreate them or the parent, regenerate keys, or repeat the child batch. This is the next separate action, not a completed deployment or approval of the rest of the MVP.
 
 ## Exact scope to review

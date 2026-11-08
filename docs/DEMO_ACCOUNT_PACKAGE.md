@@ -1,6 +1,6 @@
 # New demo accounts — proposed scope, not execution approval
 
-**8 November 2026.** The human created the parent and three exact children; independent read-only RPC verified their FINAL creation transactions/keys/initial balances. The agent has not read human secrets or signed. Deployment/init and remaining calls below are still proposed, not performed or approved by this document. Never repeat parent/child creation or key generation.
+**8 November 2026.** The human created the parent/three exact children and deployed/initialized the default Gate; independent read-only RPC verified FINAL transactions/code/configuration/keys/nonces. The agent has not read human secrets or signed. Project/provider/capsule/quote/key/purchase/outcome calls below remain proposed, not performed or approved by this document. Never repeat account/key creation or deployment/init.
 
 | Proposed account | Role | Human-controlled key |
 | --- | --- | --- |
@@ -16,7 +16,7 @@ Historical RPC at block `FJ9MLe8UXnyqwXDE2g1EUXsVWt4vWQT7qcZApemHbFVA`, height27
 These are **testnet NEAR**, not fiat equivalents. The parent grant was observed as 10 testnet NEAR; recheck current available balance before each approved step. Stop if it cannot cover the package; never substitute real funds or another account.
 
 - Parent-created initial balances: contract4.5 NEAR, provider0.3 NEAR, agent0.1 NEAR; total4.9 NEAR.
-- One project/capsule: budget ceiling/funded purchase allocation0.30 NEAR, immediate purchase cap0.05 NEAR, full commitment cap0.30 NEAR, autonomy threshold0.05 NEAR, recurring policy REQUIRE_APPROVAL.
+- One project:0.30 NEAR **unfunded delegation ceiling**, separate0.08192 NEAR storage contribution. A later separately created capsule has0.30 NEAR actual purchase funding, immediate purchase cap0.05 NEAR, full commitment cap0.30 NEAR, autonomy threshold0.05 NEAR, recurring policy REQUIRE_APPROVAL.
 - One canonical one-time database quote: due-now/full commitment0.05 NEAR, no future commitment. Exact resource/purpose and criteria use the existing fictional website fixture.
 - Restricted key: `submit_purchase` only on `gate.runlatch-demo-1108.testnet`, zero deposit, gas allowance0.05 NEAR. Gas allowance does not grant purchase authority. Keep the recovery key; no deletion or unlimited allowance.
 - Observed-price storage contributions: project0.08192 NEAR; provider registration0.04096 NEAR; capsule history2.62144 NEAR; quote0.08192 NEAR. Capsule creation attaches0.30 +2.62144 =2.92144 NEAR. Owner setup deposits total3.04432 NEAR; quote deposit is paid separately by the provider. Re-read actual contract requirements before approving the final calls.
@@ -37,8 +37,8 @@ Callbacks are contract-scheduled receipts, not additional human signatures. No a
 
 ## Remaining exact binding
 
-The default artifact was rechecked locally:415910 bytes, SHA256 `d0397fc992cb8f0624076c59314dbe1339461f38ea4c66980dd3d39720c57964`, NEAR code hash `F1pev22VSu86qxxWicXpCixtzzNoQxEi1FHRF2eGXjGP`. It is not deployed.
+The default artifact is now deployed and initialized:415910 bytes, SHA256 `d0397fc992cb8f0624076c59314dbe1339461f38ea4c66980dd3d39720c57964`, NEAR code hash `F1pev22VSu86qxxWicXpCixtzzNoQxEi1FHRF2eGXjGP`, transaction `23jZ77SEAK3b4YwW6EjanToSSt1XtbCvvgTPxFXYJqg6`. Independent FINAL readback confirms operatorroot/schema2/testnet/soleexpectedGatekey/nonce276806735000001. This does not prove a purchase, delivery or human acceptance.
 
-Human-only local generation yielded **five public keys**, bound in an ignored public-record file: four full-access keys and one uninstalled restricted key. Do not repeat [completed key steps](HUMAN_DEMO_KEY_STEPS.md), the faucet or [completed children](HUMAN_DEMO_CHILD_STEPS.md). [The next human-only deployment/init command](HUMAN_DEMO_DEPLOY_STEP.md) uses only the Gate's exact Windows store entry after separate typed approval. It does not admit stock CLI defaults or a parent-signing fallback. No real human private key has been accessed by the agent; no new dependency or Windows policy change accompanies this step.
+Human-only local generation yielded **five public keys**, bound in an ignored public-record file: four full-access keys and one uninstalled restricted key. Do not repeat [completed key steps](HUMAN_DEMO_KEY_STEPS.md), the faucet, [completed children](HUMAN_DEMO_CHILD_STEPS.md) or [completed deployment/init](HUMAN_DEMO_DEPLOY_STEP.md). Human localNode/Windows store signing remains separate from the agent/app; no stockCLI or parent-signing fallback was admitted. Next is [one exact owner project-creation command](HUMAN_DEMO_PROJECT_STEP.md), locally prepared/tested but not executed. No real human private key has been accessed by the agent.
 
 After human-only generation, bind those public keys, the exact opaque project/task/quote IDs, fixture criteria hashes, chain-derived expiry times, all arguments/deposits and fresh nonce/block values to one final human-reviewed package. **This document alone does not authorize account creation, key installation, deployment, signatures or acceptance.** Website hosting proceeds separately with honest absent-testnet labels.

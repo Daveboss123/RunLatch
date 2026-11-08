@@ -1,6 +1,6 @@
 # Working testnet MVP — implementation plan
 
-**Requested:** 8 November 2026. **Sequence:** Working testnet MVP first; the new Replay Lab second, only after the human gives a separate go-ahead. The seven-case Replay Lab prompt is retained in the conversation and original blueprint; do not start that feature in this milestone.
+**Requested:** 8 November 2026. **Sequence:** Working testnet MVP first; the new Replay Lab second. **Latest human steering:** proceed autonomously without local/UI heads-ups or routine approvals; review at the end of the whole build. This supersedes earlier routine stop/go requests, not the first-task completion requirement or human full-access key boundary. The seven-case Replay Lab prompt is retained; do not start that second feature while this first milestone is unfinished.
 
 ## Existing foundations and actual gaps
 
@@ -29,11 +29,13 @@ Public signing/execution is not yet authorized by the broad implementation reque
 
 No `function-call-key-plugin`: its current peer range conflicts with connector0.12.0, it persists a browser key and falls back to wallet authority on denied permissions/removed keys. Those behaviors conflict with the project boundary. Human recovery access remains intact; finite gas is mandatory despite generic docs suggesting unlimited allowance.
 
-Catalog CLIs remain absent and their remote installer lacks consent; no catalog search result, installer, payment or project disclosure is claimed. Required library/API checks used official read-only docs. Before visual implementation, notify the human again, inspect actual Roster hierarchy/controls and apply existing RunLatch tokens/dither/React constraints. No UI/layout work has begun in this audit.
+At the initial audit, catalog CLIs were absent; section71 now verifies the human-installed binaries and a read-only catalog search with no exact NEAR documentation fit. No installer/payment/private-project disclosure occurred. Required library/API checks use official docs. Before visual implementation, inspect actual Roster hierarchy/controls and apply RunLatch tokens/dither/React constraints; the human's latest steering removes routine local UI heads-ups. Historical audit statements below are not current capability or permission claims.
 
-## Second-task stop
+## Second-task ordering and final review
 
-After the first task is actually implemented and verified, report exact outputs and remaining limitations. Then tell the human Replay Lab is next and wait for their go-ahead (they may paste the prompt again). Do not silently implement Replay Lab under “anything else necessary.”
+After the first task is actually implemented and verified, save exact outputs and remaining limitations, then continue the agreed Replay Lab second under the human's latest autonomous whole-build instruction. No routine visual approval is required. Never substitute synthetic data for a missing public purchase/evidence flow or call the first task complete to skip that ordering. Human full-access signatures remain explicit own-terminal steps, not an agent key-reading permission; public/signing/privacy/submission boundaries remain.
+
+**Current checkpoint,section71:** parent/children and default Gate deployment/init are actually observed FINAL. One exact operator project command is locally prepared/tested but not executed; final-source counts and public fresh-read timing are in BUILD_LOG.md. [Copy/paste step](HUMAN_DEMO_PROJECT_STEP.md). It feeds the existing issued setup-review validator from one fixed same-final-block RPC context, avoiding duplicate full preflight reads. Existing `/testnet` workspace and restricted runner/reviews remain local; no capsule/quote/key/purchase/provisioning/check/acceptance evidence yet. Current hosted website remainsa0d2c17. Updates below retain historical stage evidence and older permission wording; latest steering above governs local work.
 
 ## Local progress — 8 November
 

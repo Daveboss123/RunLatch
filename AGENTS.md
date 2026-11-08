@@ -71,8 +71,8 @@ Official sources: https://nearhackathon.com/ and https://nearhackathon.com/HACKA
 
 ## Design and dithercn
 
-- **Human requested a heads-up before any UI or layout work.** Notify them before starting frontend scaffolding, visual implementation, or layout changes. Backend/tests/docs may continue; do not silently begin the interface.
-- **Current sequence:** the7 November direction-change request resumes autonomous local audit/docs/backend/testing and supersedes the complete pause. Finish the brief's project/security/commitment/evidence foundations before UI. The prior human request for a UI/layout heads-up remains; do not silently begin frontend or visual work. Public/signing/privacy gates remain unchanged.
+- **8 November human steering:** local development, including UI/layout, proceeds autonomously without heads-ups or routine approval requests. The human will review at the end of the whole build; do not interrupt ordinary implementation for visual approval.
+- **Current sequence:** finish the brief's project/security/commitment/evidence foundations, then connect verified records to the website and finish UI/QA. Do not label account/deployment/setup success as a funded purchase or complete Working MVP. Human full-access signing stays in their own terminal; exact public/signing/privacy gates remain, not an agent credential-reading permission.
 
 - **Roster Finance is the primary live visual reference:** https://www.roster.finance/. Before a visual implementation/substantial change, inspect actual hierarchy, navigation, spacing, tables, transitions, responsive behavior, and interactions. Record observations and limitations. Adapt quality and storytelling, not branding, assets, text, or distinctive product components.
 - Preserve the RunLatch paper/ink/lime palette, typography, named concepts, and operational clarity in DESIGN.md. Product before marketing; real mechanisms before security claims.
