@@ -7,6 +7,9 @@ import { fail, list, parseBoundedJson } from "../../src/lib/near/records.ts";
 import { decodeUnsignedAgentTransaction, encodeUnsignedAgentTransaction } from "./transaction-codec.ts";
 import { encodeBase58_32 } from "./base58.ts";
 import { inspectSignedAgentEnvelope, verifyAgentSignature } from "./signature-envelope.ts";
+import { injectedKeyFixture } from "../../tests/near/helpers/process-key.ts";
+import { signedRunFixture } from "../../tests/near/helpers/signed-run.ts";
+import { disposeRestrictedProcessKey } from "./restricted-process-key.ts";
 const parts: Buffer[] = []; let size = 0;
 try {
   for await (const part of process.stdin) {
@@ -33,7 +36,15 @@ try {
   if (inspectSignedAgentEnvelope(verified.signed_bytes).transaction_hash !== verified.transaction_hash) fail("PARITY_SIGNATURE_INSPECTION");
   const ephemeral = { public_key: transaction.public_key, signature_bytes: [...signature], transaction_hash: verified.transaction_hash,
     signed_wire_base64: Buffer.from(verified.signed_bytes).toString("base64") };
-  const output = JSON.stringify({ source: "LOCAL_CODEC_PARITY_WITH_EPHEMERAL_SIGNATURE", public_execution: false, results, ephemeral });
+  // Independent Rust verification of the shared exact-review signer AFTER generated PKCS#8 injection.
+  // Only public transaction/signature fields leave this test bridge; no supplied private key input.
+  const injected = injectedKeyFixture(), review = await signedRunFixture(injected.signer);
+  const prepared = injected.signer.signReview(review.review, review.review, review.confirmation, BigInt(review.review.reviewed_at_ns));
+  const checked = inspectSignedAgentEnvelope(prepared.signed_bytes);
+  disposeRestrictedProcessKey(injected.handle);
+  const imported = { transaction: checked.transaction, signature_bytes: [...prepared.signed_bytes.slice(-64)], transaction_hash: checked.transaction_hash,
+    signed_wire_base64: Buffer.from(prepared.signed_bytes).toString("base64"), public_execution: false };
+  const output = JSON.stringify({ source: "LOCAL_CODEC_PARITY_WITH_EPHEMERAL_SIGNATURE", public_execution: false, results, ephemeral, imported });
   if (Buffer.byteLength(output) > 65536) fail("PARITY_OUTPUT_LIMIT");
   process.stdout.write(output);
 } catch {

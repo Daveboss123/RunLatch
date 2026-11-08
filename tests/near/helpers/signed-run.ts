@@ -1,5 +1,6 @@
 /** Synthetic project + ephemeral signing only. No secret export, HTTP read or registered account. */
 import { createLocalSigningExercise } from "../../../scripts/near/local-signing-exercise.ts";
+import type { LocalReviewSigner } from "../../../scripts/near/local-review-signer.ts";
 import { preparePurchaseReview } from "../../../src/lib/near/action-review.ts";
 import { inspectRestrictedAccess } from "../../../src/lib/near/agent-access.ts";
 import { parseTestnetTarget } from "../../../src/lib/near/testnet-target.ts";
@@ -8,7 +9,7 @@ import { encodeBase58_32 } from "../../../scripts/near/base58.ts";
 import { reviewFixture, scope } from "../../frontend/helpers/action-review.ts";
 import { target } from "../../frontend/helpers/testnet-evidence.ts";
 
-export async function signedRunFixture(signer = createLocalSigningExercise(), requestId = "database") {
+export async function signedRunFixture(signer: LocalReviewSigner & { readonly public_key: string } = createLocalSigningExercise(), requestId = "database") {
   const data = await reviewFixture();
   const action = { ...data.action, public_key: signer.public_key, proposal: { ...data.action.proposal, request_id: requestId } };
   const access = inspectRestrictedAccess({ ...scope, public_key: signer.public_key }, parseTestnetTarget(target), data.key,

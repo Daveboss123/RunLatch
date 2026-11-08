@@ -122,8 +122,56 @@ async fn restricted_v0_node_bytes_match_reviewed_rust_sdk() -> Result<(), Box<dy
     let wire: near_openapi_types::SignedTransaction =
         SignedTransaction::new(signature, first).into();
     assert_eq!(result["ephemeral"]["signed_wire_base64"], wire.to_string());
+    // Second actual signature: Node generated a key, imported its canonical PKCS#8 in memory,
+    // checked its pinned public key, then used the SAME exact-review signer implementation.
+    let imported = &result["imported"];
+    assert_eq!(imported["public_execution"], false);
+    let fields = &imported["transaction"];
+    assert_eq!(fields["network"], "testnet");
+    assert_eq!(fields["method"], "submit_purchase");
+    assert_eq!(fields["attached_deposit"], "0");
+    let key: PublicKey = fields["public_key"]
+        .as_str()
+        .ok_or("Missing public key")?
+        .parse()?;
+    let tx = Transaction::V0(TransactionV0 {
+        signer_id: fields["signer_id"]
+            .as_str()
+            .ok_or("Missing signer")?
+            .parse()?,
+        public_key: key,
+        nonce: fields["nonce"].as_str().ok_or("Missing nonce")?.parse()?,
+        receiver_id: fields["receiver_id"]
+            .as_str()
+            .ok_or("Missing receiver")?
+            .parse()?,
+        block_hash: fields["block_hash"]
+            .as_str()
+            .ok_or("Missing block")?
+            .parse()?,
+        actions: vec![near_api::types::Action::FunctionCall(Box::new(
+            FunctionCallAction {
+                method_name: "submit_purchase".into(),
+                args: serde_json::to_vec(&fields["args"])?,
+                gas: NearGas::from_gas(fields["gas"].as_str().ok_or("Missing gas")?.parse()?),
+                deposit: NearToken::from_yoctonear(0),
+            },
+        ))],
+    });
+    let bytes: Vec<u8> = serde_json::from_value(imported["signature_bytes"].clone())?;
+    let signature = Signature::from_parts(near_api::types::crypto::KeyType::ED25519, &bytes)?;
+    assert!(signature.verify(tx.get_hash(), key));
+    let mut altered = bytes;
+    altered[0] ^= 1;
+    assert!(
+        !Signature::from_parts(near_api::types::crypto::KeyType::ED25519, &altered)?
+            .verify(tx.get_hash(), key)
+    );
+    assert_eq!(imported["transaction_hash"], tx.get_hash().to_string());
+    let wire: near_openapi_types::SignedTransaction = SignedTransaction::new(signature, tx).into();
+    assert_eq!(imported["signed_wire_base64"], wire.to_string());
     println!(
-        "24 V0 byte/hash/layout cases and one Node ephemeral Ed25519 signature verified by Rust; no network execution"
+        "24 V0 cases and two ephemeral Ed25519 signatures (including PKCS#8-injected exact review) verified by Rust; no network execution"
     );
     Ok(())
 }

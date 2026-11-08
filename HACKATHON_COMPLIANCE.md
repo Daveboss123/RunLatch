@@ -256,3 +256,7 @@ OfficialHACKATHON.md read-only at2026-11-08T01:20:48.117Z:22199bytes/SHA25690379
 ## 19. Local sequential nonce reconciliation — 8 November2026
 
 OfficialHACKATHON.md read-only at2026-11-08T01:31:49.415Z:22199bytes/SHA256903794f4b656b456eaee087941517d024a33633641d167b90c3f060d381d9aed byte-identicaltosection18. No deadline/consent change detected in checkedsource; no comprehensivecommunity/personaleligibility/publiclinksreview. Sequentialnonce tests use only ephemeralkeys/publicfixturedata/injectedreceipts; offlineRustparity is notSandbox/publicexecution. No publicaccount/key/deployment/signature/transaction/provisioning/post/submission/privateprojectdisclosure/feedback action. WorkingtestnetMVPstillincomplete; ReplayLabgo-aheadabsent.
+
+## 20. Restricted process-key injection — 8 November2026
+
+OfficialHACKATHON.md read-only at2026-11-08T01:45:31.830Z:22199bytes/SHA256903794f4b656b456eaee087941517d024a33633641d167b90c3f060d381d9aed byte-identicaltosection19. No detecteddeadline/consent change or comprehensiveeligibility/community/publiclinkreview. Keyinjectiontests generateephemeralmaterialinmemoryonly; offlineRustchecks2signatures/24wirevectors, notSandbox/publicexecution. No realcredentialread, publicsignature/account/keyinstallation/deployment/transaction/provisioning/post/publish/submission/privateprojectdisclosure/feedback. Publicscope/WorkingMVPcompletion/ReplayLabgo-ahead remainabsent.

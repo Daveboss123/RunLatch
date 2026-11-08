@@ -1,17 +1,17 @@
-/** Compose existing offline request journal, one-shot key guard, ephemeral signer and bounded byte-send.
- * No public signer/real secret loading/wallet/CLI. RPC returns never become payment evidence.
+/** Compose existing offline journal/key guard, LOCAL review signer and bounded injected byte-send.
+ * No public signer/wallet/CLI or default secret read. RPC returns never become payment evidence.
  */
 import { fail } from "../../src/lib/near/records.ts";
 import type { PurchaseReview } from "../../src/lib/near/action-review.ts";
 import type { AttemptJournal } from "./attempt-journal.ts";
 import type { LocalKeyGuard } from "./local-key-guard.ts";
 import { createLocalBroadcastExercise } from "./local-broadcast-exercise.ts";
-import type { createLocalSigningExercise } from "./local-signing-exercise.ts";
+import type { LocalReviewSigner } from "./local-review-signer.ts";
 import { exerciseSingleAttempt } from "./single-attempt.ts";
 
 interface LocalRunnerPorts {
   readonly journal: AttemptJournal; readonly keyGuard: LocalKeyGuard;
-  readonly signer: ReturnType<typeof createLocalSigningExercise>;
+  readonly signer: LocalReviewSigner;
   readonly freshReview: (signal: AbortSignal) => Promise<PurchaseReview>;
   readonly transport: typeof fetch; readonly nowNs: () => bigint;
   readonly timeoutMs?: number; readonly signal?: AbortSignal;
