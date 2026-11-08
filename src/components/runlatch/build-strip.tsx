@@ -5,7 +5,8 @@ import { useRef, useState } from "react";
 import { useDocumentVisible, useInView, usePrefersReducedMotion } from "@/lib/dither/motion";
 
 const tools = [
-  { name: "NEAR", href: "https://near.org/", mark: "near" },
+  // Keep the accurate technology reference; the unverified logo stays outside public/.
+  { name: "NEAR", href: "https://near.org/", mark: null },
   { name: "Rust", href: "https://rust-lang.org/", mark: "rust" },
   { name: "Next.js", href: "https://nextjs.org/", mark: "nextdotjs" },
   { name: "React", href: "https://react.dev/", mark: "react" },

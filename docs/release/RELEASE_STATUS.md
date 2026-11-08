@@ -1,5 +1,7 @@
 # Local release-hardening record
 
+**8 November delivery update:** GitHub source is now pushed privately. The human requests a Vercel preview before the actual testnet run is complete. [Exact preview scope](../VERCEL_PREVIEW.md): DAVE / runlatch, private Git source, default protection, no keys or production promotion. Rendered personal paths are removed; the unverified NEAR artwork is preserved outside `public/`, while its text label remains. This supersedes the older absence-of-target and hosted-path statements below, not the historical tests, source-history privacy holds, manual-platform limits or unfinished real testnet evidence. Current build/deployment results belong in BUILD_LOG.md section63.
+
 **Scope:** item 2, requested 7 November 2026, plus the subsequently explicit local policy-workshop, registered-quote frontend/agent and receipt/intelligence requests. Item 1 (full human visual review) is deferred, not discarded. Dependency hardening made no interface/layout changes; subsequent features are documented in [the policy workshop](../POLICY_WORKSHOP.md), [LOCAL contract observation](../CONTRACT_OBSERVATION_DEMO.md) and [Outcome Receipts and Run Intelligence](../OUTCOME_RECEIPTS_AND_INTELLIGENCE.md). This is local verification, **not public-release clearance**.
 
 ## Completed checks
