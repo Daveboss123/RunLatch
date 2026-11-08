@@ -97,4 +97,13 @@ The first attempted `v7.4.0` tag lookup returned 404; the subsequently found ver
 | which-typed-array | 1.1.24 | MIT |
 | xtend | 4.0.2 | MIT |
 
-Future admission still requires explaining exact manifest/lock/Node-only adapter/test/notice changes, resolving the remaining notices and bundled-source scope, reviewed script-disabled installation, clean-install/type/lint/tests and browser graph exclusion. No public account, wallet, signer, network action, payment, publication or third-party contact is authorized by this review.
+## Notice follow-up — section49, still no admission
+
+The section48 finding of two unresolved notices above is preserved as history. A further official registry/source check found the following:
+
+- `bs58:4.0.1` registry `gitHead` is `ba80a23f74efc055577d7040ef32e1ae765d6702`; that complete root tree has no LICENSE. The later upstream license-addition commit **`ec21ace130d0c08cc317448952b679ec1b93f17d`** still declares version 4.0.1/MIT and carries a **byte-identical runtime `index.js`** (140 bytes, SHA-256 `0cfcec7b298a0c33588b432fad41e2fba216336d34ffd8c13422d21d3134ab57`). It adds the full MIT notice, copyright2018cryptocoinjs:1069bytes, SHA-256 `57efbd615689807b8341d557af0038fae58da7e2831f29f52d02902f657deb25`. This locates a source-matching **supplemental upstream notice** for future preservation; it is not a claim that the original archive contained it or legal clearance for every component.
+- `near-seed-phrase:0.2.1` has no repository/gitHead/full notice in its exact registry metadata. The official `near/near-seed-phrase` repository exists. Its pinned commit **`e6cd4c1750f28bc4ee597d42daf454676f3c7c15`** has byte-identical `package.json`, runtime `index.js` and `README.md` to the reviewed archive and still declares0.2.1/MIT, but its complete root tree has **no LICENSE/NOTICE file**. No copyright holder or permission text was invented from contributor identities or another package. **This exact-notice gap remains unresolved.** No maintainer was contacted.
+
+Pinned public source bytes, root trees and hashes are retained under ignored `sdk-graph-review/notice-follow-up/`, not installed packages/public testnet evidence. No graph re-resolution, install, audit repeat, signature or package-code execution occurred. CatalogCLIs remained absent and their remote installer unapproved; no catalog result/payment/private project disclosure is claimed.
+
+Future admission still requires explaining exact manifest/lock/Node-only adapter/test/notice changes, resolving the remaining `near-seed-phrase` notice and bundled-source scope, reviewed script-disabled installation, clean-install/type/lint/tests and browser graph exclusion. No public account, wallet, signer, payment, publication or third-party contact is authorized by this review.

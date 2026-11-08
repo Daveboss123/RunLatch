@@ -4,6 +4,7 @@ import { inspectPurchaseEvidence, parsePurchaseObservationIntent, unverifiedPurc
 import { inspectRestrictedAccess, parseRestrictedAgentScope } from "./agent-access.ts";
 import { parsePurchaseAction, preparePurchaseReview } from "./action-review.ts";
 import { parseTestnetTarget, type FinalBlock } from "./testnet-target.ts";
+import { assertSetupRole, parseSetupAction, prepareSetupReview } from "./setup-review.ts";
 export { namedTestnetAccount, parseTestnetTarget, type TestnetTarget, type FinalBlock } from "./testnet-target.ts";
 import { amount, count, enumValue, fail, hash, id, list, object, parseBoundedJson,
   parseProvider, parsePurchase, parseQuote, reference, time } from "./records.ts";
@@ -104,7 +105,7 @@ export function createTestnetReader(input: unknown, injectedFetch?: typeof fetch
       return response;
     }
     async function view(block: FinalBlock, method: "get_operator" | "get_schema_version" | "get_network_tag" | "get_storage_requirements"
-      | "get_project" | "get_capsule_report_snapshot" | "get_provider" | "get_quote", args: Readonly<Record<string, unknown>>) {
+      | "get_project" | "get_capsule" | "get_capsule_report_snapshot" | "get_provider" | "get_quote", args: Readonly<Record<string, unknown>>) {
       const response = await query(block, { request_type: "call_function", method_name: method, args_base64: encodedArgs(args) });
       const bytes = Uint8Array.from(list(response.result, MAX_BYTES).map(v => count(v, 255)));
       let text: string; try { text = new TextDecoder("utf-8", { fatal: true }).decode(bytes); }
@@ -148,13 +149,39 @@ export function createTestnetReader(input: unknown, injectedFetch?: typeof fetch
       if (keys.next_key !== undefined && keys.next_key !== null) return fail("AGENT_ACCESS_KEY_LIST_INCOMPLETE");
       return inspectRestrictedAccess(scope, target, { nonce: key.nonce, permission: key.permission }, keys);
     }
-    return { preflight, view, rpc, verifyCode, restrictedAccess };
+    async function humanAccess(block: FinalBlock, signer: string, publicKey: string) {
+      const key = await query(block, { request_type: "view_access_key", public_key: publicKey }, signer);
+      return { nonce: key.nonce, permission: key.permission };
+    }
+    return { preflight, view, rpc, verifyCode, restrictedAccess, humanAccess };
   }
   return Object.freeze({ target,
     preflight: (signal?: AbortSignal) => operation(signal).preflight(),
     async readRestrictedAgent(inputScope: unknown, signal?: AbortSignal) {
       const scope = parseRestrictedAgentScope(inputScope, target), session = operation(signal), observed = await session.preflight();
       return Object.freeze({ ...observed, access: await session.restrictedAccess(observed.block, scope) });
+    },
+    async readSetupReview(inputAction: unknown, signal?: AbortSignal) {
+      const action = parseSetupAction(inputAction);
+      assertSetupRole(action, target);
+      const session = operation(signal), observed = await session.preflight();
+      const signerAccess = await session.humanAccess(observed.block, action.signer_id, action.public_key);
+      let existing: unknown, project: unknown = null, previous: unknown = null;
+      const providers: unknown[] = [];
+      if (action.method === "create_project") existing = await session.view(observed.block, "get_project", { project_id: action.args.project.project_id });
+      else if (action.method === "register_provider") existing = await session.view(observed.block, "get_provider", { provider_id: action.args.provider_id });
+      else if (action.method === "create_capsule") {
+        existing = await session.view(observed.block, "get_capsule", { capsule_id: action.args.capsule_id });
+        project = await session.view(observed.block, "get_project", { project_id: action.args.policy.project_id });
+        for (const provider_id of action.args.policy.allowed_provider_ids) providers.push(await session.view(observed.block, "get_provider", { provider_id }));
+      } else {
+        const quote = action.args.quote;
+        existing = await session.view(observed.block, "get_quote", { quote_id: quote.quote_id });
+        providers.push(await session.view(observed.block, "get_provider", { provider_id: quote.provider_id }));
+        if (quote.previous_quote_id !== null) previous = await session.view(observed.block, "get_quote", { quote_id: quote.previous_quote_id });
+      }
+      return prepareSetupReview(target, action, { block: observed.block, storage: observed.storage, signer_access: signerAccess,
+        existing_record: existing, project, providers, previous_quote: previous, transport_source: transportSource });
     },
     async readPurchaseReview(inputAction: unknown, inputScope: unknown | null, signal?: AbortSignal) {
       const action = parsePurchaseAction(inputAction);

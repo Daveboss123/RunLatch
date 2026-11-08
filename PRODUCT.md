@@ -9,6 +9,8 @@
 
 **Next explicit request,8 November:** build the Working testnet MVP first, then stop before a separately approved new Replay Lab. [Plan and exact gates](docs/WORKING_TESTNET_MVP_PLAN.md). Preserve the narrow fictional agency purchase-to-outcome workflow and existing contract; finish public-network readback, human-reviewed signing and restricted local agent rather than add a marketplace/hosted signer. First bounded read-only RPC module is locally tested but not integrated into the browser or actually connected to a public contract. No working testnet MVP completion is claimed yet.
 
+**Setup groundwork:** [Unsigned project/capsule/provider/quote reviews](docs/TESTNET_SETUP_REVIEW.md) now use the current Rust signatures and bounded same-final-block readback, separating unfunded ceiling, capsule funding/storage and canonical full quote commitment. Local exact-content confirmation keeps signing disabled; this does not create authority, authenticate a human, settle a payment or finish the demo. SDKnotice/admission, wallet/signing, outcome controls/fixture flow and approved public execution remain pending.
+
 RunLatch is **outcome-bound purchasing and financial accountability for AI-powered businesses**: delegate a project task, bind purchases to current human authority and full commercial terms, and inspect what was approved, paid, received and checked.
 
 **Beachhead:** small owner-led AI-native software/automation agencies and digital/creative studios delivering client work. This is an unvalidated customer hypothesis, not adoption/market evidence. The MVP is one operator/fictional organisation, not a hosted multi-tenant service.

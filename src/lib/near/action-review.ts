@@ -5,6 +5,7 @@ import { publicKey } from "./testnet-evidence.ts";
 import { namedTestnetAccount, parseTestnetTarget, type FinalBlock } from "./testnet-target.ts";
 import type { inspectRestrictedAccess } from "./agent-access.ts";
 import type { buildProjectReport } from "../reporting/project.ts";
+import { canonicalReviewContent as canonical, reviewContentHash as digest } from "./review-content.ts";
 
 const issuedReviews = new WeakSet<object>();
 
@@ -19,17 +20,6 @@ export function parsePurchaseAction(value: unknown): PurchaseAction {
   if (method === "submit_purchase" ? a.expected_request_hash !== null : a.expected_request_hash === null) return fail("INVALID_ACTION_APPROVAL_BINDING");
   return Object.freeze({ method, signer_id: namedTestnetAccount(a.signer_id), public_key: publicKey(a.public_key), gas,
     proposal: parseProposal(a.proposal), expected_request_hash: a.expected_request_hash === null ? null : hash(a.expected_request_hash) });
-}
-function canonical(value: unknown, depth = 0): string {
-  if (depth > 24) return fail("ACTION_REVIEW_DEPTH_LIMIT");
-  if (Array.isArray(value)) return `[${value.map(v => canonical(v, depth + 1)).join(",")}]`;
-  if (value !== null && typeof value === "object") return `{${Object.entries(object(value)).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => `${JSON.stringify(k)}:${canonical(v, depth + 1)}`).join(",")}}`;
-  return JSON.stringify(value);
-}
-async function digest(value: unknown) {
-  const bytes = new TextEncoder().encode(canonical(value));
-  if (bytes.length > 1_048_576) return fail("ACTION_REVIEW_INPUT_LIMIT");
-  return [...new Uint8Array(await crypto.subtle.digest("SHA-256", bytes))].map(v => v.toString(16).padStart(2, "0")).join("");
 }
 interface ReviewContext {
   readonly block: FinalBlock; readonly snapshot: unknown; readonly provider: unknown; readonly quote: unknown;
