@@ -38,3 +38,7 @@ Observed `lib/index.js` behavior:
 Archive integrity: `sha512-n5BDLKC8zEkSZpvDkcMifiJKTZBCR54lVL4qAP4WfP98raRb339YxncRV2kL+h3eDDqA/nVBDCTH8iNvzH5PfA==`;511707bytes.
 
 Before any install, explain the exact version, purpose/peers/licences and changed manifest/lock/Node-only signer/test/doc files, use a reviewed project-local install with lifecycle scripts disabled where appropriate, and verify clean install/type/lint/tests/audit and browser bundle exclusion. None of these candidate observations supplies public-signing or publication consent.
+
+## Transitive follow-up — still no admission
+
+The [exact candidate graph/source review](SDK_TRANSITIVE_SOURCE_REVIEW.md) now covers 68 locations / 67 integrity-verified archives, license/engine/peer metadata, packaged notices and selected ABI/seed/low-level source paths. The version-matching upstream commit supplies the missing SDK Apache text, while **bs584.0.1 and near-seed-phrase0.2.1 exact notice gaps remain**. Isolated candidate audit reports0 current advisories; that is not safety or legal clearance. No root dependency or lock change/install occurred. A separate [offline single-attempt exercise](LOCAL_SINGLE_ATTEMPT_EXERCISE.md) tests journal/uncertainty ordering without an SDK, signer, public adapter or new Gate. It does not finish the planned restricted runner.
