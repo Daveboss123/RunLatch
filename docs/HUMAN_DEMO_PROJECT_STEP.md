@@ -1,6 +1,6 @@
 # Create the fictional project — human-terminal step
 
-**8 November 2026. Prepared and locally tested; not executed.** The Gate deployment/init is completed and must never be repeated. This next command creates **one project only**, using the operator's existing human-controlled Windows Credential Manager key. No new dependency, account or key is installed.
+**Completed 8 November 2026:** the human created the project in transaction `BU2DMrx9gi3zTTzcybvjuCp5Zm9HQdpoP96SLafjvTnB`; independent readback verifies FINAL execution and the exact active revision1 project with allocated authority0. **Do not rerun creation or remove attempt markers.** The commands below document the completed scope. The 0.30 NEAR ceiling remains unfunded; no capsule/purchase/outcome is complete. See BUILD_LOG.md section72.
 
 ## Exact scope
 
