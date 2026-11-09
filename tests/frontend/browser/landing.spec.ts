@@ -25,8 +25,8 @@ test("D-03 reconstructed narrative order, labelled fixtures and honest deploymen
   expect(await page.locator("main > section").evaluateAll(nodes => nodes.map(node => node.id || "hero"))).toEqual(["hero", "board", "problem", "simulator", "commitment", "receipts", "intelligence", "proof", "architecture", "questions"]);
   await expect(page.getByRole("contentinfo")).toBeVisible();
   await expect(page.locator(".run-board").getByText("Demo data", { exact: true })).toBeVisible();
-  await expect(page.getByText("Gate + unfunded project", { exact: true })).toBeVisible();
-  await expect(page.locator(".deployment-status")).toContainText("No public purchase or outcome yet.");
+  await expect(page.getByText("Gate + project + provider", { exact: true })).toBeVisible();
+  await expect(page.locator(".deployment-status")).toContainText("Provider registered; no capsule, quote, purchase or outcome yet.");
   expect(await page.locator('a[href="#"]').count()).toBe(0);
   const broken = await page.locator('a[href^="#"]').evaluateAll(nodes => nodes.map(node => (node as HTMLAnchorElement).hash).filter(hash => !document.getElementById(decodeURIComponent(hash.slice(1)))));
   expect(broken).toEqual([]);

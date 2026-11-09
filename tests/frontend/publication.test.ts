@@ -32,8 +32,10 @@ test("preview distinguishes recorded testnet setup from absent public purchase a
   assert.match(footer, /Private source repository/u);
   assert.doesNotMatch(footer, /No public deployment|Repository not published/u);
   const docs = await readFile("src/app/docs/page.tsx", "utf8");
-  assert.match(docs, /Human setup was observed on 8 November/u);
-  assert.match(docs, /No public purchase or outcome exists/u);
+  assert.match(docs, /Human setup is observed on public testnet/u);
+  assert.match(docs, /active provider <code>db_demo_1108/u);
+  assert.match(docs, /5DnrDArTCEN8rGaDCAqacX2CmxvCymYozNam7iys4DLu/u);
+  assert.match(docs, /No capsule, quote, restricted key, public purchase or outcome exists/u);
   assert.match(docs, /This website has no connected signer/u);
   assert.doesNotMatch(docs, /Not connected or deployed/u);
 });

@@ -2,7 +2,7 @@
 
 **Locally prepared and fresh unsigned readback verified, not executed.** The parent/children, Gate deployment/init and project creation are already completed. Do not repeat them or remove their permanent markers. This new helper registers one immutable controlled provider; it is not a purchase or a complete Working testnet MVP.
 
-**Latest human-terminal result:** after the earlier unexplained `LOCAL_OR_RPC_FAILURE`, the human's new read-only `--preflight` passed. No provider-attempt directory exists; operator nonce is unchanged and provider absent. Under the tested journal-before-sign ordering, the stopped command did not reach signing. A subsequent agent unsigned initial/fresh pair also passed. The original cause remains unidentified, not permanently repaired. The exact one-call human signing review below is now the next step; no previously signed transaction is being resent or re-signed.
+**Completed 9 November 2026 — never run the signing command again.** The human approved the exact one-call review. FINAL transaction `5DnrDArTCEN8rGaDCAqacX2CmxvCymYozNam7iys4DLu` registered active provider `db_demo_1108` with immutable publisher/recipient `db.runlatch-demo-1108.testnet` and quote count 0. Independent `--check` at block height 276944483 confirmed the current provider/project/key state and retained FINAL proof. This registration paid storage and gas only: purchase funding 0, no quote, capsule, restricted key, purchase or outcome.
 
 ## Exact scope
 
@@ -58,24 +58,19 @@ Paste only its public `PROVIDER_UNSIGNED_PREFLIGHT_OK` JSON or the sanitized `PR
 
 The human diagnostic now passes as well, at block `4X9AmYhiZmEbXHBmxvttWwsm1AxmiskMx5cNAHeiwT1f`, height276910545, with nonce276803830000004. A subsequent agent initial/fresh recheck passes4716ms total with the same semantic state. Neither grants signing consent or permanently explains the first error; the default command still creates a new fresh review and requires the exact human typed approval.
 
-## Exact signing command — human preflight has passed
+## Signing is complete — read-only checks only
+
+Do **not** run the default signing command again, re-sign, resend, change provider ID or edit/remove the retained attempt. The only permitted provider-helper command now is:
 
 ```powershell
-Set-Location 'C:\Users\David\RunLatch'
-node scripts/setup/human-register-demo-provider.ts
+node scripts/setup/human-register-demo-provider.ts --check
 ```
 
-At the displayed exact review, type:
-
-```text
-REGISTER PROVIDER db_demo_1108 ON gate.runlatch-demo-1108.testnet USING LOCAL NODE SIGNER
-```
-
-This is **human own-terminal signing only**. It uses the already installed pinned native helper to read only the operator's exact credential, after typed approval, synced review/intent and fresh public recheck. The DB and Gate credentials are never read by this signer. No broader wallet/CLI/owner fallback is available to the agent. No new dependency, account, key, deployment, capsule funding, quote, purchase, provisioning, task check, human acceptance, owner return, Git push or website deployment is bundled.
+The human-only signer read only the exact operator credential after typed approval. The agent never accessed that credential. The DB and Gate credentials were not read by the signer. No quote, capsule funding, restricted key, purchase, provisioning, check, acceptance, owner return or mainnet action was bundled.
 
 The unchanged shared setup review expires60 seconds after its chain block. A conservative wall deadline also includes **all initial reads**, prompt time and fresh reads; it is not renewed after slow RPC. Key, nonce, balance, code, project, provider absence, DB account/key and fees must stay exact. A0.03 NEAR balance cushion and current-price gas estimate are checked, not promised as actual fees. Storage credit goes to the Gate; it is not supplier payment or capsule purchase funding.
 
-On success paste only the public JSON with `"status":"PROVIDER_REGISTRATION_OBSERVED"`. It must include the actual transaction/receipt IDs, exact active provider with quote_count0, unchanged unfunded project, code, nonce and separate gas/token burn. No private key or signed bytes belong in chat.
+The retained public result has `"status":"PROVIDER_REGISTRATION_OBSERVED"`, transaction hash `5DnrDArTCEN8rGaDCAqacX2CmxvCymYozNam7iys4DLu`, receipts `SUtV8MPcogh741sdo4eQ4keTygJDrAJAgpNDy6fjNjG` and `2TG2SDLhVCwerSMmYvg7k15xDdp7LrGs8L28K2VwA3hH`, nonce `276803830000005`, active provider with quote count 0 and unchanged unfunded project. No private key or signed bytes were placed in chat or source.
 
 ## Error, interruption or uncertain result
 

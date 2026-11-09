@@ -4,7 +4,7 @@
 
 RunLatch is a prototype for small AI-native agencies that let software agents buy project resources. A **Client Work Capsule** gives one project task a bounded budget, one agent, an approved provider/service scope and an expiry. The project-bound **Gate** checks a canonical, provider-published quote and the full commitment in Rust before reserving anything. **Outcome Receipts** keep approval, settlement, provisioning, objective checks and explicit human acceptance separate.
 
-**Status: local prototype, public NEAR testnet partially set up, no public purchase or outcome yet.** The browser is a `BROWSER_FIXTURE` preview and never signs, reserves or transfers. The LOCAL Sandbox agency workflow is reproducible. The testnet contract and project exist, but no capsule, quote, restricted key or purchase does. Read [the exact remaining testnet plan and approval gate](docs/TESTNET_VERTICAL_SLICE_PLAN.md).
+**Status: local prototype, public NEAR testnet partially set up, no public purchase or outcome yet.** The browser is a `BROWSER_FIXTURE` preview and never signs, reserves or transfers. The LOCAL Sandbox agency workflow is reproducible. The testnet contract, project and immutable database-provider registration exist; no capsule, quote, restricted key or purchase does. Read [the exact remaining testnet plan and approval gate](docs/TESTNET_VERTICAL_SLICE_PLAN.md).
 
 NEAR HACKATHON 2026 project. Tracks this fits: **security** (primary) and **agents** (the workflow it actually supports). `business` is a possible secondary track if procurement for AI-native studios is accepted as a business use case.
 
@@ -192,7 +192,7 @@ Imported records are read in memory only. Nothing is uploaded, saved or authenti
 | Network | NEAR testnet only |
 | Gate contract | Deployed and initialized: `gate.runlatch-demo-1108.testnet`, schema 2, code hash `F1pev22VSu86qxxWicXpCixtzzNoQxEi1FHRF2eGXjGP`, deployment transaction `23jZ77SEAK3b4YwW6EjanToSSt1XtbCvvgTPxFXYJqg6` |
 | Project | `project_demo_1108`, ACTIVE revision 1, allocated 0, no capsules; create transaction `BU2DMrx9gi3zTTzcybvjuCp5Zm9HQdpoP96SLafjvTnB` |
-| Database provider | `db_demo_1108` **not registered** |
+| Database provider | `db_demo_1108`, active, immutable publisher/recipient `db.runlatch-demo-1108.testnet`, quote count 0; registration transaction `5DnrDArTCEN8rGaDCAqacX2CmxvCymYozNam7iys4DLu` |
 | Capsule, quote, restricted key, purchase, callback, provisioning, check, acceptance, report | **Absent** |
 
 There is no public testnet purchase, transaction for a purchase, receipt, delivery or acceptance. Do not read the deployment above as a completed product run. Verify any reference through a public testnet RPC; this README does not assert a light-client proof.
