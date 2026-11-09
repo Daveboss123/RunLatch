@@ -22,16 +22,18 @@ for (const width of [320, 360, 390, 768, 1024, 1280, 1364, 1440]) {
 }
 
 test("D-03 reconstructed narrative order, labelled fixtures and honest deployment state", async ({ page }) => {
-  expect(await page.locator("main > section").evaluateAll(nodes => nodes.map(node => node.id || "hero"))).toEqual(["hero", "board", "problem", "simulator", "commitment", "lifecycle", "receipts", "intelligence", "proof", "architecture", "questions"]);
+  expect(await page.locator("main > section").evaluateAll(nodes => nodes.map(node => node.id || "hero"))).toEqual(["hero", "board", "problem", "simulator", "commitment", "receipts", "intelligence", "proof", "architecture", "questions"]);
   await expect(page.getByRole("contentinfo")).toBeVisible();
   await expect(page.locator(".run-board").getByText("Demo data", { exact: true })).toBeVisible();
-  await expect(page.getByText("Not deployed", { exact: true })).toBeVisible();
+  await expect(page.getByText("Gate + unfunded project", { exact: true })).toBeVisible();
+  await expect(page.locator(".deployment-status")).toContainText("No public purchase or outcome yet.");
   expect(await page.locator('a[href="#"]').count()).toBe(0);
   const broken = await page.locator('a[href^="#"]').evaluateAll(nodes => nodes.map(node => (node as HTMLAnchorElement).hash).filter(hash => !document.getElementById(decodeURIComponent(hash.slice(1)))));
   expect(broken).toEqual([]);
 });
 
 test("D-05 simulator adversarial controls and no signing requests", async ({ page }) => {
+  await page.goto("/gate");
   const writes: string[] = [];
   page.on("request", request => { if (!["GET", "HEAD"].includes(request.method())) writes.push(`${request.method()} ${request.url()}`); });
   const cases = [
@@ -39,6 +41,7 @@ test("D-05 simulator adversarial controls and no signing requests", async ({ pag
     ["Stale project", "STALE_PROJECT_REVISION"], ["Replay request", "REQUEST_REPLAY"],
     ["Duplicate resource", "DUPLICATE_RESOURCE"], ["Revoked capsule", "CAPSULE_INACTIVE"],
     ["Expired quote", "QUOTE_EXPIRED"], ["Unregistered vendor", "UNKNOWN_PROVIDER"], ["Cancelled project", "PROJECT_INACTIVE"],
+    ["Concurrent request", "INSUFFICIENT_AVAILABLE_BUDGET"],
   ];
   for (const [name, reason] of cases) {
     await page.getByRole("button", { name, exact: true }).click();
@@ -96,6 +99,7 @@ test("D-09 keyboard menu, tab arrows and visible focus", async ({ page }) => {
 
 test("P-19 selected disclosure and local JSON export", async ({ page }) => {
   await expect(page.getByText("Nothing selected to share.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Printable client report" })).toBeDisabled();
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download selected demo JSON" }).click();
   const download = await downloadPromise;
@@ -111,6 +115,60 @@ test("P-19 selected disclosure and local JSON export", async ({ page }) => {
   await page.getByRole("checkbox", { name: /Outcome evidence/u }).check();
   await expect(page.locator(".report-expenses")).toContainText("human acceptance not recorded");
   await expect(page.locator(".report-output")).toContainText("Denied proposals do not add commitments.");
+  await expect(page.getByRole("button", { name: "Printable client report" })).toBeEnabled();
+  await page.getByRole("button", { name: "Printable client report" }).click();
+  const sheet = page.getByRole("dialog", { name: "Printable client report preview" });
+  await expect(sheet).toContainText("BROWSER_FIXTURE · not a contract record");
+  await expect(sheet).toContainText("Settled");
+  await expect(sheet).toContainText("human acceptance not recorded");
+  await expect(sheet).toContainText("Full minimum commitment (NEAR)");
+  await expect(sheet).toContainText("2.40");
+  await expect(sheet.getByRole("heading", { name: "Automated Booking Website" })).toBeFocused();
+  await expect(sheet).toContainText("No actual owner approval, public transaction, supplier event, client acceptance or share link");
+  await sheet.getByRole("button", { name: "Close print preview" }).click();
+  await expect(sheet).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Printable client report", exact: true })).toBeFocused();
+  await page.getByRole("button", { name: "Printable client report", exact: true }).click();
+  await page.keyboard.press("Escape");
+  await expect(sheet).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Printable client report", exact: true })).toBeFocused();
+});
+
+test("P-19 printable report reflows, isolates print output and passes keyboard/contrast checks", async ({ page }) => {
+  test.setTimeout(120_000);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.getByRole("checkbox", { name: /Budget & commitments/u }).check();
+  const trigger = page.getByRole("button", { name: "Printable client report", exact: true });
+  const sheet = page.getByRole("dialog", { name: "Printable client report preview" });
+  await trigger.click();
+  await expect(sheet).toContainText("Purchase details were not selected for disclosure.");
+  await expect(sheet).not.toContainText("Store booking requests");
+  await page.keyboard.press("Escape");
+  await page.getByRole("checkbox", { name: /Purchase details/u }).check();
+  await page.getByRole("checkbox", { name: /Outcome evidence/u }).check();
+  for (const width of [1440, 390]) for (const theme of ["dark", "light"]) {
+    await page.setViewportSize({ width, height: 844 });
+    const dark = await page.locator("html").evaluate(node => node.classList.contains("dark"));
+    if (dark !== (theme === "dark")) await page.getByRole("button", { name: `Switch to ${theme} theme`, exact: true }).click();
+    await trigger.click();
+    expect(await sheet.evaluate(node => node.scrollWidth <= node.clientWidth)).toBe(true);
+    await expect(sheet).toContainText("Store booking requests");
+    const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"]).analyze();
+    expect(results.violations.map(item => ({ id: item.id, targets: item.nodes.map(node => node.target) }))).toEqual([]);
+    for (let i = 0; i < 5; i++) {
+      await page.keyboard.press("Tab");
+      // Native dialogs may tab through browser chrome (activeElement becomes body),
+      // but must never focus an inert control in the underlying page.
+      expect(await sheet.evaluate(node => node.contains(document.activeElement) || document.activeElement === document.body)).toBe(true);
+    }
+    await page.emulateMedia({ media: "print" });
+    await expect(sheet.getByRole("button", { name: "Print this report" })).toBeHidden();
+    await expect(page.locator("main")).toBeHidden();
+    await expect(sheet.getByRole("heading", { name: "Automated Booking Website" })).toBeVisible();
+    await page.emulateMedia({ media: "screen", reducedMotion: "reduce" });
+    await page.keyboard.press("Escape");
+    await expect(trigger).toBeFocused();
+  }
 });
 
 test("D-18 static dither and reduced motion, no hidden animation or storage", async ({ page }) => {
@@ -279,7 +337,7 @@ test("Publication: Docs omit personal paths and footer keeps truthful deployment
   await page.goto("/docs");
   await expect(page.locator("main")).not.toContainText("/mnt/c/Users/");
   await expect(page.locator("main")).not.toContainText("C:\\Users\\");
-  await expect(page.locator("footer")).toContainText("No public NEAR contract");
+  await expect(page.locator("footer")).toContainText("Testnet setup exists; no public purchase or outcome yet");
   await expect(page.locator("footer")).toContainText("Private source repository");
   await expect(page.locator("#credits")).toContainText("its unverified logo is not served");
   const artwork = await page.request.get("/marks/near.svg");
@@ -490,11 +548,14 @@ test("Full audit: single mobile affordance and new-tab Built with links", async 
 });
 
 test("Full audit: shared proposal state, uncapped denial and linked receipt selection", async ({page})=>{
+  await page.goto("/gate");
   await page.getByRole("button",{name:"Uncapped exposure",exact:true}).click();
   await expect(page.locator(".reason-codes")).toContainText("UNBOUNDED_COMMITMENT");
   await expect(page.locator(".quote-costs")).toContainText("Unknown");
   await page.getByLabel("Hypothetical capsule allocation").fill("9");
   await expect(page.locator(".reason-codes")).toContainText("UNBOUNDED_COMMITMENT");
+  await page.goto("/");
+  await page.getByRole("button",{name:"Alter recipient",exact:true}).click();
   await expect(page.locator(".animated-latch-frame")).toHaveAttribute("data-preview-decision","DENIED");
   await page.getByRole("button",{name:"Reset simulation",exact:true}).click();
   await page.locator("#commitment").getByRole("button",{name:"12-month quote",exact:true}).click();
@@ -562,8 +623,8 @@ test("D-08/D-23 screenshots, clean console and measured load", async ({ page }) 
     await page.screenshot({ path: `.local/ui/landing-${width}.png`, fullPage: true });
     await page.screenshot({ path: `.local/ui/hero-${width}.png` });
     await page.locator(".run-board").screenshot({ path: `.local/ui/board-${width}.png` });
-    await page.getByRole("button", { name: "Hidden term", exact: true }).click();
-    await expect(page.locator(".reason-codes")).toContainText("INSUFFICIENT_COMMITMENT_BUDGET");
+    await page.getByRole("button", { name: "Alter recipient", exact: true }).click();
+    await expect(page.locator(".reason-codes")).toContainText("QUOTE_TERMS_MISMATCH");
     await page.locator(".simulator-workbench").screenshot({ path: `.local/ui/simulator-${width}.png` });
     await page.getByRole("button", { name: "Switch to dark theme", exact: true }).click();
     await expect(page.locator("html")).toHaveClass(/dark/u);

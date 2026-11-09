@@ -115,11 +115,21 @@ test("unknown response/HTTP error/wrong hash/duplicate fields retain captured id
   }
 });
 
-test("timeout/cancel/late transport response never finalizes settlement, releases markers or sends again", async () => {
+test("timeout/cancel/late transport response never finalizes settlement, releases markers or sends again", { timeout: 10_000 }, async context => {
   const t = await testnetRunFixture(); let calls = 0, late: (() => void) | undefined;
+  context.after(() => disposeRestrictedProcessKey(t.key.handle));
+  context.mock.timers.enable({ apis: ["setTimeout"] });
+  let entered: () => void = () => {};
+  const transportEntered = new Promise<void>(resolve => { entered = resolve; });
   const transport: typeof fetch = async (_url, init) => { calls++; const r = JSON.parse(String(init?.body));
-    return new Promise(resolve => { late = () => resolve(Response.json({ jsonrpc: "2.0", id: r.id, result: r.id.replace("runlatch-local-broadcast-", "") })); }); };
-  const result = await runRestrictedTestnetPurchase(t.confirm(), t.key.handle, { ...t.ports, transport, timeoutMs: 250 });
+    return new Promise(resolve => { late = () => resolve(Response.json({ jsonrpc: "2.0", id: r.id, result: r.id.replace("runlatch-local-broadcast-", "") })); entered(); }); };
+  const pending = runRestrictedTestnetPurchase(t.confirm(), t.key.handle, { ...t.ports, transport, timeoutMs: 250 });
+  // Exercise post-send timeout, not a race with filesystem preparation under CPU load.
+  await transportEntered;
+  context.mock.timers.tick(249);
+  assert.equal(calls, 1);
+  context.mock.timers.tick(1);
+  const result = await pending;
   assert.equal(result.status, "RESULT_UNKNOWN"); assert.ok(result.identity); assert.equal(calls, 1); late?.();
   await new Promise(resolve => setImmediate(resolve)); assert.equal(result.payment_evidence, "NOT_OBSERVED");
   const cancel = new AbortController(); cancel.abort();

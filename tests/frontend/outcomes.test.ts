@@ -55,11 +55,14 @@ test("exact duplicate observations and replay do not duplicate spend or blocked 
   const b = await load(raw), result = summarizeOutcomes([b, b]);
   assert.equal(result.sample_count, 1); assert.equal(result.duplicate_count, 1); assert.equal(result.receipts.length, 1);
   assert.deepEqual(result.blocked_reasons, [{ reason: "REQUEST_REPLAY", count: 1 }]); assert.equal(result.provider_spend[0].spent, "50");
+  assert.equal(result.ledger?.spent, "50"); assert.equal(result.ledger?.observation_count, 1);
 });
 test("conflicting snapshots rejected, time selection excludes without mutating source", async () => {
   const pass = await load(await outcomeFixture()), fail = await load(await outcomeFixture("SETTLED", "VALIDATION_FAILED"));
   assert.throws(() => summarizeOutcomes([pass, fail]), /CONFLICTING_OUTCOME_SNAPSHOTS/u);
   assert.equal(summarizeOutcomes([pass], { from: "24", to: "30" }).sample_count, 0);
+  assert.equal(summarizeOutcomes([pass], { from: "24", to: "30" }).ledger?.spent, "50");
+  assert.equal(summarizeOutcomes([]).ledger, null);
   assert.equal(summarizeOutcomes([pass]).time_range_ns?.first, "23");
   assert.throws(() => summarizeOutcomes([pass], { from: "30", to: "1" }), /INVALID_OUTCOME_RANGE/u);
   assert.throws(() => summarizeOutcomes(Array.from({ length: 17 }, () => pass)), /OUTCOME_BUNDLE_LIMIT/u);
@@ -106,6 +109,17 @@ test("changing the canonical amount changes exact costs, not a presentation cons
   raw.snapshots[0].capsule.allocated = raw.snapshots[0].capsule.policy.budget = raw.snapshots[0].project.allocated_authority = raw.snapshots[0].project.input.budget_ceiling = "9007199254740994";
   const result = summarizeOutcomes([await load(raw)]);
   assert.equal(result.provider_spend[0].spent, "9007199254740993"); assert.equal(result.costs.cohorts[0].cost_per_success?.floor_yocto, "9007199254740993");
+  assert.equal(result.ledger?.spent, "9007199254740993"); assert.equal(result.ledger?.allocated, "9007199254740994");
+});
+test("ledger pending counts stay snapshot-scoped after time filtering and deduplication", async () => {
+  const b = await load(await outcomeFixture("SETTLEMENT_PENDING", null));
+  const summary = summarizeOutcomes([b, b], { from: "31", to: "40" });
+  assert.equal(summary.receipts.length, 0); assert.equal(summary.duplicate_count, 1);
+  assert.equal(summary.ledger?.reserved, "50"); assert.equal(summary.ledger?.spent, "0");
+  assert.equal(summary.ledger?.pending_settlement_receipts, 1); assert.equal(summary.ledger?.observation_count, 1);
+  const unproven = await outcomeFixture(); unproven.attempts[0].callback = null;
+  const ledger = summarizeOutcomes([await load(unproven)]).ledger;
+  assert.equal(ledger?.pending_settlement_receipts, 1); assert.equal(ledger?.spent, "50");
 });
 test("contradictory result, substituted criteria/version, duplicate checks and future quote fail closed", async () => {
   const raw = await outcomeFixture("SETTLED", "VALIDATION_FAILED");

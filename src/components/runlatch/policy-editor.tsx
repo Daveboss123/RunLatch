@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { compileInstructions, SAMPLE_INSTRUCTIONS, MAX_INSTRUCTIONS } from "@/lib/policy/compiler";
 import { POLICY_DEMO_CONTEXT as context } from "@/lib/policy/demo";
 import { toManual, validateManual, type ManualTerms } from "@/lib/policy/manual";
@@ -26,6 +26,9 @@ const fields = [
   ["approval_threshold", "Owner approval above", "Strictly above this full commitment, exact owner approval is required. Blank disables only this threshold; 0 requires approval for every positive commitment."],
 ] as const;
 type Mode = "instructions" | "manual" | "json";
+const subscribeToHydration = () => () => {};
+const clientReady = () => true;
+const serverReady = () => false;
 
 function PolicyExplanation({ policy }: { policy: PolicyTerms }) {
   const rows = [
@@ -48,6 +51,7 @@ function PolicyExplanation({ policy }: { policy: PolicyTerms }) {
 }
 
 export function PolicyEditor() {
+  const hydrated = useSyncExternalStore(subscribeToHydration, clientReady, serverReady);
   const [mode, setMode] = useState<Mode>("instructions");
   const [instructions, setInstructions] = useState(SAMPLE_INSTRUCTIONS);
   const [json, setJson] = useState(JSON.stringify(samplePolicy, null, 2));
@@ -96,13 +100,13 @@ export function PolicyEditor() {
     return issues.filter(issue => mode === "instructions" ? field === "instructions" : mode === "json" ? field === "json" : issue.field === field);
   }
   const inlineError = (field: string) => fieldIssues(field).length ? <p className="field-error" id={`policy-${field}-error`}>{fieldIssues(field).map(issue => issue.message).join(" ")}</p> : null;
-  return <div className="policy-editor">
+  return <div className="policy-editor" aria-busy={!hydrated}>
     <section className="policy-draft" aria-labelledby="draft-title">
       <h2 id="draft-title">Draft purchasing rules</h2>
       <p>No LLM adapter is configured. Instructions are interpreted locally with a small explicit grammar, not general AI understanding. Nothing is uploaded or saved to browser storage.</p>
       <p className="fine-print">Hypothetical new allocation for <code>{context.project_id}</code>, revision {context.project_revision}. Ceiling 3.00 NEAR, existing allocations 0.00 in this what-if context. The seeded project board is not changed.</p>
       <label className="policy-label" htmlFor="policy-mode">Draft method</label>
-      <select id="policy-mode" value={mode} onChange={event => { changed(); setMode(event.target.value as Mode); }}>
+      <select id="policy-mode" disabled={!hydrated} value={mode} onChange={event => { changed(); setMode(event.target.value as Mode); }}>
         <option value="instructions">Plain-language instructions</option><option value="manual">Manual form</option><option value="json">Structured JSON</option>
       </select>
       <form onSubmit={event => { event.preventDefault(); validate(); }} noValidate>
@@ -112,7 +116,7 @@ export function PolicyEditor() {
         })}</ul></div> : null}
         {mode === "instructions" ? <div className="policy-field"><label htmlFor="policy-instructions">Purchasing instructions</label>
           <p id="policy-instructions-help" className="fine-print">Use the example’s explicit limits and IDs. Vague terms such as “cheap”, duplicate rules and unsupported conditions block review. Do not enter private client information.</p>
-          <textarea id="policy-instructions" rows={10} maxLength={MAX_INSTRUCTIONS} value={instructions} onChange={event => { changed(); setInstructions(event.target.value); }} {...issueProps("instructions")} />{inlineError("instructions")}</div>
+          <textarea id="policy-instructions" disabled={!hydrated} rows={10} maxLength={MAX_INSTRUCTIONS} value={instructions} onChange={event => { changed(); setInstructions(event.target.value); }} {...issueProps("instructions")} />{inlineError("instructions")}</div>
           : mode === "json" ? <div className="policy-field"><label htmlFor="policy-json">Policy JSON (integer yoctoNEAR strings)</label><p id="policy-json-help" className="fine-print">Paste one untrusted terms object, at most 8 KiB. Required limits, selected project and known provider IDs are checked. Recipient and AI-decision fields are forbidden.</p>
             <textarea id="policy-json" rows={18} maxLength={MAX_POLICY_JSON} value={json} onChange={event => { changed(); setJson(event.target.value); }} spellCheck={false} {...issueProps("json")} />{inlineError("json")}</div>
           : <div className="policy-manual">
@@ -127,7 +131,7 @@ export function PolicyEditor() {
             <div className="policy-field"><label htmlFor="policy-max_quantity">Maximum quantity</label><p id="policy-max_quantity-help" className="fine-print">Canonical quote units, 1 to 50.</p><input id="policy-max_quantity" inputMode="numeric" maxLength={2} value={manual.max_quantity} onChange={event => changeManual("max_quantity", event.target.value)} {...issueProps("max_quantity")} />{inlineError("max_quantity")}</div>
             <div className="policy-field"><label htmlFor="policy-expires_at_ns">Expiry (nanoseconds)</label><p id="policy-expires_at_ns-help" className="fine-print">After fixed demo time {context.now_ns}, no later than project expiry {context.project_expires_at_ns}.</p><input id="policy-expires_at_ns" inputMode="numeric" maxLength={20} value={manual.expires_at_ns} onChange={event => changeManual("expires_at_ns", event.target.value)} {...issueProps("expires_at_ns")} />{inlineError("expires_at_ns")}</div>
           </div>}
-        <div className="policy-actions"><button className="button" type="submit">Validate draft</button><button className="button button-secondary" type="button" onClick={sampleAgain}>Load explicit sample</button></div>
+        <div className="policy-actions"><button className="button" type="submit" disabled={!hydrated}>Validate draft</button><button className="button button-secondary" type="button" disabled={!hydrated} onClick={sampleAgain}>Load explicit sample</button></div>
       </form>
     </section>
     <section className="policy-review" aria-labelledby="policy-review-title"><h2 id="policy-review-title" ref={reviewHeading} tabIndex={-1}>Review every rule</h2>

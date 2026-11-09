@@ -2,7 +2,7 @@
 
 **Locally prepared and fresh unsigned readback verified, not executed.** The parent/children, Gate deployment/init and project creation are already completed. Do not repeat them or remove their permanent markers. This new helper registers one immutable controlled provider; it is not a purchase or a complete Working testnet MVP.
 
-**Latest human-terminal result:** the default command stopped with `LOCAL_OR_RPC_FAILURE`. No provider-attempt directory exists; independent readback finds unchanged operator nonce and provider absent. Under the tested helper's journal-before-sign ordering, it did not reach signing. The cause of that human-terminal error is not identified. **Do not repeat default execution yet.** Use the new read-only diagnostic below; it checks state, fees and public review serialization without creating approval tokens/attempt records or accessing the signer.
+**Latest human-terminal result:** after the earlier unexplained `LOCAL_OR_RPC_FAILURE`, the human's new read-only `--preflight` passed. No provider-attempt directory exists; operator nonce is unchanged and provider absent. Under the tested journal-before-sign ordering, the stopped command did not reach signing. A subsequent agent unsigned initial/fresh pair also passed. The original cause remains unidentified, not permanently repaired. The exact one-call human signing review below is now the next step; no previously signed transaction is being resent or re-signed.
 
 ## Exact scope
 
@@ -56,9 +56,9 @@ node scripts/setup/human-register-demo-provider.ts --preflight
 
 Paste only its public `PROVIDER_UNSIGNED_PREFLIGHT_OK` JSON or the sanitized `PROVIDER_STOPPED ... phase=...` line. It does not prompt for approval, read a credential, sign, broadcast or create an attempt marker. It refuses if an existing attempt directory is present; only `--check` is supported for that case. Native connection errors now show only known error codes; unknown causes/messages/URLs/stacks/bodies stay redacted. No retries or RPC fallback were added.
 
-The same diagnostic passes in the agent's read-only environment, including fee/state/serialization checks. That does not prove the original human-terminal cause is fixed or grant signing consent. Resolve the human diagnostic before the default signing step below.
+The human diagnostic now passes as well, at block `4X9AmYhiZmEbXHBmxvttWwsm1AxmiskMx5cNAHeiwT1f`, height276910545, with nonce276803830000004. A subsequent agent initial/fresh recheck passes4716ms total with the same semantic state. Neither grants signing consent or permanently explains the first error; the default command still creates a new fresh review and requires the exact human typed approval.
 
-## Exact signing command — on hold pending the human diagnostic
+## Exact signing command — human preflight has passed
 
 ```powershell
 Set-Location 'C:\Users\David\RunLatch'

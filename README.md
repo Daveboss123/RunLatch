@@ -1,192 +1,238 @@
 # RunLatch
 
-Project-bound purchasing authority and outcome accountability for AI-powered businesses. **Give an AI agent a job, not a blank cheque.** See the newer [product-direction brief](RUNLATCH_PRODUCT_DIRECTION_CHANGE_BRIEF.md) and [change plan](DIRECTION_CHANGE_PLAN.md).
+**Project-bound purchasing authority and outcome accountability for AI-powered businesses.** Give an agent a job, not a blank cheque.
 
-## Current stage — local receipts and Run Intelligence, not deployed
+RunLatch is a prototype for small AI-native agencies that let software agents buy project resources. A **Client Work Capsule** gives one project task a bounded budget, one agent, an approved provider/service scope and an expiry. The project-bound **Gate** checks a canonical, provider-published quote and the full commitment in Rust before reserving anything. **Outcome Receipts** keep approval, settlement, provisioning, objective checks and explicit human acceptance separate.
 
-**Working testnet MVP in progress (8 November):** dependency-free bounded testnet readback and a [transaction/transfer/private-callback settlement observer](docs/TESTNET_SETTLEMENT_OBSERVER.md) are locally implemented. Their synthetic tests bring frontendNode to116passes; backend115/type/lint pass. They are not yet connected to a public contract or browser wallet, and do not sign or submit anything. Human-reviewed signing, the restricted local agent and actual approved testnet workflow remain unfinished. The new Replay Lab is second and awaits a separate go-ahead. [Current plan and approval gates](docs/WORKING_TESTNET_MVP_PLAN.md).
+**Status: local prototype, public NEAR testnet partially set up, no public purchase or outcome yet.** The browser is a `BROWSER_FIXTURE` preview and never signs, reserves or transfers. The LOCAL Sandbox agency workflow is reproducible. The testnet contract and project exist, but no capsule, quote, restricted key or purchase does. Read [the exact remaining testnet plan and approval gate](docs/TESTNET_VERTICAL_SLICE_PLAN.md).
 
-**Review/access foundation:** [unsigned exact purchasing review and restricted-key readback](docs/TESTNET_ACTION_REVIEW.md) now bring frontendNode to136passes; backend115/type/lint pass. Public-key scope, full native commitment and fresh exact-content checks are locally tested—not wallet authentication, a signer or testnet execution. [Connector/SDK package-source review](docs/TESTNET_SIGNING_DEPENDENCY_REVIEW.md) records why default remote-wallet/retry behavior is not admitted. No new dependency or UI was installed.
+NEAR HACKATHON 2026 project. Tracks this fits: **security** (primary) and **agents** (the workflow it actually supports). `business` is a possible secondary track if procurement for AI-native studios is accepted as a business use case.
 
-**Single-attempt groundwork:** `npm.cmd run test:near` runs20offline tests for [local claim/identity/journal/uncertainty safeguards](docs/LOCAL_SINGLE_ATTEMPT_EXERCISE.md). This exercise has no signer/broadcast adapter and rejects public execution; synthetic transaction IDs are not network evidence. [The exact SDK graph review](docs/SDK_TRANSITIVE_SOURCE_REVIEW.md) records67 verified candidate archives and remaining notice gaps. No SDK is installed; the Working testnet MVP is still in progress.
+## Problem and target user
 
-**Setup review groundwork:** [Unsigned owner/provider setup calls](docs/TESTNET_SETUP_REVIEW.md) cover project/capsule/provider/quote creation with final-block readback and exact deposits. A project ceiling, funded capsule budget, storage credit, quote price and full commitment are different quantities. Signing remains disabled; no public-testnet workflow is complete. The source-matchingbs58notice is now located; near-seed-phrase notice/SDK admission and actual wallet/signing/outcome integration are still pending.
+A small AI studio wants an agent to buy a database, hosting or API credit for one client project. The studio does not want to hand the agent an unrestricted wallet. A normal payment API checks a balance; it does not enforce which project, provider, recipient, price, quantity, expiry, recurrence or future obligation the agent is allowed to commit to. RunLatch makes that authority explicit and machine-checkable, then records what happened without pretending payment proves delivery.
 
-**Owner/outcome review groundwork:** [Eleven fixed unsigned owner actions](docs/TESTNET_OWNER_OUTCOME_REVIEW.md) cover state/revision, unpaid-request rejection, unused-fund close and separate provisioning/task/acceptance content. Task reviews verify exact local fixture bytes, not a live provider. Revocation/failed provisioning retain pending funds and future commitments. These tests add no signer or public evidence; the Working testnet MVP remains incomplete.
+Target user: a 2-10 person AI-native software/automation agency that delegates recurring infrastructure purchases for client work. The demo operator is fictional ("Northstar Studio") and the client project is a fictional booking website. This is an unvalidated beachhead hypothesis, not a customer claim.
 
-**Wire/local signing groundwork:** [Narrow Node V0 codec and ephemeral test signing](docs/TESTNET_TRANSACTION_CODEC.md) match24Rust wire/hash vectors; Rust verifies a real locally generated Node Ed25519 signature. The existing offlinejournal now has tests with actual signed identity, not only synthetic hashes. No real agent key/secret loader, public broadcaster, ownerwallet or approved testnetrun exists yet; no workingtestnetMVP completion is claimed.
+## Architecture
 
-**Signed local runner groundwork:** [Key guard and one bounded injected send](docs/LOCAL_SIGNED_RUNNER_EXERCISE.md) sync request/key/hash markers before one exact byte-send.64localNode tests pass; errors/late replies never release/resend or prove payment. The key guard is deliberately one-shot even after success, not yet sequentialpublicnonce coordination. No suppliedsecret/publicbroadcaster/wallet or testnetpayment is enabled.
+```text
+Human owner / operator                     Restricted agent
+        |                                        |
+        | creates project + capsule              | submits one purchase
+        | approves above threshold               | (no deposit, no owner methods)
+        v                                        v
++-----------------------------------------------------------------------+
+|  Rust Gate contract (NEAR, schema 2)                                  |
+|  project revision -> capsule + immutable policy                       |
+|  provider registry -> canonical quote (publisher/recipient/terms)     |
+|  identity -> budget -> full commitment -> reservation -> transfer     |
+|  private callback -> settlement -> Outcome Receipt                    |
++-----------------------------------------------------------------------+
+        |                    |                         |
+        | native NEAR        | private callback        | read-only views
+        v                    v                         v
+  canonical recipient   resolve once, fail closed   LOCAL observation JSON
+                                                         |
+                                    +--------------------+--------------------+
+                                    |                                         |
+                              Browser preview                         Run Intelligence
+                              BROWSER_FIXTURE                         imported records
+```
 
-**Local sequential nonce groundwork:** [Exact prior reconciliation and bounded slots](docs/LOCAL_SEQUENTIAL_NONCE_RECONCILIATION.md) permit up to3distinctephemeral-key requests only with exact issued final local transaction/purchase/key evidence between them. The original one-shot anchor is never reset/adopted; unknown outcomes/highernonce/oldfiles do not unlock.83near tests pass; no HTTPadapter/realkey/publicrunner/testnetpayment or MVPcompletion is claimed.
+- **On-chain (Rust):** project and revision, capsule and immutable policy, provider registry, canonical quotes, purchase decisions, reservation/future commitment, native transfer scheduling, private callback result, Outcome Receipt, provisioning/check/acceptance attestations and bounded message records.
+- **Off-chain:** the model prompt, full task artifacts, provider service data, report rendering and the human's acceptance decision input. Only bounded hashes/attestations are recorded. A hash detects change; it does not prove truth or confidentiality.
 
-**Process-key groundwork:** [Explicit PKCS#8 injection](docs/RESTRICTED_PROCESS_KEY_INJECTION.md) removes one process slot and checks the pinned agent public key, without a defaultenv/file read or exposing its private KeyObject. Generated-key tests reuse the same LOCAL exact-review signer/journal/sequential path;95near tests and offlineRust verification pass. HTTP/public signing remains disabled; key matching alone does not prove restricted permissions or human consent. No real key/testnet payment/MVP completion claimed.
+## Execution modes
 
-**Connected fixture workflow:** `node scripts/near/rehearse-fixture-workflow.ts` → clearly labelled **synthetic** purchase-evidence → fixture/check → unsigned owner reviews → receipt/report rehearsal. [Scope and commands](docs/CONNECTED_FIXTURE_WORKFLOW.md). No real owner action, network execution or fiat peg;108near tests pass. The actual Working testnet MVP remains incomplete and Replay Lab is deferred.
+Every money or policy surface uses one canonical label:
 
-**Nonce readback:** [Captured agent transaction readback](docs/SIGNED_AGENT_NONCE_READBACK.md) now reuses the same observer and pins restricted key queries to its final block.120near tests pass; unknown/higher/unsafe nonces never authorize a resend. Read-only and HTTP-capable, not an admitted public signer/runner or executed testnet flow.
+| Mode | Meaning | Allowed claim |
+| --- | --- | --- |
+| `BROWSER_FIXTURE` | Seeded values and TypeScript preview. No contract call, signer, transfer or payment. | Illustrative UI and policy paths only |
+| `LOCAL_SDK_TEST` | Rust contract tests with mocked host promise outcomes. | Contract logic under documented test-harness assumptions |
+| `LOCAL_SANDBOX` | Isolated Local NEAR Sandbox execution. Not public testnet. | Local runtime behaviour under the recorded test setup |
+| `NEAR_TESTNET` | Observed public testnet account/transaction reference. | Only the exact observed public references |
 
-**Restricted runner connection:** [Bounded testnet runner](docs/RESTRICTED_TESTNET_RUNNER.md) now connects the existing review/key/journal/nonce/signature/send path behind a separate exact one-call confirmation. **136near tests** pass. This is local implementation/synthetic evidence, not public consent or execution; owner/provider wallet and actual approved transfer-to-fixture/receipt/report remain unfinished. LOCAL defaults stay isolated; no retry/owner fallback.
+The current website is **BROWSER_FIXTURE** throughout. The reproducible backend evidence is **LOCAL_SANDBOX**. No `NEAR_TESTNET` purchase or outcome exists.
 
-**Human read-only workspace:** `/testnet` now connects exact setup/approval/outcome reviews, the captured-purchase observer and an owner-selected report. **193frontend /136near /115backend tests and9new isolated browser checks** pass. [Scope and reproduction](docs/HUMAN_TESTNET_WORKSPACE.md). No wallet/signer or public action is enabled; the previous root preview remains intact, with this route reviewed in a separate loopback build. Human signing admission and exact approved network execution still block the Working testnet MVP. Replay Lab has not started.
+## Prerequisites and clean checkout
 
-**CLI chosen:** [Human CLI source review](docs/HUMAN_CLI_SETUP.md) pins0.31.1 and records its retry/credential/config defaults. The private Windows tool build was blocked by Application Control4551; no executable or signing result exists. The human-approved [reversible testnet-only profile](docs/REVERSIBLE_CLI_PROFILE.md) is now active, with the original config preserved unread. **151near tests** pass. Official prebuilt verification/signing admission still remain; no security-policy weakening, signature, public run or MVP-completion claim.
-
-**Receipt/intelligence milestone (8 November):** `/intelligence` projects separate authorization/submission/settlement/completion/validation and owner acceptance from explicitly selected LOCAL files. Provider spend, failure-inclusive cost per successful run, failed/error-run cost, blocked attempts and comparable canonical quote changes derive from those records, with sample/time/exclusion labels. Illustrative fixtures are separately selected and labelled; manual deterministic JSON fixture checks remain UNATTESTED and cannot change analytics. **85 frontend Node/115 backend Node/86 root Chromium**, strict type/lint/build and15parity pass on local code candidate **eeef5cd**. A genuine236-file fresh checkout also passes all15web-only steps, audit0, **84browser tests/2actual-file skips** and clean final Git status; private LOCAL bundles were not copied. Earlier SDK/Sandbox evidence and historical all-mode failures stay separate. [Exact checkout record](docs/release/RELEASE_STATUS.md) and BUILD_LOG.md section44 retain outcomes and initial failures. No independent chain/provider truth, new payment authority or public deployment is claimed. [Reproduction and evidence limits](docs/OUTCOME_RECEIPTS_AND_INTELLIGENCE.md).
-
-**Registered-quote checkpoint (7 November):** the scoped LOCAL agency harness exports canonical provider/quote/purchase records and actual native-transfer/private-callback outcomes. `/demo#contract-observation` imports them read-only, separate from the browser simulator. **147 Rust SDK,115 backend Node,67 frontend Node and73 Chromium browser tests pass**, with typecheck/lint/build and15 Rust/preview parity vectors. All three actual LOCAL agency bundles were imported in the root browser run. A genuine227-file fresh checkout of **e9a0095** also passes all15 web-only steps: fresh install, type/lint/build,115+67 Node tests,15 parity vectors, audit0 and **72 browser passes/1 actual-file skip**, with clean final Git status. Private `.local` bundles were not copied; this is not an all-mode Sandbox or public-testnet pass. No public testnet contract, wallet connector or signing is enabled. See [observation reproduction and limits](docs/CONTRACT_OBSERVATION_DEMO.md), [exact checkout record](docs/release/RELEASE_STATUS.md) and BUILD_LOG.md section43.
-
-**Earlier policy checkpoint:** requested policy workshop verified with115 backend Node,54 frontend Node and55 Chromium browser cases, strict type/lint/build and15 Rust/preview parity vectors. A genuine219-file clone of **01f1963** passes fresh installation, all those checks, audit0 and clean final Git status.26 additional policy cases pass in installed Edge/Chrome. Recorded140 Rust/SDK/LOCAL Sandbox evidence remains separate; the older all-mode clone timed out, with a passing separate agency follow-up. These earlier counts do not cover the new observation extension. Agency delivery/check/test-owner acceptance is controlled LOCAL fixture evidence, not real infrastructure/client acceptance. Full human visual review and public release remain gated. [Exact checkout/licence/privacy/platform results](docs/release/RELEASE_STATUS.md) preserve failures and remaining blockers.
-
-- The product/architecture/design/acceptance specifications exist.
-- A Rust NEAR SDK contract stores funded capsules, canonical provider quotes, exact approvals, reservations, private native-transfer resolution, and owner unused-fund return state.
-- A dependency-free Rust Gate checks exact agent identity/key, capsule state/expiry, quote hash and provider/recipient binding, service/quantity/recurring restrictions, replay, and integer available-budget/approval thresholds.
-- **147 LOCAL Linux Rust/SDK tests pass**. SDK promise outcomes are mocked; actual Sandbox checks are separate.
-- Gate is wired into submit_purchase; no free recipient/price/denial override. Transfers reserve/consume first. LOCAL scripted research, offline validation, bounded owner review/attestation/receipt views and exact cost cohorts now work. The browser has labelled seeded previews and a deterministic simulator, not wallet/testnet execution.
-- Current default WASM **415910 bytes**, SHA-256 `d0397fc992cb8f0624076c59314dbe1339461f38ea4c66980dd3d39720c57964`, passed the final combined Sandbox run. Separate LOCAL callback-fault WASM **415908 bytes**, SHA-256 `3130b4688df40f5fa473117ff202342bf7b81dc965b3d9c32121ed7d7efe5bb2`; **never deploy it publicly**. Prior hashes remain historical in BUILD_LOG.md. Release QA remains pending.
-
-**No public deployed contract address, public repository/demo URL, customer activity, or public settled-payment evidence exists.** LOCAL Sandbox evidence is recorded separately. RunLatch is provisional and is not a production custody service or audited security product.
-
-**Frontend:** this same npm root has pinned Next16.4.5, React19.3.1, Tailwind4.3.5, current source-installed dithercn/loaded project skill and self-hosted Space Grotesk/Inter/IBM Plex Mono. Native NEAR values are seeded, not fiat equivalents. Pure-black dark by default, selectable light, centred hero with one interactive request→capsule→Gate→receipt illustration/SVG fallback, bidirectional opaque heading ink, genuinely scroll-linked reversible budget reveal, a sticky desktop/mobile-sequential story, fixed-term commitment explainer, linked lifecycle/receipt inspection and read-only demo/docs. Hero/Gate/commitment share the selected proposal; seeded receipts and callback fixtures remain separate from it. Pointer/range/pause controls change only the illustration. Stronger hover/press/focus/disabled states, one labelled mobile-menu icon and a tighter copy/action closing layout replace the older presentation; `/gate` omits the redundant closing pitch. No signing service, live RPC, telemetry, third-party chart or paid AI integration.
-
-## Run the local UI
-
-Requirements: Node>=24.20.0 and npm. No wallet, credentials, public account or .env file needed.
+- Node.js **24.20.0 or newer** and npm 11 (the repository was tested with Node 24.20.0 / npm 11.19.0).
+- A browser for the Next.js app.
+- Rust **1.95+** for the contract tests. On Windows the recorded path uses WSL Ubuntu-24.04; on Linux/macOS a normal Rust toolchain works.
+- No wallet, private key, `.env` file, RPC credential or paid service is needed for the local demo.
+- Playwright browsers for the browser suite: `npx.cmd playwright install chromium` (Windows) or `npx playwright install chromium`.
 
 ```powershell
 npm.cmd ci
-npm.cmd run dev
-# Open http://127.0.0.1:3000
-```
-
-- `/`: eleven-section product narrative; the redundant second comparison matrix is consolidated into Docs and the `#capabilities` deep link remains. “Alter recipient” -> quote-hash denial; “Expired quote”, “Unregistered vendor” and “Cancelled project” -> explicit hard denials. “Hidden term” ->2.40 NEAR full commitment rejected against2.30 available; set allocation4 -> exact owner approval required, no money held. “Uncapped exposure” remains denied even with larger allocation. These are TypeScript browser simulations checked against15 actual Rust Gate vectors/all29 check states, not chain calls.
-- Primary “Try the Gate” opens `/gate`; “Inspect a project” opens `/demo`, not a landing anchor. On `/gate`, the header offers “Inspect a project” as the next step.
-- `/gate`: dedicated adversarial Gate testing workspace using the same exact preview component. No signing, reservation or payment.
-- `/demo`: explicit read-only LOCAL contract observation import, followed by the preserved fictional project and separate resettable browser walkthrough. See [the observation demo](docs/CONTRACT_OBSERVATION_DEMO.md). Imported records are internally checked, not independently verified chain truth. The walkthrough's evaluate quote -> preview reservation -> apply success/failure/unknown **callback fixture** changes only illustrative browser state; it is not a public settlement resolver. No real provider or transfer is called by the browser.
-- `/docs`: curated architecture/API/limits/reproduction/privacy/asset credits. It does not expose arbitrary workspace files or `.local` evidence.
-- `/intelligence`: [Outcome Receipts and record-derived Run Intelligence](docs/OUTCOME_RECEIPTS_AND_INTELLIGENCE.md). Explicitly select LOCAL files (up to16,1MiB each) or labelled illustrative data; project/time selection updates exact provider/finished-run costs and receipts. Missing callbacks exclude costs, not silently confirm settlement. No upload, storage, signer or automatic access to `.local` files.
-- `/policy`: [validated purchasing-policy workshop](docs/POLICY_WORKSHOP.md), linked from `/demo`. Explicit instructions/manual/JSON → typed checks → review every limit/scope/fixture recipient → explicit approval of an immutable **local demo version only**. No LLM key required, no contract activation, no seeded-capsule edit. Unsupported/contradictory instructions fail instead of silently becoming sample policy. Hosted LLM integration is not configured; a tested draft-only adapter seam does not imply real inference.
-- First paint -> pure-black dark, including without JavaScript. Theme button -> light/black; footer texture control -> reduced/static treatment. Display preferences are memory-only and never change spending authority or write browser storage.
-- “Built with” items show only real logo and name; their tool websites open in a new tab with noopener/noreferrer and an accessible announcement. Global LOCAL/non-partner qualification remains; no unimplemented technology shown as integrated.
-
-```powershell
 npm.cmd run typecheck
 npm.cmd run lint
-npm.cmd run build
 npm.cmd test
 npm.cmd run test:frontend
-npm.cmd run test:preview-parity
-npx.cmd --no-install playwright install chromium --only-shell --no-remove
-# With the loopback app running:
-npm.cmd run test:browser
+npm.cmd run test:near
 ```
 
-Production-mode local preview: `npm.cmd run build`, then `npm.cmd start`; do not start dev and production on the same port. Launchers bind only127.0.0.1 and disable Next telemetry. Browser screenshots/reports are ignored under `.local/ui/`, never uploaded. `node scripts/web/check-clean-source.mjs` stages allowlisted source/packaged assets and runs fresh npm ci/type/lint/Node/build checks; this is not a Git clone or fresh Rust environment. Current results/remaining limits are in BUILD_LOG.md.
+```bash
+npm ci
+npm run typecheck
+npm run lint
+npm test
+npm run test:frontend
+npm run test:near
+```
 
-Visual reproduction with the production server running: `node scripts/web/capture-reconstruction.mjs` -> dark-first then light section/interaction/reduced screenshots and desktop/mobile video under `.local/ui/reconstruction/`. `node scripts/web/capture-reconstruction.mjs --measure-only` -> bounded1440px headless loopback sample in `isolated-performance.json`; WebGL submissions are not hardware/GPU or real-device measurements. Latest private review: `.local/ui/full-audit/review/REVIEW.md`, with210 PNGs at1440/1364/1024/768/390/360, four homepage light/dark axe checks with0 violations, plus42/42 browser QA. Original37/42 failure and corrections remain in BUILD_LOG sections38–40; older reviews remain historical. Headed Edge/Chrome now verify actual hidden-tab pause/resume and four routes with axe0/pageoverflow0; Safari, real mobile and manual assistive-technology remain unverified. The isolated headless sample LCP328ms/CLS0.000383488/one480×85 canvas/40 submissions over2002ms is not a device guarantee. Current full npm audit reports0, versus preserved13-development-advisory history. Do not force upgrades or call npm audit a security audit.
+Observed 9 November 2026 with the current source:
 
-Release checks: `node scripts/web/check-release-source.mjs` -> bounded candidate pattern/privacy report (not legal clearance or exhaustive secrets scan). `node scripts/web/check-release-checkout.mjs --web-only` -> actual local Git clone/fresh install/Node/parity/build/browser checks and clean final status; latest pass **eeef5cd**, without the full SDK/WASM/Sandbox suite. Omit `--web-only` to include approved Ubuntu SDK/LOCAL Sandbox reproduction with existing host caches; the earlier e5ab580 all-mode attempt timed out and is not called passing. Neither publishes. Exact tested commits/results and unresolved distribution notices are in the release record. Source-installed dithercn, shadcn registry defaults, local fonts, Simple Icons geometry and credited design guidance are reused; see [third-party notices](THIRD_PARTY_NOTICES.md). Original RunLatch code was developed with AI assistance; local baseline history is not re-dated or represented as entirely new hackathon work.
+```text
+typecheck   exit 0
+lint        exit 0
+npm test                 115 tests, 115 pass, 0 fail
+npm run test:frontend    200 tests, 200 pass, 0 fail
+npm run test:near        244 tests, 244 pass, 0 fail
+```
 
-## Run the completed offline validator
-
-No package installation, credentials, tokens, or website requests are needed:
+Run the app:
 
 ```powershell
-node --test tests/validation/research.test.ts
-node scripts/validation/check-report.ts fixtures/research/valid-demo.json
-node scripts/validation/check-report.ts fixtures/research/invalid-demo.json
+npm.cmd run dev
 ```
 
-Do X -> see Y: valid fixture -> LOCAL/UNATTESTED validation passed (exit0); incomplete fixture -> TOO_FEW_SOURCES/failed (exit1). The55-test suite covers success/failure/tamper/bounds/no-network behavior. URL checks mean syntax only; hashes mean integrity, not independent truth or on-chain attestation. See [validator format and limits](src/lib/validation/README.md).
+Open `http://127.0.0.1:3000`. The demo server binds to `127.0.0.1` only and needs no environment variables.
 
-## Planning documents
-
-New primary story: one fictional AI agency/client website work order, canonical database purchase, full financial commitment controls and a source-labelled expense/outcome report. Native NEAR demo ratios are not dollar equivalents. Small agencies are a customer hypothesis, not validated demand. Research workflow/analytics below remain tested regression, not the primary positioning.
-
-- [Product and trust boundaries](PRODUCT.md)
-- [Contract/application architecture](ARCHITECTURE.md)
-- [Visual system and Roster/dithercn requirements](DESIGN.md)
-- [Acceptance requirements and evidence levels](ACCEPTANCE_TESTS.md)
-- [Official hackathon compliance](HACKATHON_COMPLIANCE.md)
-- [Actual progress, commands, and blockers](BUILD_LOG.md)
-- [Persistent coding instructions](AGENTS.md)
-
-## Historical LOCAL Gate tests on Windows
-
-These commands worked historically. This machine's rebuilt native executables are now blocked by Application Control; **do not bypass or keep retrying blocked Windows binaries**. Use the current native Linux test command below. Gate tests need no wallet or credentials.
-
-From the project root, in PowerShell:
+Browser suite (the dev server must be running):
 
 ```powershell
-New-Item -ItemType Directory -Path '.tools/native-tests' -Force | Out-Null
-rustc --edition=2024 --test 'contracts/runlatch/src/gate.rs' -o '.tools/native-tests/gate-tests.exe'
-& '.tools/native-tests/gate-tests.exe'
+npx.cmd playwright test
 ```
 
-**Do X -> see Y:** run the test executable -> see the valid canonical purchase eligible, wrong key/recipient/quote hash and stale/replayed/over-budget/recurring cases denied, with unexecuted dependent checks marked not evaluated. The current observed run reported 26 passed, 0 failed. This is a LOCAL unit-test result; it is not proof that money moved or a NEAR transaction was rejected.
+Observed 9 November: **98 Playwright tests pass**, including axe accessibility checks, keyboard paths, reduced motion, no-JavaScript fallback, responsive layouts at 320-1440 px, printable-report isolation and pre-hydration input protection. These checks are Chromium evidence, not a universal accessibility or real-device certification.
 
-## Run the current contract suite in approved Ubuntu
+### Rust contract tests
+
+The repository records both a direct Cargo path and the Windows/WSL helper:
+
+```bash
+cargo test --locked --manifest-path contracts/runlatch/Cargo.toml
+cargo clippy --locked --all-targets --manifest-path contracts/runlatch/Cargo.toml -- -D warnings
+cargo fmt --manifest-path contracts/runlatch/Cargo.toml -- --check
+```
 
 ```powershell
 wsl --distribution Ubuntu-24.04 --user runlatch --exec sh /mnt/c/Users/David/RunLatch/scripts/setup/test-contract-linux.sh
 ```
 
-Do X -> see Y: locked SDK tests, strict Clippy and format -> current contract counts in BUILD_LOG. `npm.cmd test` passed115 Node tests, including imported-provenance labels not granting verification/authority; not tsc/browser/chain proof. See [contract API/trade-offs](contracts/runlatch/README.md). Paths/user belong to this setup; on another Linux checkout use `sh scripts/setup/test-contract-linux.sh`.
+Observed: **147 Rust tests pass**; Clippy and format pass. These are SDK/unit tests with mocked host outcomes. They are not Sandbox or testnet execution.
 
-## WASM build and historical Windows SDK command
-
-The contract manifest pins near-sdk 5.30.0 and Cargo.lock pins resolved dependencies. Current official SDK docs require the on-chain `--cfg near` host path; `.cargo/config.toml` scopes it to WASM. SDK unit-testing features are test-only.
+### LOCAL Sandbox golden path
 
 ```powershell
-$env:AWS_LC_SYS_PREBUILT_NASM = '1' # documented Windows x64 test-dependency fallback
-$env:CARGO_TARGET_DIR = Join-Path (Get-Location).Path '.tools/cargo-target/unit'
-cargo test --locked --manifest-path 'contracts/runlatch/Cargo.toml'
-cargo clippy --locked --all-targets --manifest-path 'contracts/runlatch/Cargo.toml' -- -D warnings
-```
-
-The Windows SDK and cargo-near executables are now blocked by Application Control. Use checksum-verified native Linux cargo-near0.22.0, with native filesystem outputs to avoid NTFS artifact-copy errors:
-
-```powershell
-wsl --distribution Ubuntu-24.04 --user runlatch --exec sh /mnt/c/Users/David/RunLatch/scripts/setup/build-sandbox-artifacts-linux.sh
 npm.cmd run prepare:sandbox-reports
-wsl --distribution Ubuntu-24.04 --user runlatch --exec sh /mnt/c/Users/David/RunLatch/scripts/setup/test-sandbox-linux.sh all
+wsl --distribution Ubuntu-24.04 --user runlatch --exec sh /mnt/c/Users/David/RunLatch/scripts/setup/test-sandbox-linux.sh agency
 ```
 
-Do not disable wasm-opt or compiler/protocol checks to force an artifact. The development build skips optional ABI generation only. Approved WSL2 Ubuntu setup is complete; no Windows security-policy change or Docker installation. Actual Sandbox checks are separate from SDK mocks.
+Observed 9 November 2026:
 
-Canonical native artifacts: `$HOME/.cache/runlatch-artifacts/production/runlatch_contract.wasm` and `/callback-fault/runlatch_contract.wasm`. The legacy ignored Windows artifact mirror is historical, not automatically refreshed. Never deploy the callback-fault build or use --all-features for a public artifact. See [Sandbox modes/evidence](scripts/sandbox/README.md).
+```json
+{"result":"AGENCY_WORKFLOW_CHECKS_PASSED","public_testnet":false,"source":"LOCAL_NEAR_SANDBOX_SCRIPTED_AGENCY_WORKFLOW","runs":[
+{"scenario":"pass","payment_status":"SETTLED","settled_spend":"70","task_check_status":"VALIDATION_PASSED","human_decision":"ACCEPTED","fixture_service_calls":1},
+{"scenario":"provision-fail","payment_status":"SETTLED","settled_spend":"50","task_check_status":"VALIDATION_FAILED","human_decision":"REJECTED","fixture_service_calls":1},
+{"scenario":"payment-fail","payment_status":"SETTLEMENT_FAILED","settled_spend":"0","task_check_status":"VALIDATION_ERROR","human_decision":"REJECTED","fixture_service_calls":0}]}
+```
 
-## Planned on-chain / off-chain boundary
+Evidence is written to `.local/projects/latest.json` and per-project observation files. This is isolated local runtime evidence, not public testnet proof.
 
-**On-chain-capable code, not publicly deployed:** projects/revisions, funded capsules, canonical commercial quotes, exact scoped identity, approvals, integer S/R/C accounting, resource duplicate claims, native callbacks, C-excluding owner return, independent bounded provisioning/check/acceptance and report views. Public accounts/wallet/evidence unfinished. Local runtime proof covers only tested artifacts/cases.
+## Do X -> see Y
 
-**Off-chain:** JSON/count/URL-syntax validation, fixtures, owner review and exact cost cohorts implemented/tested. LOCAL Sandbox scripted workflow/service adapters and receipts work; reconstructed browser UI is verified with explicitly seeded simulations. Public-network observer/wallet integration remains unfinished. Validator hashes/owner attestation do not prove honest checker execution or research truth.
+### 1. One eligible request (`BROWSER_FIXTURE`)
 
-## LOCAL scripted workflow and costs
+1. Run `npm.cmd run dev` and open `http://127.0.0.1:3000/gate`.
+2. Leave **Database - one-time** selected and click **Valid request**.
+3. See **Eligible in simulation** / **Inside the boundary.**, **Passed checks 29 of 29**, **Reservation attempted: No**, **Transfer attempted: No**, **Outcome Receipt created: No**, and `BROWSER_FIXTURE` provenance.
+4. The panel states that a real Rust approval would reserve 0.50 NEAR before scheduling a transfer. The browser does neither.
 
-Primary agency workflow and explicit disclosure export: [Sandbox guide](scripts/sandbox/README.md#primary-fictional-agency-workflow). It tests a fictional booking-website database purchase and source-separated provisioning/check/acceptance/report, including adverse requests. Read the actual generated IDs in `.local/projects/latest.json`, then `node scripts/workflow/export-project-local.ts <generated-project-id> --budget --expenses --evidence` -> selected canonical-input projection; omit all flags -> no financials or expenses. The current reducer was checked read-only against all three existing generated cases: settled70/pass/accepted, settled50/provision-fail/rejected and spent0/payment-fail/rejected, in integer yoctoNEAR. Export metadata does not independently verify a chain or create new execution evidence. [Judge path and unpublished drafts](docs/JUDGE_QUICKSTART_AND_DRAFTS.md) separate browser, SDK and Sandbox reproduction. Research below remains regression evidence.
+### 2. One tampered request (`BROWSER_FIXTURE`)
 
-**Registered-quote observation extension (BUILD_LOG section43):** run `scripts/setup/test-sandbox-linux.sh agency` in the approved isolated Linux environment → actual canonical quote/request/transfer/callback records under `.local/projects/<generated-project-id>/observation.json`. Open `/demo#contract-observation` → explicitly select that file → inspect the three registered demo providers, canonical recipients/commercial terms, exact yoctoNEAR ledger and separate payment/provisioning/check/owner-action evidence. Files are not served or uploaded; browser data stays in memory. `node scripts/web/inspect-local-observation.ts <generated-project-id>` provides an explicit bounded CLI read-back. The agent draft contains IDs/hash only; owner review is historical/unsigned and all public-testnet/signing controls remain disabled. Actual new147SDK and agency adapter results, browser regressions and limitations are recorded in BUILD_LOG.md rather than inherited from the earlier policy checkpoint above.
+1. On `/gate`, click **Alter recipient**.
+2. See **Request denied**, the failed rule `QUOTE_TERMS_MISMATCH`, **No new reservation or commitment**, and no transfer or receipt.
+3. Click **Over budget** to see `INSUFFICIENT_AVAILABLE_BUDGET`, or **Concurrent request** to inspect an illustrative interleaving: two 1.30 NEAR requests each fit 2.30 NEAR alone; after the first reservation, the later request sees 1.00 and is denied. This browser fixture does not send two requests. Rust tests enforce atomic reservation.
 
-After generating fixtures/building as above:
+### 3. The same boundary in Rust (`LOCAL_SDK_TEST`)
 
 ```powershell
-wsl --distribution Ubuntu-24.04 --user runlatch --exec sh /mnt/c/Users/David/RunLatch/scripts/setup/test-sandbox-linux.sh workflow
-npm.cmd run analyze:local
+wsl --distribution Ubuntu-24.04 --user runlatch --exec sh /mnt/c/Users/David/RunLatch/scripts/setup/test-contract-linux.sh
 ```
 
-Do X -> see Y: run the three LOCAL cases -> PASS with20 records, paid-incomplete FAIL, and failed extraction payment/ERROR with no extraction delivery. Actual settled costs300+300+100 yoctoNEAR /1 passed run =700 yoctoNEAR per success, including failure/error costs. This is a three-run controlled fixture sample, not customer activity, merchant acceptance, a factual research claim or a savings statistic. Gas/storage/owner returns are separate. No signer enters the browser/Node validator; finite250-millinear agent gas allowance is not the1000-yocto capsule budget.
+Look for these passing tests:
 
-Generated reports/receipts/facts live under ignored `.local/workflows/`; cost output in `intelligence.json`. Scoped key tests use the `scoped` mode. The SDK's omitted invalid-transaction detail/legacy missing-key response is handled honestly with bounded loopback diagnosis/read-back; no broader-key purchase fallback.
+- `g02_proposed_wrong_identity_or_key_is_denied`
+- `g02_actual_submit_requires_exact_runtime_account_key_and_zero_deposit`
+- `a05_only_owner_deposit_capable_action_can_approve_reject_or_cancel`
+- `a09_hard_denial_cannot_be_overridden_by_exact_owner_hash`
+- `s05_external_caller_cannot_forge_callback_success`
+- `p16_p18_agent_cannot_record_provisioning_task_check_or_human_acceptance`
+- `c05_owner_or_provider_account_cannot_be_the_agent`
 
-AI never authorizes payment. An off-chain validation report or owner attestation does not prove factual research truth or guarantee delivery. Quotes are controlled demo-provider terms, not a claim that commercial API vendors accept NEAR testnet payments.
+See [docs/AGENT_BOUNDARY_PROOF.md](docs/AGENT_BOUNDARY_PROOF.md) for the full code-to-test map.
 
-## Safety and hackathon gates
+### 4. Inspect an Outcome Receipt (`LOCAL_SANDBOX` records)
 
-- Planned demo: NEAR testnet only. A read-only RPC status query confirmed chain testnet/protocol88; this is environment evidence, not a RunLatch integration.
-- No mainnet, real funds, public deployment, source publication, social post, or hackathon submission without explicit human approval.
-- `.env.example` has empty/placeholder values only. Never write real private keys to repository/runtime files or logs; approved scoped runner keys are process-injected, not public web configuration.
-- Generated builds/tools and private artifacts are ignored/not served. Review evidence and secrets before any publication.
-- The live hackathon requires a public repository and human X demo by 14 November 2026 23:59 UTC; it allows testnet-only projects and does not mandate Intents/TEE/Chain Signatures. Public release remains approval-gated.
+1. Run the LOCAL Sandbox agency workflow above.
+2. Open `http://127.0.0.1:3000/demo` and choose a generated file such as `.local/projects/<project-id>/observation.json`.
+3. Select a purchase in the local contract inspector. Approval, payment, provisioning, objective check and human acceptance are shown as separate states.
+4. Open `http://127.0.0.1:3000/intelligence` and choose **Choose LOCAL files**, then select one or more `observation.json` files. The page shows provider spend, cost per successful run where a denominator exists, failed-run cost, blocked reasons, quote history, selected-snapshot ledger position and Outcome Receipts. Ledger totals are unfiltered snapshot sums after duplicate/conflict checks, not necessarily the whole project.
+5. Missing evidence stays **Unavailable** or **Not recorded**; it is never shown as zero, passed or accepted.
 
-Original RunLatch source is provisionally MIT-licensed; third-party terms/notices are separate. Name/eligibility/asset/release checks remain before public launch.
+Imported records are read in memory only. Nothing is uploaded, saved or authenticated by the browser.
+
+## Testnet status
+
+| Item | Status |
+| --- | --- |
+| Network | NEAR testnet only |
+| Gate contract | Deployed and initialized: `gate.runlatch-demo-1108.testnet`, schema 2, code hash `F1pev22VSu86qxxWicXpCixtzzNoQxEi1FHRF2eGXjGP`, deployment transaction `23jZ77SEAK3b4YwW6EjanToSSt1XtbCvvgTPxFXYJqg6` |
+| Project | `project_demo_1108`, ACTIVE revision 1, allocated 0, no capsules; create transaction `BU2DMrx9gi3zTTzcybvjuCp5Zm9HQdpoP96SLafjvTnB` |
+| Database provider | `db_demo_1108` **not registered** |
+| Capsule, quote, restricted key, purchase, callback, provisioning, check, acceptance, report | **Absent** |
+
+There is no public testnet purchase, transaction for a purchase, receipt, delivery or acceptance. Do not read the deployment above as a completed product run. Verify any reference through a public testnet RPC; this README does not assert a light-client proof.
+
+## Known limitations
+
+- **No public testnet vertical slice yet.** The exact remaining calls and approval gates are in [docs/TESTNET_VERTICAL_SLICE_PLAN.md](docs/TESTNET_VERTICAL_SLICE_PLAN.md).
+- **No wallet or signer in the browser.** The website cannot approve, reserve, transfer or submit.
+- **Callback recovery:** a missing, failed or unproven callback keeps the reservation pending. There is no timer-based release, blind retry, public settlement setter or implemented reconciliation release procedure. An unknown result is never treated as success.
+- **Imported records are claims.** LOCAL observation validation checks internal consistency and bindings, not chain truth or provider delivery.
+- **Owner acceptance is not verified client satisfaction.** It is the operator's explicit recorded decision.
+- **No security audit or formal verification.** Rust enforces authorization under tested assumptions; this is not production custody or a security certification.
+- **Native NEAR only.** No fiat peg, exchange rate, stablecoin, cross-chain settlement, mainnet action or real funds.
+- **Single operator and project-bound demo.** No multi-tenant service, marketplace, agent swarm, production identity system or client share link.
+- **No Replay Lab yet.** The tested research/fixture workflow remains regression evidence, not the primary product story.
+- **Website is a hosted preview, not a completed testnet purchase.** The existing site is https://runlatch.vercel.app/, connected to the private repository's `main` branch. The human approved the 9 November website update; [BUILD_LOG.md](BUILD_LOG.md) records the exact verified deployed revision and publication outcome. Until that deployment is verified, local changes are not evidence of live changes.
+
+## Repository and dependency disclosure
+
+- Original RunLatch source was checkpointed into this repository on 7 November 2026, within the NEAR HACKATHON development window. Any earlier local work is baseline and is not re-dated or claimed as new.
+- Reused libraries and tools are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and `docs/release/DEPENDENCY_INVENTORY.json`.
+- Engine: Next.js 16.4.5, React 19.3.1, Tailwind CSS 4.3.5, TypeScript 5.9.3, Playwright 1.64.1 and axe-core 4.14.0. Licences are recorded in the generated notices.
+- Dither engine: the `dithercn` implementation vendored under `src/lib/dither` is MIT-licensed; see `licenses/dithercn-MIT.txt`.
+- Fonts: Space Grotesk, Inter and IBM Plex Mono are self-hosted through Fontsource; their OFL licences are in the package notices and `licenses/npm-transitive-NOTICES.txt`.
+- Icons: Simple Icons where used, CC0; see `licenses/simple-icons-CC0.md`.
+- NEAR tooling: `near-cli-rs` MIT notice and Cargo transitive notices are retained under `licenses/`.
+- Project licence: [MIT](LICENSE).
+
+## Hackathon references
+
+- Rules: https://nearhackathon.com/HACKATHON.md (re-checked 9 November 2026).
+- NEAR documentation: https://docs.near.org/
+- Submission deadline: 2026-11-14T23:59:00Z. Public repository, public X demo post and the single submission are human actions and are not performed by this repository.
+- Submission fields, the demo post and the final payload must be supplied and approved by the human. No example or duplicate identity is used.
+
+## Further reading
+
+- [PRODUCT.md](PRODUCT.md) - product boundary and customer.
+- [ARCHITECTURE.md](ARCHITECTURE.md) - accounting, state and security model.
+- [ACCEPTANCE_TESTS.md](ACCEPTANCE_TESTS.md) - adversarial cases and expected results.
+- [DESIGN.md](DESIGN.md) - visual system and dither rules.
+- [BUILD_LOG.md](BUILD_LOG.md) - chronological implementation and test evidence.
+- [docs/REMEDIATION_STATUS.md](docs/REMEDIATION_STATUS.md) - nine-prompt delivery scope, actual QA and remaining external gates.

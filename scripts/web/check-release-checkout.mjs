@@ -43,6 +43,7 @@ try {
   npm("run lint");
   npm("test");
   npm("run test:frontend");
+  npm("run test:near");
   npm("run test:preview-parity");
   npm("run build");
   npm("audit --json");

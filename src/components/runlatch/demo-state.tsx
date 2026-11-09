@@ -38,7 +38,7 @@ function usePreviewState() {
     selected: SCENARIOS.find(s => s.id === scenario)!,
     preset: SCENARIO_PRESETS[scenario],
     choose: (id: Scenario) => { const preset = SCENARIO_PRESETS[id]; setScenario(id); setQuoteIndex(preset.quote_index); setBudget(preset.allocation); },
-    selectQuote: (index: number) => { if (Number.isInteger(index) && index >= 0 && index < QUOTES.length) { setQuoteIndex(index); setScenario(index === 2 ? "recurring" : index === 3 ? "expired" : index === 4 ? "unbounded" : "valid"); } },
+    selectQuote: (index: number) => { if (Number.isInteger(index) && index >= 0 && index < QUOTES.length) { setQuoteIndex(index); setScenario(index === 2 ? "recurring" : index === 3 ? "expired" : index === 4 ? "unbounded" : index === 5 ? "concurrent" : "valid"); } },
   }), [scenario, budget, quoteIndex, q, current, receipt]);
 }
 const DemoContext = createContext<ReturnType<typeof usePreviewState> | null>(null);

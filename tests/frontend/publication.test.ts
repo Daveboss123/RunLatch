@@ -26,10 +26,14 @@ test("unverified NEAR artwork is retained but not served", async () => {
   assert.match(await readFile("src/components/runlatch/build-strip.tsx", "utf8"), /name: "NEAR"[^\n]+mark: null/u);
 });
 
-test("hosted preview copy does not claim a deployed NEAR contract or public repository", async () => {
+test("preview distinguishes recorded testnet setup from absent public purchase and private source", async () => {
   const footer = await readFile("src/components/runlatch/footer.tsx", "utf8");
-  assert.match(footer, /No public NEAR contract/u);
+  assert.match(footer, /Testnet setup exists; no public purchase or outcome yet/u);
   assert.match(footer, /Private source repository/u);
   assert.doesNotMatch(footer, /No public deployment|Repository not published/u);
-  assert.match(await readFile("src/app/docs/page.tsx", "utf8"), /Not connected or deployed/u);
+  const docs = await readFile("src/app/docs/page.tsx", "utf8");
+  assert.match(docs, /Human setup was observed on 8 November/u);
+  assert.match(docs, /No public purchase or outcome exists/u);
+  assert.match(docs, /This website has no connected signer/u);
+  assert.doesNotMatch(docs, /Not connected or deployed/u);
 });

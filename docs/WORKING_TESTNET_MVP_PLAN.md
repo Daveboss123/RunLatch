@@ -45,6 +45,8 @@ After the first task is actually implemented and verified, save exact outputs an
 
 **Section76 supersedes the default signing handoff:** human default command returned a generic failure; no provider-attempt exists and public state/nonce are unchanged. Its cause is unproven; agent unsigned state/fee/full-review serialization and new `--preflight` mode pass. Default is on hold; human next runs only the read-only diagnostic and returns public JSON/sanitized phase code.244near/196frontend/115backend/type/lint/5offlineRustparity pass. No real key/sign/send/registration occurred, no retry/fallback/marker cleanup or completed MVP claim.
 
+**Section77 supersedes that hold:** human --preflight now passes with unchanged nonce/provider absent; no provider-attempt directory exists. Subsequent native unsigned initial/fresh pair passes4716ms. The first error's cause remains unknown, not permanently repaired. Next is the exact guarded human own-terminal register_provider review/typed approval, not a resend of any signed transaction. No provider/purchase/outcome/MVP completion or website change is claimed.
+
 ## Local progress — 8 November
 
 Stages1/2 now have dependency-free read-only modules and synthetic tests. The [settlement observer](TESTNET_SETTLEMENT_OBSERVER.md) joins exact transaction/actions, transfer data dependency, successful private callback, historical code hashes and pinned canonical state, preserving no-payment/replay/rollback/unknown distinctions. Full116frontendNode/115backendNode/type/lint pass; no public RPC execution or browser connection exists. Human wallet/scoped-agent/fixture vertical slice and complete testnet evidence remain unfinished. Test fixtures never substitute for actual approved network execution.

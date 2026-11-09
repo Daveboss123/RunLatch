@@ -134,5 +134,28 @@ test("without JavaScript the page never activates policy or offers an authentica
   await expect(noJs.locator("noscript p")).toContainText("Interactive drafting requires JavaScript.");
   await expect(noJs.getByRole("button", { name: /Approve local version/u })).toHaveCount(0);
   await expect(noJs.getByText("No version approved. Drafting has no authority.", { exact: true })).toBeVisible();
+  await expect(noJs.getByLabel("Purchasing instructions", { exact: true })).toBeDisabled();
+  await expect(noJs.getByRole("button", { name: "Validate draft", exact: true })).toBeDisabled();
   await context.close();
+});
+
+test("draft cannot be edited before hydration and later input never merges with the sample", async ({ browser, page }) => {
+  const context = await browser.newContext();
+  const slowPage = await context.newPage();
+  let release: () => void = () => {};
+  const scriptsReady = new Promise<void>(resolve => { release = resolve; });
+  await slowPage.route("**/_next/**/*.js", async route => { await scriptsReady; await route.continue(); });
+  try {
+    await slowPage.goto(new URL("/policy", page.url()).href, { waitUntil: "commit" });
+    const input = slowPage.getByLabel("Purchasing instructions", { exact: true });
+    await expect(input).toBeDisabled();
+    await expect(slowPage.getByRole("button", { name: "Validate draft", exact: true })).toBeDisabled();
+    release();
+    await expect(input).toBeEnabled();
+    await input.fill("Use cheap hosting");
+    await slowPage.getByRole("button", { name: "Validate draft", exact: true }).click();
+    await expect(input).toHaveValue("Use cheap hosting");
+    await expect(input).toHaveAttribute("aria-invalid", "true");
+    await expect(slowPage.getByRole("button", { name: /Approve local version/u })).toHaveCount(0);
+  } finally { release(); await context.close(); }
 });

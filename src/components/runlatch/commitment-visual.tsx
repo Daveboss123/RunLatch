@@ -1,6 +1,6 @@
 "use client";
 
-import { QUOTES } from "@/lib/preview/fixtures";
+import { DEMO_CLOCK, QUOTES } from "@/lib/preview/fixtures";
 import { budgetBreakdown, calculateCommitment } from "@/lib/purchasing/commitment";
 import { formatNear, parseNear } from "@/lib/preview/money";
 import { fillStyle } from "@/lib/dither/style";
@@ -27,7 +27,7 @@ export function CommitmentVisual() {
       <dl className="capsule-balances"><div><dt>Settled</dt><dd>{formatNear(budget.spent)} NEAR</dd></div><div><dt>Reserved</dt><dd>{formatNear(budget.reserved)} NEAR</dd></div><div><dt>Available now</dt><dd>{formatNear(budget.available_now)} NEAR</dd></div><div><dt>Available to commit</dt><dd>{formatNear(budget.available_to_commit)} NEAR</dd></div></dl>
       <BudgetPartition budget={budget} />
       <div className="account-invariants"><code>available_now = allocated − spent − reserved</code><code>available_to_commit = available_now − committed_future</code></div>
-      <dl className="capsule-scope"><div><dt>Allowed providers</dt><dd>Database & hosting fixtures</dd></div><div><dt>Scope</dt><dd>Infrastructure · one assigned agent</dd></div><div><dt>Fixture expiry</dt><dd>8 November 2026, 12:00 UTC</dd></div><div><dt>Authority</dt><dd>Immutable policy · current project revision</dd></div></dl>
+      <dl className="capsule-scope"><div><dt>Allowed providers</dt><dd>Database & hosting fixtures</dd></div><div><dt>Scope</dt><dd>Infrastructure · one assigned agent</dd></div><div><dt>Fixture clock</dt><dd>{DEMO_CLOCK.label} · quotes expire {DEMO_CLOCK.expiry_label} (historical, not live)</dd></div><div><dt>Authority</dt><dd>Immutable policy · current project revision</dd></div></dl>
     </div>
     <div className="commitment-exposure">
       <div className="quote-switch" role="group" aria-label="Compare canonical hosting quotes"><button aria-pressed={!recurring} onClick={() => selectQuote(1)}>One-time quote</button><button aria-pressed={recurring} onClick={() => selectQuote(2)}>12-month quote</button></div>

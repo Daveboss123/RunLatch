@@ -45,4 +45,6 @@ The [provider terminal helper](HUMAN_DEMO_PROVIDER_STEP.md) is locally implement
 
 Latest human default command stopped generically before any attempt directory; independent nonce/provider/project state is unchanged. Its cause is unproven. **Default is on hold**; next is only the guide's read-only `--preflight` diagnostic, now locally tested with clearer sanitized error phases. No signing/send/registration or authority change is inferred from preparation success.
 
+Section77: that human --preflight now passes and a subsequent native unsigned initial/fresh recheck passes; no attempt directory or nonce change exists. The hold is superseded for the guide's exact human signing review/typed approval. Original failure remains unexplained; no signed transaction is being retried, and no actual registration is claimed.
+
 After human-only generation, bind those public keys, the exact opaque project/task/quote IDs, fixture criteria hashes, chain-derived expiry times, all arguments/deposits and fresh nonce/block values to one final human-reviewed package. **This document alone does not authorize account creation, key installation, deployment, signatures or acceptance.** Website hosting proceeds separately with honest absent-testnet labels.

@@ -24,7 +24,7 @@ export function RunBoard({ dashboard = false }: { dashboard?: boolean }) {
   ];
   return <div className={`run-board ${dashboard ? "board-dashboard" : ""}`}>
     <div className="board-top"><div><span className="board-agency">Northstar Studio <span className="quiet">/</span> ACME Demo Client</span><h3>Automated Booking Website</h3><p>One project. One Client Work Capsule. A visible spending boundary.</p></div><span className="demo-tag">Demo data</span></div>
-    <div className="board-meta"><span>Project <code>booking-demo-01</code></span><span>Revision <code>1</code></span><Status tone="good">Active authority</Status><span className="meta-right">Native NEAR · simulated ledger</span></div>
+    <div className="board-meta"><span>Project <code>booking-demo-01</code></span><span>Revision <code>1</code></span><Status tone="good">Capsule active · seeded</Status><span className="meta-right">Unit: native NEAR<span className="meta-separator" aria-hidden="true"> · </span>Execution: browser fixture</span></div>
     <dl className="metrics">{metrics.map(([label, value]) => <div key={label} className={label === "Available to commit" ? "metric-available" : ""}><dt>{label}</dt><dd>{formatNear(value)}<span>NEAR</span></dd></div>)}</dl>
     <BudgetPartition budget={DEMO_BUDGET} />
     <div className="board-table-heading"><h4>Purchases & requests</h4><label>Show<select value={filter} onChange={event => { setFilter(event.target.value); setSelected(null); }} aria-label="Filter purchases"><option value="all">All requests</option><option value="SETTLED">Settled</option><option value="SETTLEMENT_PENDING">Pending settlement</option><option value="NOT_ATTEMPTED">Not attempted</option><option value="SETTLEMENT_FAILED">Failed settlement</option></select></label></div>

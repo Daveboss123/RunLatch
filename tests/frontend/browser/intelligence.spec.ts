@@ -5,7 +5,11 @@ import { outcomeFixture } from "../helpers/outcomes";
 import { commercialQuoteHash } from "../../../src/lib/purchasing/hashing";
 
 const view = (page: Page) => page.locator("#run-intelligence");
+async function ensureLocal(page: Page) {
+  if (await page.getByLabel("Record source").inputValue() !== "local") await page.getByLabel("Record source").selectOption("local");
+}
 async function importFile(page: Page, value: unknown) {
+  await ensureLocal(page);
   await page.getByLabel("LOCAL outcome observation JSON files").setInputFiles({ name: "observation.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(value)) });
   await expect(view(page).getByRole("status").first()).not.toContainText("Checking selected records");
 }
@@ -13,9 +17,11 @@ test.beforeEach(async ({ page }) => { await page.goto("/intelligence"); });
 
 test("empty read-only state, illustrative selection and source separation", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Paid is not the same as done." })).toBeVisible();
-  await expect(view(page)).toContainText("No files selected"); await expect(page.getByTestId("cost-per-success")).toHaveCount(0);
+  await expect(view(page)).toContainText("Choose a sample or import LOCAL records"); await expect(page.getByTestId("cost-per-success")).toHaveCount(0);
+  await expect(view(page).getByRole("button", { name: "Load sample project" })).toBeVisible();
   await page.getByLabel("Record source").selectOption("illustrative"); await page.getByRole("button", { name: "Load illustrative sample" }).click();
   await expect(page.getByTestId("cost-per-success")).toHaveText("100"); await expect(page.getByTestId("failed-run-cost")).toHaveText("50");
+  await expect(view(page).locator(".intelligence-ledger")).toContainText("Selected ledger spend (yoctoNEAR)100");
   await expect(view(page)).toContainText("Illustrative only — fabricated references"); await expect(view(page)).toContainText("3 selected runs");
   await page.getByRole("checkbox", { name: "illustrative-paid-failure", exact: true }).uncheck();
   await expect(page.getByTestId("cost-per-success")).toHaveText("50"); await expect(page.getByTestId("failed-run-cost")).toHaveText("0");
@@ -51,6 +57,7 @@ test("missing callback, failed payment and no final report cannot become success
 test("time/owner selection removes underlying records and rejects invalid ranges", async ({ page }) => {
   await importFile(page, await outcomeFixture()); await page.getByLabel("From time (integer ns)").fill("24");
   await expect(view(page)).toContainText("0 selected runs"); await expect(view(page).locator(".outcome-receipt")).toHaveCount(0);
+  await expect(view(page).locator(".intelligence-ledger")).toContainText("Selected ledger spend (yoctoNEAR)50");
   await page.getByLabel("Through time (integer ns)").fill("1"); await expect(view(page).getByRole("alert")).toContainText("Cannot aggregate");
   await page.getByLabel("From time (integer ns)").fill(""); await page.getByLabel("Through time (integer ns)").fill("");
   await expect(page.getByTestId("cost-per-success")).toHaveText("50");
@@ -92,6 +99,7 @@ test("late imports discarded after clear/replacement; memory-only no writes/netw
     File.prototype.text = function () { if (!first) return original.call(this); first = false; const text = original.call(this);
       return new Promise<string>(resolve => { Object.assign(window, { finishIntelligenceRead: async () => resolve(await text) }); }); };
   });
+  await ensureLocal(page);
   await page.getByLabel("LOCAL outcome observation JSON files").setInputFiles({ name: "first.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(await outcomeFixture())) });
   await expect(view(page).getByRole("status").first()).toContainText("Checking selected records");
   await page.getByRole("button", { name: "Clear intelligence view" }).click(); await importFile(page, await outcomeFixture("SETTLEMENT_FAILED", "VALIDATION_ERROR"));
@@ -128,6 +136,7 @@ test("actual three LOCAL agency bundles aggregate and owner selection changes co
   let m: { runs: { project_id: string; settled_spend: string }[] };
   try { m = JSON.parse(await readFile(".local/projects/latest.json", "utf8")); } catch { test.skip(true, "Actual LOCAL artifacts absent from this checkout"); return; }
   const started = Date.now();
+  await ensureLocal(page);
   await page.getByLabel("LOCAL outcome observation JSON files").setInputFiles(m.runs.map(r => `.local/projects/${r.project_id}/observation.json`));
   const total = m.runs.reduce((sum, r) => sum + BigInt(r.settled_spend), 0n).toString();
   await expect(page.getByTestId("cost-per-success")).toHaveText(total); await expect(view(page)).toContainText("3 selected runs");

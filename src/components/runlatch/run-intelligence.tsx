@@ -70,6 +70,10 @@ function Results({ bundles, from, to }: { bundles: readonly OutcomeObservation[]
   return <div className="intelligence-results">
     <p className="intelligence-sample" role="status">{data.sample_count} selected runs · {data.receipts.length} purchase receipts · {data.excluded.length} excluded from cost cohorts · {data.duplicate_count} duplicate snapshots ignored · {data.filtered_count} outside time range.</p>
     <p>Range: {data.time_range_ns ? `${data.time_range_ns.first}–${data.time_range_ns.last} ns` : "Unavailable — no selected records"}. Finished runs use report-recorded time; unfinished runs use observation time. All amounts below are integer yoctoNEAR, not fiat (10²⁴ yoctoNEAR = 1 NEAR).</p>
+    <section aria-labelledby="ledger-heading"><h2 id="ledger-heading">Project ledger position.</h2><p>Selected capsule totals from the observation snapshots, not necessarily the entire project. These are not limited by the time filter. Ledger claims are not independently proven settlement; exact duplicate snapshots are counted once.</p>
+      {data.ledger ? <><dl className="intelligence-ledger"><div><dt>Selected ledger spend (yoctoNEAR)</dt><dd>{data.ledger.spent}</dd></div><div><dt>Reserved now (yoctoNEAR)</dt><dd>{data.ledger.reserved}</dd></div><div><dt>Committed future (yoctoNEAR)</dt><dd>{data.ledger.committed_future}</dd></div><div><dt>Allocated authority (yoctoNEAR)</dt><dd>{data.ledger.allocated}</dd></div><div><dt>Pending or unverified settlement receipts</dt><dd>{data.ledger.pending_settlement_receipts}<small>Across the selected snapshots, not the time-filtered list. A missing callback is not confirmed failure.</small></dd></div></dl>
+        <p className="fine-print">Source: {data.ledger.observation_count} distinct selected observation{data.ledger.observation_count === 1 ? "" : "s"}, in the source mode selected above. Method: sum canonical-input capsule ledgers after duplicate/conflict checks. Gas, storage credits and owner returns are excluded from spend.</p></> : <p>Not enough data for capsule ledger totals. Missing evidence is unavailable, not zero.</p>}
+    </section>
     <section aria-labelledby="provider-spend-heading"><h2 id="provider-spend-heading">Where the recorded spend went.</h2><p>Matching native transfer and successful private callback records only, including selected unfinished runs. File claims are not independent chain proof. Gas, storage and owner returns are excluded.</p>
       {data.provider_spend.length ? <div className="intelligence-table-wrap" tabIndex={0} role="region" aria-label="Provider spend table"><table><caption>Selected evidenced provider spend · {total} yoctoNEAR</caption><thead><tr><th scope="col">Provider</th><th scope="col">Relative spend</th><th scope="col">Spend (yoctoNEAR)</th></tr></thead><tbody>{data.provider_spend.map(p => <tr key={`${p.contract_id}:${p.provider_id}`}><th scope="row">{p.provider_id}{mixedContracts ? <small> · {p.contract_id}</small> : null}</th><td><div className="provider-bar" aria-hidden="true"><span style={{ width: total === "0" ? "0%" : visualPercent(p.spent, total), ...fillStyle("dotted", { color: "--color-accent", cell: 2 }) }} /></div></td><td className="integer">{p.spent}</td></tr>)}</tbody></table></div> : <p>No matched settled provider spend in this selection. This is not a zero-cost success claim.</p>}
     </section>
@@ -93,8 +97,8 @@ function Results({ bundles, from, to }: { bundles: readonly OutcomeObservation[]
 }
 
 export function RunIntelligence() {
-  const [source, setSource] = useState("local"), [bundles, setBundles] = useState<readonly OutcomeObservation[]>([]), [selected, setSelected] = useState<readonly string[]>([]);
-  const [busy, setBusy] = useState(false), [notice, setNotice] = useState("No files selected. No analytics are loaded."), [error, setError] = useState("");
+  const [source, setSource] = useState(""), [bundles, setBundles] = useState<readonly OutcomeObservation[]>([]), [selected, setSelected] = useState<readonly string[]>([]);
+  const [busy, setBusy] = useState(false), [notice, setNotice] = useState("Choose a sample or import LOCAL records. No analytics are loaded."), [error, setError] = useState("");
   const [from, setFrom] = useState(""), [to, setTo] = useState("");
   const [importVersion, setImportVersion] = useState(0);
   const sequence = useRef(0), fileRef = useRef<HTMLInputElement>(null);
@@ -103,11 +107,11 @@ export function RunIntelligence() {
     sequence.current++; setSource(nextSource); setBundles([]); setSelected([]); setBusy(false); setError(""); setFrom(""); setTo("");
     setNotice("Selection cleared. Contract funds and authority are unchanged."); if (fileRef.current) fileRef.current.value = "";
   }
-  async function load(files?: FileList) {
+  async function load(files?: FileList, kind = source) {
     const operation = ++sequence.current; setBundles([]); setSelected([]); setError(""); setBusy(true); setNotice("Checking selected records…");
     try {
       let imported: readonly OutcomeObservation[];
-      if (source === "illustrative") imported = await illustrativeOutcomes();
+      if (kind === "illustrative") imported = await illustrativeOutcomes();
       else {
         const list = Array.from(files ?? []);
         if (!list.length || list.length > 16 || list.some(f => f.size > 1048576)) throw new Error("OUTCOME_FILE_LIMIT");
@@ -116,7 +120,7 @@ export function RunIntelligence() {
       summarizeOutcomes(imported);
       if (sequence.current !== operation) return;
       setBundles(imported); setSelected(imported.map(b => b.observation.project_id)); setImportVersion(operation);
-      setNotice(source === "illustrative" ? "Illustrative sample loaded. All references and metrics are invented fixtures, not execution evidence." : "Selected LOCAL records loaded into memory. No upload, persistence, network call or signature.");
+      setNotice(kind === "illustrative" ? "Illustrative sample loaded. All references and metrics are invented fixtures, not execution evidence." : "Selected LOCAL records loaded into memory. No upload, persistence, network call or signature.");
     } catch (cause) {
       if (sequence.current !== operation) return;
       const code = cause instanceof Error && /^[A-Z_]{1,64}$/u.test(cause.message) ? cause.message : "FILE_READ_OR_VALIDATION_ERROR";
@@ -127,15 +131,16 @@ export function RunIntelligence() {
   return <div id="run-intelligence" className="run-intelligence">
     <section className="intelligence-source" aria-labelledby="intelligence-source-heading"><h2 id="intelligence-source-heading">Choose the evidence, not a headline.</h2>
       <p>Read-only selected records. No chain oracle, live vendor, signer, upload or public testnet connection. Imported source labels are claims; consistency checks do not authenticate them.</p>
-      <label>Record source<select value={source} onChange={e => reset(e.target.value)}><option value="local">Imported LOCAL Sandbox files</option><option value="illustrative">Illustrative browser fixtures</option></select></label>
-      <div className="intelligence-import">{source === "local" ? <div><label htmlFor="intelligence-files">LOCAL outcome observation JSON files</label><input ref={fileRef} id="intelligence-files" type="file" accept=".json,application/json" multiple onChange={e => { if (e.currentTarget.files?.length) void load(e.currentTarget.files); }} aria-invalid={Boolean(error)} aria-describedby="intelligence-import-help intelligence-import-error" /><p id="intelligence-import-help">Explicitly select .local/projects/&lt;project-id&gt;/observation.json. Up to 16 files, 1 MiB each. Replacement is atomic; nothing is auto-opened, saved or uploaded.</p></div>
-        : <button type="button" className="button button-secondary" onClick={() => void load()}>Load illustrative sample</button>}
+      <label>Record source<select value={source} onChange={e => reset(e.target.value)}><option value="">Choose a data source</option><option value="local">Imported LOCAL Sandbox files</option><option value="illustrative">Illustrative browser fixtures</option></select></label>
+      <div className="intelligence-import">{source === "" ? <div className="intelligence-source-choice"><div><h3>Load a labelled sample</h3><p>One click. Fabricated references and sample metrics, never described as chain or Sandbox evidence.</p><button type="button" className="button button-secondary" onClick={() => { reset("illustrative"); void load(undefined, "illustrative"); }}>Load sample project</button></div><div><h3>Import LOCAL Sandbox observations</h3><p>Use generated <code>.local/projects/&lt;project-id&gt;/observation.json</code> files. Up to 16 files, 1 MiB each.</p><button type="button" className="button button-secondary" onClick={() => reset("local")}>Choose LOCAL files</button></div></div>
+        : source === "local" ? <div><label htmlFor="intelligence-files">LOCAL outcome observation JSON files</label><input ref={fileRef} id="intelligence-files" type="file" accept=".json,application/json" multiple onChange={e => { if (e.currentTarget.files?.length) void load(e.currentTarget.files); }} aria-invalid={Boolean(error)} aria-describedby="intelligence-import-help intelligence-import-error" /><p id="intelligence-import-help">Explicitly select .local/projects/&lt;project-id&gt;/observation.json. Up to 16 files, 1 MiB each. Replacement is atomic; nothing is auto-opened, saved or uploaded.</p></div>
+        : <div><p className="fine-print">Illustrative sample: invented references and metrics. Not a LOCAL Sandbox or public testnet result.</p><button type="button" className="button button-secondary" onClick={() => void load(undefined, "illustrative")}>Load illustrative sample</button></div>}
         <button type="button" className="button button-secondary" onClick={() => reset()} disabled={!bundles.length && !busy && !error}>Clear intelligence view</button></div>
       <p role="status">{notice}</p><p id="intelligence-import-error" role={error ? "alert" : undefined}>{error}</p>
     </section>
     {bundles.length ? <><div className="intelligence-source-label">{source === "illustrative" ? "Illustrative only — fabricated references and sample metrics, not product results." : "Imported LOCAL Sandbox records — not public NEAR testnet or independent chain proof."}</div>
       <fieldset className="intelligence-selection"><legend>Selected project bundles</legend>{bundles.map((b, i) => <label key={`${b.observation.project_id}:${i}`}><input type="checkbox" checked={selected.includes(b.observation.project_id)} onChange={e => setSelected(previous => e.target.checked ? [...previous, b.observation.project_id] : previous.filter(id => id !== b.observation.project_id))} />{b.observation.project_id}</label>)}</fieldset>
       <div className="intelligence-filters"><label>From time (integer ns)<input value={from} maxLength={20} inputMode="numeric" placeholder="No lower bound" onChange={e => setFrom(e.target.value)} /></label><label>Through time (integer ns)<input value={to} maxLength={20} inputMode="numeric" placeholder="No upper bound" onChange={e => setTo(e.target.value)} /></label></div>
-      <div aria-busy={busy}><Results key={importVersion} bundles={chosen} from={from} to={to} /></div></> : <p className="intelligence-empty">Select evidence to see spend, finished-run cost, blocked attempts and receipts. Empty is unavailable, not a fabricated zero.</p>}
+      <div aria-busy={busy}><Results key={importVersion} bundles={chosen} from={from} to={to} /></div></> : <p className="intelligence-empty">{source === "" ? "Choose the labelled sample or import LOCAL records. Empty is unavailable, not a fabricated zero." : "Select evidence to see spend, finished-run cost, blocked attempts and receipts. Empty is unavailable, not a fabricated zero."}</p>}
   </div>;
 }

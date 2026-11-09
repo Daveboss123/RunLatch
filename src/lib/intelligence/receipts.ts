@@ -188,19 +188,31 @@ export function summarizeOutcomes(bundles: readonly OutcomeObservation[], range:
   const from = BigInt(time(range.from)), to = BigInt(time(range.to));
   if (from > to) return fail("INVALID_OUTCOME_RANGE");
   const seen = new Map<string, string>(), runs: RunEvidence[] = [], receipts: OutcomeReceipt[] = [], selected: OutcomeObservation[] = [];
-  let duplicates = 0, filtered = 0;
+  let duplicates = 0, filtered = 0, ledgerCount = 0, pendingSettlements = 0;
+  const ledgerTotals = { allocated: 0n, spent: 0n, reserved: 0n, committed_future: 0n };
   for (const b of bundles) {
-    let include = false;
+    let include = false, unique = false;
     for (const run of b.runs) {
       const identity = JSON.stringify([run.contract_id, run.capsule_id]);
       const canonical = JSON.stringify({ run, receipts: b.receipts.filter(r => r.capsule_id === run.capsule_id), observation: b.observation });
       if (seen.has(identity)) { if (seen.get(identity) !== canonical) return fail("CONFLICTING_OUTCOME_SNAPSHOTS"); duplicates++; continue; }
       seen.set(identity, canonical);
+      unique = true;
+      pendingSettlements += b.receipts.filter(r => r.capsule_id === run.capsule_id
+        && (r.settlement === "SETTLEMENT_PENDING" || r.settlement === "SETTLEMENT_UNVERIFIED")).length;
       const at = BigInt(run.validation?.recorded_at_ns ?? run.observed_at_ns);
       if (at < from || at > to) { filtered++; continue; }
       runs.push(run); receipts.push(...b.receipts.filter(r => r.capsule_id === run.capsule_id)); include = true;
     }
     if (include) selected.push(b);
+    // Ledger position is an observation snapshot, not a time-filtered flow.
+    // Use the same duplicate/conflict checks as receipts before counting it.
+    if (unique && b.observation.report.financials) {
+      ledgerCount++;
+      for (const key of Object.keys(ledgerTotals) as (keyof typeof ledgerTotals)[]) {
+        ledgerTotals[key] += BigInt(b.observation.report.financials[key]);
+      }
+    }
   }
   const costs = analyzeRunCosts(JSON.stringify(runs.flatMap(r => r.cost_fact ? [r.cost_fact] : [])));
   const spend = new Map<string, { contract_id: string; provider_id: string; spent: bigint }>(), blocked = new Map<string, number>(), attempts = new Set<string>();
@@ -220,6 +232,9 @@ export function summarizeOutcomes(bundles: readonly OutcomeObservation[], range:
   amount([...spend.values()].reduce((sum, row) => sum + row.spent, 0n).toString());
   return { source: "DERIVED_SELECTED_INPUT_NOT_INDEPENDENT_CHAIN_PROOF" as const, sample_count: runs.length, duplicate_count: duplicates, filtered_count: filtered,
     time_range_ns: times.length ? { first: times.reduce((a, b) => a < b ? a : b).toString(), last: times.reduce((a, b) => a > b ? a : b).toString() } : null,
+    ledger: ledgerCount ? { observation_count: ledgerCount, pending_settlement_receipts: pendingSettlements,
+      allocated: amount(ledgerTotals.allocated.toString()), spent: amount(ledgerTotals.spent.toString()),
+      reserved: amount(ledgerTotals.reserved.toString()), committed_future: amount(ledgerTotals.committed_future.toString()) } : null,
     receipts, runs, costs, excluded: runs.filter(r => r.exclusion).map(r => ({ capsule_id: r.capsule_id, reason: r.exclusion! })),
     provider_spend: [...spend.values()].map(row => ({ ...row, spent: row.spent.toString() })).sort((a, b) => BigInt(a.spent) > BigInt(b.spent) ? -1 : BigInt(a.spent) < BigInt(b.spent) ? 1 : `${a.contract_id}:${a.provider_id}`.localeCompare(`${b.contract_id}:${b.provider_id}`)),
     blocked_reasons: [...blocked].sort(([a], [b]) => a.localeCompare(b)).map(([reason, count]) => ({ reason, count })),
