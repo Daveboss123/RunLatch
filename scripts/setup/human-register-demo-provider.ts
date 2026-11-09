@@ -9,8 +9,7 @@ import { confirmFreshSetupReview, prepareSetupReview } from "../../src/lib/near/
 import { parsePublicDemoKeys } from "./human-create-demo-parent.ts";
 import { gateAccount } from "./deployment-codec.ts";
 import { parentAccount } from "./child-account-codec.ts";
-import { projectTarget } from "./project-codec.ts";
-import { encodeProviderTransaction, providerAction, providerAnswer, providerDeposit, providerTerms, verifyProviderSignature,
+import { encodeProviderTransaction, providerAction, providerAnswer, providerDeposit, providerTerms, providerTarget, verifyProviderSignature,
   type ProviderTransaction } from "./provider-codec.ts";
 import { providerRpc, inspectProviderExecution } from "./provider-rpc.ts";
 import { admitHumanProviderSigner, signHumanProvider } from "./human-provider-signer.ts";
@@ -38,7 +37,7 @@ export async function prepareProvider(operatorKey: string, gateKey: string, data
   const rpc = providerRpc(transport ?? fetch), state = await rpc.state(operatorKey, gateKey, databaseKey);
   if (state.provider !== null) throw Error("PROVIDER_ALREADY_EXISTS_READBACK_ONLY");
   if (BigInt(state.operator.nonce) >= BigInt(Number.MAX_SAFE_INTEGER)) throw Error("PROVIDER_NONCE_RPC_LIMIT");
-  const setup = await prepareSetupReview(projectTarget, providerAction(operatorKey), { block: state.block, storage: state.storage,
+  const setup = await prepareSetupReview(providerTarget, providerAction(operatorKey), { block: state.block, storage: state.storage,
     signer_access: { nonce: Number(state.operator.nonce), permission: "FullAccess" }, existing_record: state.provider,
     project: null, providers: [], previous_quote: null,
     transport_source: transport ? "INJECTED_TEST_TRANSPORT_NOT_CHAIN_EVIDENCE" : "EXPLICIT_TESTNET_HTTP_READBACK" });
@@ -89,6 +88,7 @@ export async function executeProvider(directory: string, review: ProviderReview,
 async function check(operatorKey: string, gateKey: string, databaseKey: string) {
   const rpc = providerRpc(fetch), state = await rpc.state(operatorKey, gateKey, databaseKey);
   console.log(JSON.stringify({ status: "PROVIDER_READ_ONLY_STATE", contract_id: gateAccount, operator_id: parentAccount,
+    rpc_url: providerTarget.rpc_url,
     operator_public_key: operatorKey, operator_nonce: state.operator.nonce, gate_code_hash: state.gate.state.code_hash,
     project: state.project, provider: state.provider, database: state.database, block_hash: state.block.hash, block_height: state.block.height,
     limitation: "Read-only current state; no creation/signing consent. Existing identity is checked below, never resumed." }));
@@ -119,6 +119,7 @@ async function main() {
   catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
   const review = await prepareProvider(operator.public_key, gate.public_key, db.public_key);
   console.log(JSON.stringify({ ...review, signer: "LOCAL_NODE_WINDOWS_CREDENTIAL_MANAGER_OPERATOR_ONLY", immutable_provider: providerTerms,
+    rpc_selection: "EXPLICIT_NEAR_DOCUMENTED_PUBLIC_FASTNEAR_TESTNET_NO_FALLBACK_NO_PAID_CALL",
     disclosure: "ONE register_provider,50Tgas,0.04096NEAR storage to existing Gate. Project ACTIVE revision1 allocated0. No database payment/quote/capsule/key/purchase/provisioning/check/acceptance, redeployment or cloud push. DB key is public readback only, never read by signer." }, null, 2));
   const terminal = createInterface({ input: process.stdin, output: process.stdout }); let answer: string;
   try { answer = await terminal.question(`Type ${providerAnswer} to approve exactly this one transaction: `); } finally { terminal.close(); }

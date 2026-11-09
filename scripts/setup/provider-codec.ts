@@ -3,14 +3,17 @@ import { createHash, createPublicKey, verify } from "node:crypto";
 import { object, parseBoundedJson, parseProvider, time } from "../../src/lib/near/records.ts";
 import { canonicalReviewContent } from "../../src/lib/near/review-content.ts";
 import { parseSetupAction } from "../../src/lib/near/setup-review.ts";
+import { parseTestnetTarget } from "../../src/lib/near/testnet-target.ts";
 import { decodeBase58_32, encodeBase58_32 } from "../near/base58.ts";
 import { checkedPublicKey, parentAccount } from "./child-account-codec.ts";
 import { gateAccount } from "./deployment-codec.ts";
-import { checkedDemoProject } from "./project-codec.ts";
+import { checkedDemoProject, projectTarget } from "./project-codec.ts";
 
 export const providerTerms = Object.freeze({ provider_id: "db_demo_1108", publisher_id: "db.runlatch-demo-1108.testnet",
   recipient_id: "db.runlatch-demo-1108.testnet" });
 export const providerGas = "50000000000000", providerDeposit = "40960000000000000000000";
+/** Explicit existing allowlisted public RPC; never a runtime fallback after an uncertain send. */
+export const providerTarget = parseTestnetTarget({ ...projectTarget, rpc_url: "https://test.rpc.fastnear.com/" });
 export const providerAnswer = `REGISTER PROVIDER ${providerTerms.provider_id} ON ${gateAccount} USING LOCAL NODE SIGNER`;
 /** The already-created project is a prerequisite, not an argument or mutation of registration. */
 export function checkedProviderProject(value: unknown, now: string) {

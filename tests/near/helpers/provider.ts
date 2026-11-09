@@ -43,7 +43,7 @@ export function providerFixture() {
   }
   const requests: { method: string; params: Record<string, unknown> }[] = [];
   const transport = async (url: string, input: RequestInit) => {
-    if (url !== "https://rpc.testnet.near.org/" || input.redirect !== "error" || input.credentials !== "omit") throw Error("UNEXPECTED_TRANSPORT");
+    if (url !== "https://test.rpc.fastnear.com/" || input.redirect !== "error" || input.credentials !== "omit") throw Error("UNEXPECTED_TRANSPORT");
     const request = JSON.parse(String(input.body)); requests.push(request); let result: unknown;
     if (request.method === "status") result = { chain_id: state.mainnet ? "mainnet" : "testnet", sync_info: { syncing: state.syncing } };
     else if (request.method === "block") result = { header: { hash, height: 1000, timestamp_nanosec: state.now } };

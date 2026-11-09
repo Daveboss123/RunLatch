@@ -1,4 +1,4 @@
-/** Fixed database registration views and one-send; reuses the existing Gate/project preflight. */
+/** Fixed database registration views and one-send; exact Gate/project checks, no RPC fallback. */
 import { amount, count, object, parseBoundedJson, time } from "../../src/lib/near/records.ts";
 import { canonicalReviewContent } from "../../src/lib/near/review-content.ts";
 import { decodeBase58_32 } from "../near/base58.ts";
@@ -6,7 +6,7 @@ import { checkedPublicKey, parentAccount } from "./child-account-codec.ts";
 import { deploymentArtifact, gateAccount } from "./deployment-codec.ts";
 import { projectDeposit, projectIds } from "./project-codec.ts";
 import { checkedDatabaseProvider, checkedProviderProject, encodeProviderTransaction, parseProviderTransaction,
-  providerDeposit, providerGas, providerTerms, verifyProviderSignature } from "./provider-codec.ts";
+  providerDeposit, providerGas, providerTerms, providerTarget, verifyProviderSignature } from "./provider-codec.ts";
 import type { ChildTransport } from "./child-account-rpc.ts";
 type Block = { hash: string; height: number; timestamp_ns: string };
 
@@ -17,7 +17,7 @@ export function providerRpc(transport: ChildTransport) {
     const requestId = `runlatch-provider-${id}`, signal = AbortSignal.timeout(20000);
     const body = JSON.stringify({ jsonrpc: "2.0", id: requestId, method, params });
     if (Buffer.byteLength(body) > 8192) throw Error("PROVIDER_RPC_LIMIT");
-    const response = await transport("https://rpc.testnet.near.org/", { method: "POST", body, headers: { "Content-Type": "application/json" },
+    const response = await transport(providerTarget.rpc_url, { method: "POST", body, headers: { "Content-Type": "application/json" },
       redirect: "error", credentials: "omit", cache: "no-store", signal });
     if (!response.ok) throw Error(`PROVIDER_RPC_HTTP_${response.status}`);
     if (!response.body) throw Error("PROVIDER_RPC_UNAVAILABLE");

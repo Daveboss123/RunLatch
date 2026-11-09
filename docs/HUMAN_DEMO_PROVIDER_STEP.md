@@ -1,12 +1,12 @@
 # Register the database provider — human-terminal step
 
-**Locally prepared, not executed.** The parent/children, Gate deployment/init and project creation are already completed. Do not repeat them or remove their permanent markers. This new helper registers one immutable controlled provider; it is not a purchase or a complete Working testnet MVP.
+**Locally prepared and fresh unsigned readback verified, not executed.** The parent/children, Gate deployment/init and project creation are already completed. Do not repeat them or remove their permanent markers. This new helper registers one immutable controlled provider; it is not a purchase or a complete Working testnet MVP.
 
 ## Exact scope
 
 | Field | Bound value |
 | --- | --- |
-| Network / RPC | NEAR testnet / `https://rpc.testnet.near.org/` |
+| Network / RPC | NEAR testnet / **explicit `https://test.rpc.fastnear.com/`** |
 | Signer | `runlatch-demo-1108.testnet` |
 | Public key | `ed25519:4WJHM7chT6geyrN23fRR3sSLJhRaXmRaEjcaZvpUrXuL` |
 | Receiver | `gate.runlatch-demo-1108.testnet` |
@@ -28,9 +28,13 @@ Exact arguments:
 
 The existing project is a separately checked prerequisite, **not** a `register_provider` argument: `project_demo_1108`, owner operator, ACTIVE revision1, allocation0, no capsules, ceiling0.30 NEAR, expiry`1794335720864706128`, original criteria and creation timestamps. Registration does not change it. The wrapper stops if that exact authority is stale/expired/changed. Global provider count has no enumerable contract view; Rust checks the quota at execution, not a fabricated preflight count.
 
-## Current read-only limitation
+## RPC selection and fresh readback
 
-The first public `--check` succeeded and observed the expected keys/code/project, provider absent and the DB account still holding0.30 NEAR. Subsequent initial-plus-fresh unsigned preparations hit RPC HTTP429. **Fresh public signing-handoff readiness is not yet verified. Do not run the signing command until that read-only blocker is resolved and recorded.** No signer, credential reader, broadcast or real provider-attempt directory was invoked by the agent.
+The original NEAR-hosted RPC state checks succeeded, but complete initial-plus-fresh unsigned preparations hit HTTP429. Those failures remain in BUILD_LOG.md; no checks were removed and no timeout or retry rule was relaxed.
+
+The new, unexecuted provider helper now explicitly uses **FastNEAR's free public testnet RPC**, already admitted by the existing RunLatch target allowlist and listed in [NEAR's current official RPC reference](https://docs.near.org/api/rpc/providers). The exact review binds and displays this endpoint. It is **not** an automatic fallback, RPC rotation, paid API, credential-bearing URL, mainnet switch, changed contract or changed signing account. Old project/deployment/account helpers and any consumed transaction identity remain unchanged.
+
+Fresh unsigned initial+recheck on the fixed endpoint passed:3072ms initial,1677ms fresh,4749ms total, unchanged project/DB/key/account/fees and the existing shared exact-content confirmation with signing still disabled. This is one observed public-read sample, not a promised latency, permanent rate-limit repair or a signature/registration. Any later RPC failure still stops without retry/fallback. The endpoint's free limit is not numerically published; future historical lookup can be unavailable/pruned and must remain unresolved rather than silently use another node.
 
 For a public state check only, in your own PowerShell:
 
@@ -41,7 +45,7 @@ node scripts/setup/human-register-demo-provider.ts --check
 
 `--check` is always read-only. An HTTP429, timeout or unavailable record is not absence, failure proof or signing consent. Do not hammer the RPC, switch signing accounts/endpoints, or relax freshness to make it proceed.
 
-## Exact signing command, once readiness is verified
+## Exact signing command — run in your own terminal
 
 ```powershell
 Set-Location 'C:\Users\David\RunLatch'
@@ -75,3 +79,5 @@ node scripts/setup/human-register-demo-provider.ts --check
 31 focused generated-key/synthetic-RPC tests cover fixed terms, actual setup-review reuse, nonTTY/store refusal, safe imports, project/DB/key/storage/fee/funding/expiry changes, advancing final blocks, conservative initial-read deadline, HTTP429/no retry, exclusive concurrent claims, intent-before-sign/entry-before-send, exact signature/wire, uncertain/failed/malformed graphs and post-send DB changes. Five offline Rust codec tests cover four new provider V0 wire/hash vectors and one ephemeral signature plus unchanged project/deployment/child/restricted-agent parity. No real human key, Sandbox startup, public signature or registration is part of those tests.
 
 The new provider RPC reads the same fixed Gate/project checks in one same-final-block preflight, batching up to six independent queries. There is no duplicated whole preflight or broader view dispatcher. Requests/streams are bounded; errors are sanitized; `FINAL` requires the full successful operator→Gate→operator-refund outcome graph. Public RPC proof is not a light client, security audit, provider delivery guarantee or completed purchase. Exact commands, counts and observed public failures are in BUILD_LOG.md.
+
+After the explicit RPC selection,31 provider cases remain included in241near/196frontend/115backend passing Node tests, with type/root+setup lint and5offline Rust parity/Clippy/format passing. A parallel QA run hit one existing restricted-runner timing failure before invocation; the unchanged16-case file and isolated full rerun pass. The failure is retained, not a permanent timing fix or a removed adverse test. No agent real-key/store/sign/send was used.

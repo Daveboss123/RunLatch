@@ -24,6 +24,7 @@ test("human provider nonTTY entry/approval/import never accesses store/network",
 test("provider uses actual setup review, exact storage/immutable identity and unfunded project", async () => {
   const f = providerFixture(), r = await prepareProvider(f.publicKey, f.gateKey, f.databaseKey, f.transport);
   assert.equal(r.setup.transport_source, "INJECTED_TEST_TRANSPORT_NOT_CHAIN_EVIDENCE"); assert.equal(r.setup.signing_enabled, false);
+  assert.equal(r.setup.target.rpc_url, "https://test.rpc.fastnear.com/");
   assert.deepEqual(r.transaction.args, providerTerms); assert.equal(r.transaction.deposit, providerDeposit);
   assert.equal(r.setup.funding.purchase_funding, "0"); assert.equal(r.project.allocated_authority, "0");
   assert.equal(r.project.input.expires_at_ns, "1794335720864706128"); assert.equal(f.state.sends, 0); assert.equal(f.state.signatures, 0);
@@ -142,13 +143,15 @@ test("initial read time is included in the 60-second wall deadline, not renewed 
   assert.equal(f.state.sends, 0); assert.equal(f.state.signatures, 0);
 });
 test("provider supplementary HTTP failures are sanitized and never retried", async () => {
-  const f = providerFixture(); let failures = 0;
+  const f = providerFixture(); let failures = 0; const endpoints = new Set<string>();
   await assert.rejects(prepareProvider(f.publicKey, f.gateKey, f.databaseKey, async (url, input) => {
+    endpoints.add(url);
     const request = JSON.parse(String(input.body));
     if (request.method === "EXPERIMENTAL_protocol_config") { failures++; return new Response("UNTRUSTED_BODY_NOT_LOGGED", { status: 429 }); }
     return f.transport(url, input);
   }), /PROVIDER_RPC_HTTP_429/u);
   assert.equal(failures, 1); assert.equal(f.state.signatures, 0); assert.equal(f.state.sends, 0);
+  assert.deepEqual([...endpoints], ["https://test.rpc.fastnear.com/"]);
 });
 test("same semantic account/project/database state on an advancing final block stays comparable", async () => {
   const f = providerFixture(); let height = 1000;
