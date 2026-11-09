@@ -9,6 +9,19 @@ import { checkedDatabaseProvider, checkedProviderProject, encodeProviderTransact
   providerDeposit, providerGas, providerTerms, providerTarget, verifyProviderSignature } from "./provider-codec.ts";
 import type { ChildTransport } from "./child-account-rpc.ts";
 type Block = { hash: string; height: number; timestamp_ns: string };
+function transportReason(error: unknown) {
+  // Only fixed native error codes are public. Never print URLs, bodies, stacks or arbitrary messages.
+  const allowed = new Set(["ECONNRESET", "ENOTFOUND", "ETIMEDOUT", "ECONNREFUSED", "UND_ERR_CONNECT_TIMEOUT", "UND_ERR_SOCKET",
+    "CERT_HAS_EXPIRED", "UNABLE_TO_VERIFY_LEAF_SIGNATURE"]);
+  if (error instanceof Error) {
+    const cause = Object.getOwnPropertyDescriptor(error, "cause")?.value;
+    const source = cause && typeof cause === "object" ? cause : error;
+    const code: unknown = Object.getOwnPropertyDescriptor(source, "code")?.value;
+    if (typeof code === "string" && allowed.has(code)) return code;
+    if (error.name === "AbortError" || error.name === "TimeoutError") return "TIMEOUT";
+  }
+  return "UNAVAILABLE";
+}
 
 export function providerRpc(transport: ChildTransport) {
   let id = 0, sent = false;
@@ -17,8 +30,11 @@ export function providerRpc(transport: ChildTransport) {
     const requestId = `runlatch-provider-${id}`, signal = AbortSignal.timeout(20000);
     const body = JSON.stringify({ jsonrpc: "2.0", id: requestId, method, params });
     if (Buffer.byteLength(body) > 8192) throw Error("PROVIDER_RPC_LIMIT");
-    const response = await transport(providerTarget.rpc_url, { method: "POST", body, headers: { "Content-Type": "application/json" },
-      redirect: "error", credentials: "omit", cache: "no-store", signal });
+    let response: Response;
+    try {
+      response = await transport(providerTarget.rpc_url, { method: "POST", body, headers: { "Content-Type": "application/json" },
+        redirect: "error", credentials: "omit", cache: "no-store", signal });
+    } catch (error) { throw Error(`PROVIDER_RPC_TRANSPORT_${transportReason(error)}`); }
     if (!response.ok) throw Error(`PROVIDER_RPC_HTTP_${response.status}`);
     if (!response.body) throw Error("PROVIDER_RPC_UNAVAILABLE");
     const reader = response.body.getReader(), chunks: Uint8Array[] = []; let size = 0;
@@ -29,6 +45,9 @@ export function providerRpc(transport: ChildTransport) {
         const next = await reader.read(); if (next.done) break;
         size += next.value.length; if (size > 65536) throw Error("PROVIDER_RPC_LIMIT"); chunks.push(next.value);
       }
+    } catch (error) {
+      if (error instanceof Error && ["PROVIDER_RPC_UNAVAILABLE", "PROVIDER_RPC_LIMIT"].includes(error.message)) throw error;
+      throw Error("PROVIDER_RPC_RESPONSE_READ_FAILED");
     } finally { signal.removeEventListener("abort", abort); await reader.cancel().catch(() => undefined); reader.releaseLock(); }
     if (signal.aborted) throw Error("PROVIDER_RPC_UNAVAILABLE");
     const reply = object(parseBoundedJson(new TextDecoder("utf-8", { fatal: true }).decode(Buffer.concat(chunks)), 65536));

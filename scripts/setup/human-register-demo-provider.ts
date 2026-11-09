@@ -18,6 +18,7 @@ import type { ChildTransport } from "./child-account-rpc.ts";
 const root = fileURLToPath(new URL("../../", import.meta.url)), local = join(root, ".local", "human-key-setup");
 const attemptDirectory = join(local, "provider-attempt"), feeCushion = 30000000000000000000000n;
 const issued = new WeakSet<object>();
+let entryPhase = "LOCAL_PREFLIGHT";
 async function safeDirectory(path: string) {
   const meta = await lstat(path); if (!meta.isDirectory() || meta.isSymbolicLink()) throw Error("PROVIDER_DIRECTORY_UNSAFE");
 }
@@ -58,6 +59,18 @@ export async function prepareProvider(operatorKey: string, gateKey: string, data
   issued.add(review); return review;
 }
 export type ProviderReview = Awaited<ReturnType<typeof prepareProvider>>;
+/** Read-only full preparation/serialization check. No signer, approval token, journal or send. */
+export async function unsignedProviderPreflight(operatorKey: string, gateKey: string, databaseKey: string, transport?: ChildTransport) {
+  const review = await prepareProvider(operatorKey, gateKey, databaseKey, transport);
+  const reviewBytes = Buffer.byteLength(JSON.stringify(review));
+  return { status: "PROVIDER_UNSIGNED_PREFLIGHT_OK", rpc_url: review.setup.target.rpc_url,
+    operator_id: parentAccount, contract_id: gateAccount, operator_nonce: review.setup.signer_access.nonce,
+    provider_id: providerTerms.provider_id, provider_registered: false, project: review.project,
+    reviewed_block: review.setup.reviewed_block, review_bytes: reviewBytes, method: review.transaction.method,
+    attached_deposit: review.transaction.deposit, gas: review.transaction.gas,
+    signing_enabled: false, send_enabled: false, attempt_created: false,
+    limitation: "Unsigned state/fees/public serialization only; no signature, transaction, provider registration or reusable signing consent." };
+}
 /** Trusted injected test signer only; real entry selects the fixed human operator signer. */
 export async function executeProvider(directory: string, review: ProviderReview, signer: (tx: ProviderTransaction) => Uint8Array,
   transport: ChildTransport | undefined, report: (value: unknown) => void) {
@@ -106,30 +119,36 @@ async function check(operatorKey: string, gateKey: string, databaseKey: string) 
   } catch { console.log(JSON.stringify({ status: "PROVIDER_EXECUTION_UNRESOLVED", transaction_hash: encoded.transaction_hash, rule: "READBACK_ONLY_NO_RETRY" })); }
 }
 async function main() {
-  const args = process.argv.slice(2), checkOnly = args.length === 1 && args[0] === "--check";
-  if (args.length && !checkOnly) throw Error("PROVIDER_ARGUMENTS_INVALID");
-  if (!checkOnly && (!process.stdin.isTTY || !process.stdout.isTTY)) throw Error("HUMAN_TERMINAL_REQUIRED");
+  const args = process.argv.slice(2), checkOnly = args.length === 1 && args[0] === "--check", preflightOnly = args.length === 1 && args[0] === "--preflight";
+  if (args.length && !checkOnly && !preflightOnly) throw Error("PROVIDER_ARGUMENTS_INVALID");
+  if (!checkOnly && !preflightOnly && (!process.stdin.isTTY || !process.stdout.isTTY)) throw Error("HUMAN_TERMINAL_REQUIRED");
   await safeDirectory(join(root, ".local")); await safeDirectory(local);
   const keys = parsePublicDemoKeys(await publicJson(join(local, "public-demo-keys.json")));
   const operator = keys.find(v => v.role === "operator")!, gate = keys.find(v => v.role === "contract")!, db = keys.find(v => v.role === "provider")!;
   if (operator.public_key !== "ed25519:4WJHM7chT6geyrN23fRR3sSLJhRaXmRaEjcaZvpUrXuL" || gate.public_key !== "ed25519:9mjERcGtp9pc2oqxZo8zKMrbKa44wuU47KrCquKTbraB"
     || db.public_key !== "ed25519:3WYYFFAVric9chaHHF5ed8gFSqBE2DppAtGPrxvx7YXN") throw Error("PROVIDER_PUBLIC_BINDINGS_CHANGED");
-  if (checkOnly) { await check(operator.public_key, gate.public_key, db.public_key); return; }
+  if (checkOnly) { entryPhase = "READ_ONLY_CHECK"; await check(operator.public_key, gate.public_key, db.public_key); return; }
   try { await lstat(attemptDirectory); throw Error("PROVIDER_EXISTING_ATTEMPT_READBACK_ONLY"); }
   catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+  entryPhase = "UNSIGNED_STATE_AND_FEE_READ";
+  if (preflightOnly) { console.log(JSON.stringify(await unsignedProviderPreflight(operator.public_key, gate.public_key, db.public_key))); return; }
   const review = await prepareProvider(operator.public_key, gate.public_key, db.public_key);
+  entryPhase = "PUBLIC_REVIEW_DISPLAY";
   console.log(JSON.stringify({ ...review, signer: "LOCAL_NODE_WINDOWS_CREDENTIAL_MANAGER_OPERATOR_ONLY", immutable_provider: providerTerms,
     rpc_selection: "EXPLICIT_NEAR_DOCUMENTED_PUBLIC_FASTNEAR_TESTNET_NO_FALLBACK_NO_PAID_CALL",
     disclosure: "ONE register_provider,50Tgas,0.04096NEAR storage to existing Gate. Project ACTIVE revision1 allocated0. No database payment/quote/capsule/key/purchase/provisioning/check/acceptance, redeployment or cloud push. DB key is public readback only, never read by signer." }, null, 2));
+  entryPhase = "HUMAN_REVIEW_PROMPT";
   const terminal = createInterface({ input: process.stdin, output: process.stdout }); let answer: string;
   try { answer = await terminal.question(`Type ${providerAnswer} to approve exactly this one transaction: `); } finally { terminal.close(); }
   if (answer !== providerAnswer) { console.log("CANCELLED_NO_SIGNATURE_OR_SEND"); return; }
+  entryPhase = "HUMAN_APPROVAL_AND_EXCLUSIVE_CLAIM";
   const permission = admitHumanProviderSigner(review.transaction, answer); await mkdir(attemptDirectory);
+  entryPhase = "CLAIMED_EXECUTION_CHECK_EXISTING_PUBLIC_MARKERS";
   await executeProvider(attemptDirectory, review, tx => signHumanProvider(tx, permission).signed_bytes, undefined, v => console.log(JSON.stringify(v)));
 }
 if (process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1])) {
   main().catch((error: unknown) => {
     const reason = error instanceof Error && /^[A-Z][A-Z0-9_]{1,80}$/u.test(error.message) ? error.message : "LOCAL_OR_RPC_FAILURE";
-    console.error(`PROVIDER_STOPPED ${reason}: retain identities/markers; --check only. No re-sign/resend/new provider/key fallback.`); process.exitCode = 1;
+    console.error(`PROVIDER_STOPPED ${reason} phase=${entryPhase}: retain identities/markers; --check only. No re-sign/resend/new provider/key fallback.`); process.exitCode = 1;
   });
 }

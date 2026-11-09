@@ -2,6 +2,8 @@
 
 **Locally prepared and fresh unsigned readback verified, not executed.** The parent/children, Gate deployment/init and project creation are already completed. Do not repeat them or remove their permanent markers. This new helper registers one immutable controlled provider; it is not a purchase or a complete Working testnet MVP.
 
+**Latest human-terminal result:** the default command stopped with `LOCAL_OR_RPC_FAILURE`. No provider-attempt directory exists; independent readback finds unchanged operator nonce and provider absent. Under the tested helper's journal-before-sign ordering, it did not reach signing. The cause of that human-terminal error is not identified. **Do not repeat default execution yet.** Use the new read-only diagnostic below; it checks state, fees and public review serialization without creating approval tokens/attempt records or accessing the signer.
+
 ## Exact scope
 
 | Field | Bound value |
@@ -45,7 +47,18 @@ node scripts/setup/human-register-demo-provider.ts --check
 
 `--check` is always read-only. An HTTP429, timeout or unavailable record is not absence, failure proof or signing consent. Do not hammer the RPC, switch signing accounts/endpoints, or relax freshness to make it proceed.
 
-## Exact signing command — run in your own terminal
+## Diagnose the stopped command — read-only
+
+```powershell
+Set-Location 'C:\Users\David\RunLatch'
+node scripts/setup/human-register-demo-provider.ts --preflight
+```
+
+Paste only its public `PROVIDER_UNSIGNED_PREFLIGHT_OK` JSON or the sanitized `PROVIDER_STOPPED ... phase=...` line. It does not prompt for approval, read a credential, sign, broadcast or create an attempt marker. It refuses if an existing attempt directory is present; only `--check` is supported for that case. Native connection errors now show only known error codes; unknown causes/messages/URLs/stacks/bodies stay redacted. No retries or RPC fallback were added.
+
+The same diagnostic passes in the agent's read-only environment, including fee/state/serialization checks. That does not prove the original human-terminal cause is fixed or grant signing consent. Resolve the human diagnostic before the default signing step below.
+
+## Exact signing command — on hold pending the human diagnostic
 
 ```powershell
 Set-Location 'C:\Users\David\RunLatch'
@@ -81,3 +94,5 @@ node scripts/setup/human-register-demo-provider.ts --check
 The new provider RPC reads the same fixed Gate/project checks in one same-final-block preflight, batching up to six independent queries. There is no duplicated whole preflight or broader view dispatcher. Requests/streams are bounded; errors are sanitized; `FINAL` requires the full successful operator→Gate→operator-refund outcome graph. Public RPC proof is not a light client, security audit, provider delivery guarantee or completed purchase. Exact commands, counts and observed public failures are in BUILD_LOG.md.
 
 After the explicit RPC selection,31 provider cases remain included in241near/196frontend/115backend passing Node tests, with type/root+setup lint and5offline Rust parity/Clippy/format passing. A parallel QA run hit one existing restricted-runner timing failure before invocation; the unchanged16-case file and isolated full rerun pass. The failure is retained, not a permanent timing fix or a removed adverse test. No agent real-key/store/sign/send was used.
+
+The diagnostic extension adds three cases for unsigned preflight/no-signing/no-send/serialization, whitelisted native transport errors and redacted stream failures. Final34 provider cases are included in244near/196frontend/115backend/type/lint passing tests;5offline Rust codec/Clippy/format pass. No source authority, retry policy, old helper, dependency, contract or deployed artifact changed.

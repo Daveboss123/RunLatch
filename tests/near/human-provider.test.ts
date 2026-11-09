@@ -6,7 +6,7 @@ import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { prepareProvider, executeProvider, writeProviderRecord } from "../../scripts/setup/human-register-demo-provider.ts";
+import { prepareProvider, executeProvider, writeProviderRecord, unsignedProviderPreflight } from "../../scripts/setup/human-register-demo-provider.ts";
 import { encodeProviderTransaction, providerDeposit, providerTerms, verifyProviderSignature } from "../../scripts/setup/provider-codec.ts";
 import { admitHumanProviderSigner, signHumanProvider } from "../../scripts/setup/human-provider-signer.ts";
 import { providerRpc, inspectProviderExecution } from "../../scripts/setup/provider-rpc.ts";
@@ -175,4 +175,29 @@ test("post-execution database change cannot masquerade as registration-only proo
   }, () => undefined), /FINAL_STATE_UNPROVEN/u);
   await readFile(join(dir, "entered.json")); await assert.rejects(readFile(join(dir, "verified.json")), { code: "ENOENT" });
   assert.equal(f.state.sends, 1);
+});
+test("read-only full preflight checks serialization/fees but never signs/sends or creates attempt records", async () => {
+  const f = providerFixture(), result = await unsignedProviderPreflight(f.publicKey, f.gateKey, f.databaseKey, f.transport);
+  assert.equal(result.status, "PROVIDER_UNSIGNED_PREFLIGHT_OK"); assert.equal(result.method, "register_provider");
+  assert.equal(result.signing_enabled, false); assert.equal(result.send_enabled, false); assert.equal(result.attempt_created, false);
+  assert.equal(result.provider_registered, false); assert.equal(result.attached_deposit, providerDeposit);
+  assert.ok(result.review_bytes > 0 && result.review_bytes < 16384);
+  assert.equal(f.state.signatures, 0); assert.equal(f.state.sends, 0);
+  assert.ok(f.requests.some(v => v.method === "gas_price")); assert.ok(f.requests.some(v => v.method === "EXPERIMENTAL_protocol_config"));
+});
+test("native transport errors expose only whitelisted codes, not raw messages, URLs or secret-like causes", async () => {
+  for (const code of ["ECONNRESET", "PRIVATE_DETAIL_NOT_FOR_LOGS"]) {
+    const f = providerFixture(); let calls = 0;
+    await assert.rejects(unsignedProviderPreflight(f.publicKey, f.gateKey, f.databaseKey, async () => {
+      calls++; throw new TypeError("UNTRUSTED_MESSAGE_WITH_PRIVATE_CONTEXT", { cause: { code, private_data: "NEVER_PRINT" } });
+    }), code === "ECONNRESET" ? /PROVIDER_RPC_TRANSPORT_ECONNRESET/u : /PROVIDER_RPC_TRANSPORT_UNAVAILABLE/u);
+    assert.equal(calls, 1); assert.equal(f.state.signatures, 0); assert.equal(f.state.sends, 0);
+  }
+});
+test("stream read failures are sanitized, with no preflight success or automatic retry", async () => {
+  const f = providerFixture(); let calls = 0;
+  await assert.rejects(unsignedProviderPreflight(f.publicKey, f.gateKey, f.databaseKey, async () => {
+    calls++; return new Response(new ReadableStream({ start(controller) { controller.error(Error("UNTRUSTED_STREAM_CONTEXT")); } }));
+  }), /PROVIDER_RPC_RESPONSE_READ_FAILED/u);
+  assert.equal(calls, 1); assert.equal(f.state.signatures, 0); assert.equal(f.state.sends, 0);
 });
