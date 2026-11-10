@@ -91,6 +91,24 @@ test("explicit injected wallet signs only a fresh exact reviewed testnet Functio
   expect(await page.evaluate(() => ({ local: localStorage.length, session: sessionStorage.length }))).toEqual({ local: 0, session: 0 });
 });
 
+test("a connected wrong account cannot enable human consent or a signing prompt", async ({ page }) => {
+  const f = setupFixture();
+  await page.addInitScript(publicKey => {
+    const wallet = { manifest: { id: "wrong-account-wallet", name: "Wrong account wallet", type: "injected", features: {
+      testnet: true, signInWithoutAddKey: true, signAndSendTransaction: true } },
+      async signIn() { return [{ accountId: "different.testnet", publicKey }]; }, async signOut() {},
+      async getAccounts() { return [{ accountId: "different.testnet", publicKey }]; },
+      async signAndSendTransaction() { throw Error("SIGNING_MUST_NOT_BE_INVOKED"); } };
+    window.addEventListener("near-selector-ready", () => window.dispatchEvent(new CustomEvent("near-wallet-injected", { detail: wallet })));
+  }, f.actions.project.public_key);
+  await page.reload(); await intercept(page, setupTransport(f).transport);
+  await page.getByRole("button", { name: "Connect browser wallet" }).click(); await page.getByRole("button", { name: "Use Wrong account wallet" }).click();
+  await setupFields(page); await page.getByRole("button", { name: "Read and prepare unsigned review" }).click();
+  await expect(page.getByRole("checkbox", { name: "I reviewed this exact action" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Sign exact reviewed action" })).toBeDisabled();
+  await expect(view(page)).toContainText("connected account and public key do not match this review");
+});
+
 test("Meteor extension connects from the primary button without browser key creation or storage", async ({ page }) => {
   const f = setupFixture();
   // This adapter serializes native bytes; the other shared fixtures use

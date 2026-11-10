@@ -42,7 +42,7 @@ npm.cmd run lint
 
 Ignored captures/logs stay in the isolated QA source, not public evidence. At the 8 November milestone the port-3000 preview intentionally remained the prior build and the isolated loopback preview was `http://127.0.0.1:3001/testnet`. That build-isolation rule no longer applies: section 80 rebuilt the root project because the human authorized the connected owner application. A synthetic screenshot is still never a public run.
 
-**10 November wallet/helper continuation:** `meteor-wallet.ts` adds no-key extension-v2 login and exact browser serialization; `human-demo-operation.ts` adds the fixed own-terminal path for existing Credential Manager accounts. Final local unit totals are215/215 frontend,288/288 near and115/115 backend; independent locked-offline Rust checks12 operation wire vectors/4 ephemeral signatures; type/lint/build/parity and107/107 Chromium pass. A real Meteor extension approval remains human verification. No on-chain Project/Capsule/quote/key is created by these tests.
+**10 November wallet/helper continuation:** `meteor-wallet.ts` adds no-key extension-v2 login and exact browser serialization; `human-demo-operation.ts` adds the fixed own-terminal path for existing Credential Manager accounts. Final local unit totals are215/215 frontend,288/288 near and115/115 backend; independent locked-offline Rust checks12 operation wire vectors/4 ephemeral signatures; type/lint/build/parity and108/108 Chromium pass. Wrong wallet-account/key matches disable both consent and prompt controls. A real Meteor extension approval remains human verification. No on-chain Project/Capsule/quote/key is created by these tests.
 
 ## Genuine remaining blocker (8 November, historical)
 
