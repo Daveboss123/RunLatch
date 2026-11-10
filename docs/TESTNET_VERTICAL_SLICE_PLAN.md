@@ -1,5 +1,7 @@
 # Testnet vertical slice — exact remaining plan and approval gate
 
+> **10 November superseding checkpoint:** `project_demo_1108` is still stored ACTIVE but its immutable expiry has passed; allocation0/no Capsules/no purchase. Do not revive it or repeat its creation. A new unsigned `project_demo_1110` work order, `capsule_demo_1110` and `db_quote_demo_1110` are prepared, not created. Remaining order is **new Project → Capsule → quote → restricted AddKey → one reviewed agent purchase → callback/evidence/check/acceptance/receipt**. [Exact human commands, deposits, expiries and stop rules](HUMAN_DEMO_OPERATION_STEPS.md). Older rows below are historical, not current signing instructions.
+
 **Status: 9 November 2026. Public testnet is partially set up: Gate, project and immutable database-provider registration are observed; no capsule, quote, restricted key, purchase, callback, provisioning, task check, human acceptance or report exists on testnet.** This page consolidates the exact remaining sequence. It is a plan and a list of approval gates, not execution consent and not evidence of a completed purchase.
 
 Read with [DEMO_ACCOUNT_PACKAGE.md](DEMO_ACCOUNT_PACKAGE.md), [HUMAN_DEMO_PROVIDER_STEP.md](HUMAN_DEMO_PROVIDER_STEP.md), [WORKING_TESTNET_MVP_PLAN.md](WORKING_TESTNET_MVP_PLAN.md), [RESTRICTED_TESTNET_RUNNER.md](RESTRICTED_TESTNET_RUNNER.md) and [CONNECTED_FIXTURE_WORKFLOW.md](CONNECTED_FIXTURE_WORKFLOW.md).

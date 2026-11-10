@@ -11,6 +11,6 @@ else
     export RUNLATCH_NODE_EXECUTABLE=$(command -v node.exe)
 fi
 cd "$root"
-cargo test --locked --offline --manifest-path scripts/sandbox/Cargo.toml --test provider_codec --test project_codec --test deployment_codec --test child_account_codec --test transaction_codec -- --nocapture
+cargo test --locked --offline --manifest-path scripts/sandbox/Cargo.toml --test demo_operation_codec --test provider_codec --test project_codec --test deployment_codec --test child_account_codec --test transaction_codec -- --nocapture
 cargo clippy --locked --offline --all-targets --manifest-path scripts/sandbox/Cargo.toml -- -D warnings
 cargo fmt --manifest-path scripts/sandbox/Cargo.toml -- --check

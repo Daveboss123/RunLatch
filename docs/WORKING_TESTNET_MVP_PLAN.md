@@ -1,5 +1,7 @@
 # Working testnet MVP — implementation plan
 
+> **10 November:** real Meteor extension-v2 transport and exact own-terminal helpers are locally implemented. Existing WinCred accounts are not browser-wallet accounts. Original Project authority expired; a new unsigned work order is now the first required human signature. [Current exact steps](HUMAN_DEMO_OPERATION_STEPS.md). Public purchases/outcomes still do not exist; local tests and wallet-returned hashes are not settlement proof.
+
 **Requested:** 8 November 2026. **Sequence:** Working testnet MVP first; the new Replay Lab second. **Latest human steering:** proceed autonomously without local/UI heads-ups or routine approvals; review at the end of the whole build. This supersedes earlier routine stop/go requests, not the first-task completion requirement or human full-access key boundary. The seven-case Replay Lab prompt is retained; do not start that second feature while this first milestone is unfinished.
 
 ## Existing foundations and actual gaps

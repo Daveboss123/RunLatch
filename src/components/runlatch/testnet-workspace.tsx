@@ -9,7 +9,7 @@ import { HUMAN_WORKSPACE_METHODS, confirmFreshHumanWorkspaceReview, exportHumanW
 import { connectInjectedWallet, disconnectInjectedWallet, discoverInjectedWallets, signExactAgentKeyInstall, signExactHumanCall,
   type AdmittedInjectedWallet, type ConnectedInjectedWallet } from "@/lib/near/injected-wallet";
 import { confirmFreshAgentKeyInstallReview, type AgentKeyInstallReview } from "@/lib/near/agent-key-review";
-import { DEMO_AGENT_SCOPE, DEMO_CAPSULE_ACTION, DEMO_QUOTE_ACTION, RUNLATCH_TESTNET_TARGET } from "@/lib/near/demo-operations";
+import { DEMO_AGENT_SCOPE, DEMO_CAPSULE_ACTION, DEMO_PROJECT_ACTION, DEMO_QUOTE_ACTION, RUNLATCH_TESTNET_TARGET } from "@/lib/near/demo-operations";
 import { fillStyle } from "@/lib/dither/style";
 import { Status } from "./status";
 
@@ -99,21 +99,24 @@ export function TestnetWorkspace() {
     invalidate("RunLatch public testnet target loaded. Permit the read explicitly before querying it.");
     setRpc(RUNLATCH_TESTNET_TARGET.rpc_url); setContract(RUNLATCH_TESTNET_TARGET.contract_id); setOperator(RUNLATCH_TESTNET_TARGET.operator_id); setCodeHash(RUNLATCH_TESTNET_TARGET.expected_code_hash);
   }
-  function loadDemoAction(next: "capsule" | "quote") {
-    invalidate(next === "capsule" ? "Exact demo Capsule template loaded. Read current state before any wallet prompt."
+  function loadDemoAction(next: "project" | "capsule" | "quote") {
+    invalidate(next === "project" ? "New unsigned work order loaded. The original expired project is preserved, not renewed."
+      : next === "capsule" ? "Exact demo Capsule template loaded. Read current state before any wallet prompt."
       : "Exact canonical quote template loaded. Read current provider state before any wallet prompt.");
-    if (next === "capsule") {
+    if (next === "project") {
+      setMethod("create_project"); setSigner(DEMO_PROJECT_ACTION.signer_id); setPublicKey(DEMO_PROJECT_ACTION.public_key); setGas(DEMO_PROJECT_ACTION.gas); setArgs(JSON.stringify(DEMO_PROJECT_ACTION.args, null, 2));
+    } else if (next === "capsule") {
       setMethod("create_capsule"); setSigner(DEMO_CAPSULE_ACTION.signer_id); setPublicKey(DEMO_CAPSULE_ACTION.public_key); setGas(DEMO_CAPSULE_ACTION.gas); setArgs(JSON.stringify(DEMO_CAPSULE_ACTION.args, null, 2));
     } else {
       setMethod("publish_quote"); setSigner(DEMO_QUOTE_ACTION.signer_id); setPublicKey(DEMO_QUOTE_ACTION.public_key); setGas(DEMO_QUOTE_ACTION.gas); setArgs(JSON.stringify(DEMO_QUOTE_ACTION.args, null, 2));
     }
   }
   async function discover() {
-    if (walletBusy) return; setWalletBusy(true); setError(""); setNotice("Looking for compatible injected testnet wallets after your click…");
+    if (walletBusy) return; setWalletBusy(true); setError(""); setNotice("Looking for Meteor Wallet or another compatible injected testnet wallet after your click…");
     try {
       const found = await discoverInjectedWallets(); setWallets(found);
       setNotice(found.length ? `${found.length} compatible injected testnet wallet${found.length === 1 ? "" : "s"} found. Choose one to connect.`
-        : "No compatible injected testnet wallet answered. No key or account data was stored; use the reviewed own-terminal flow for these existing accounts.");
+        : "No supported browser wallet answered. Install or unlock Meteor Wallet for a wallet-held testnet account, or use the reviewed own-terminal flow for the existing Credential Manager accounts.");
     } catch { setError("Wallet discovery stopped safely. No connection, signature or transaction occurred."); }
     finally { setWalletBusy(false); }
   }
@@ -133,34 +136,38 @@ export function TestnetWorkspace() {
   }
   async function sign() {
     if (!wallet || !review || !signConsent || walletBusy) return;
+    const seq = operation.current, abort = new AbortController(); controller.current = abort;
     setWalletBusy(true); setError(""); setSubmission(null); setNotice("Re-reading the exact action at a fresh final block before opening the wallet…");
     try {
       const reader = createTestnetReader(review.review.target);
       const fresh = await readHumanWorkspaceReview(reader, review.review.action,
-        review.review.action.method === "record_task_check" ? { artifact } : undefined);
+        review.review.action.method === "record_task_check" ? { artifact } : undefined, abort.signal);
+      if (seq !== operation.current || abort.signal.aborted) throw Error("WALLET_REVIEW_CANCELLED");
       const confirmed = confirmFreshHumanWorkspaceReview(review, fresh);
-      const result = await signExactHumanCall(wallet, confirmed.call); setSubmission(result); setSignConsent(false);
+      const result = await signExactHumanCall(wallet, confirmed.call, review.review.target.rpc_url); setSubmission(result); setSignConsent(false);
       setNotice(`Wallet returned transaction ${result.transaction_hash}. This is not final settlement; inspect current state or captured purchase evidence next.`);
     } catch (cause) {
-      const code = cause instanceof Error && /^[A-Z_]{1,80}$/u.test(cause.message) ? cause.message : "WALLET_ACTION_STOPPED";
+      const code = cause instanceof Error && /^[A-Z][A-Z0-9_]{0,79}$/u.test(cause.message) ? cause.message : "WALLET_ACTION_STOPPED";
       setError(`Wallet action stopped (${code}). Check current chain state before deciding anything; do not blindly repeat an uncertain transaction.`);
-    } finally { setWalletBusy(false); }
+    } finally { setWalletBusy(false); setSignConsent(false); }
   }
   async function signAgentKey() {
     if (!wallet || !keyReview || !signConsent || walletBusy) return;
+    const seq = operation.current, abort = new AbortController(); controller.current = abort;
     setWalletBusy(true); setError(""); setKeySubmission(null); setNotice("Re-reading the agent account and exact key absence before opening the wallet…");
     try {
-      const reader = createTestnetReader(keyReview.target), fresh = await reader.readAgentKeyInstallReview(keyReview.scope);
+      const reader = createTestnetReader(keyReview.target), fresh = await reader.readAgentKeyInstallReview(keyReview.scope, abort.signal);
+      if (seq !== operation.current || abort.signal.aborted) throw Error("WALLET_REVIEW_CANCELLED");
       const confirmed = confirmFreshAgentKeyInstallReview(keyReview, fresh, { review_hash: keyReview.review_hash, consent: true });
-      const result = await signExactAgentKeyInstall(wallet, confirmed.call); setKeySubmission(result); setSignConsent(false);
+      const result = await signExactAgentKeyInstall(wallet, confirmed.call, keyReview.target.rpc_url); setKeySubmission(result); setSignConsent(false);
       setNotice(`Wallet returned AddKey transaction ${result.transaction_hash}. Re-read the installed permission before any agent purchase.`);
     } catch (cause) {
-      const code = cause instanceof Error && /^[A-Z_]{1,80}$/u.test(cause.message) ? cause.message : "AGENT_KEY_ACTION_STOPPED";
+      const code = cause instanceof Error && /^[A-Z][A-Z0-9_]{0,79}$/u.test(cause.message) ? cause.message : "AGENT_KEY_ACTION_STOPPED";
       setError(`Restricted-key action stopped (${code}). Check current account keys before any repeat; no agent purchase is enabled by this error.`);
-    } finally { setWalletBusy(false); }
+    } finally { setWalletBusy(false); setSignConsent(false); }
   }
   async function read(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); if (busy) return;
+    event.preventDefault(); if (busy || walletBusy) return;
     invalidate(); const seq = operation.current, abort = new AbortController(); controller.current = abort;
     setBusy(true); setNotice("Reading the selected testnet target. No signing or payment…");
     try {
@@ -222,16 +229,17 @@ export function TestnetWorkspace() {
       <p>Never paste a private key, seed phrase or credential. Only public account IDs, public keys, exact contract arguments and explicitly selected fixture bytes belong here.</p></aside>
     <section className="wallet-connection" aria-labelledby="wallet-connection-heading"><div><h3 id="wallet-connection-heading">Owner wallet</h3><p>{wallet
       ? `${wallet.name} connected in memory with ${wallet.accounts.length} testnet account${wallet.accounts.length === 1 ? "" : "s"}. Every transaction still needs a fresh exact review and wallet confirmation.`
-      : "Discover only compatible injected testnet wallets after your click. No remote wallet manifest, automatic connection or persisted session."}</p></div>
+      : "Connect a wallet-held testnet account with Meteor Wallet, or discover another compatible injected wallet. RunLatch loads no remote manifest, connects only after your click and persists no session."}</p></div>
       <div className="wallet-actions">{wallet ? <button type="button" className="button button-secondary" disabled={walletBusy} onClick={() => void disconnect()}>Disconnect wallet</button>
-        : <button type="button" className="button" disabled={!hydrated || walletBusy} onClick={() => void discover()}>{walletBusy ? "Looking for wallets…" : "Connect testnet wallet"}</button>}
+        : <button type="button" className="button" disabled={!hydrated || walletBusy} onClick={() => void discover()}>{walletBusy ? "Looking for wallets…" : "Connect browser wallet"}</button>}
         {!wallet && wallets.map(item => <button type="button" className="button button-secondary" key={item.id} disabled={walletBusy} onClick={() => void connect(item)}>Use {item.name}</button>)}</div>
-      {wallet ? <label>Connected signing account<select aria-label="Connected signing account" value={`${signer}:${publicKey}`} onChange={event => {
+      {wallet ? <label>Connected signing account<select aria-label="Connected signing account" disabled={walletBusy} value={`${signer}:${publicKey}`} onChange={event => {
         const selected = wallet.accounts.find(item => `${item.accountId}:${item.publicKey}` === event.target.value); if (!selected) return;
         invalidate("Connected wallet account selected. Prepare a new exact review."); setSigner(selected.accountId); setPublicKey(selected.publicKey);
       }}>{wallet.accounts.map(item => <option key={`${item.accountId}:${item.publicKey}`} value={`${item.accountId}:${item.publicKey}`}>{item.accountId} · {item.publicKey}</option>)}</select></label> : null}
+      <p className="fine-print">The existing demo keys are held in Windows Credential Manager, not Meteor. Those accounts use the separate own-terminal helpers. The original project expired on 10 November; the new work-order template is unsigned and does not revive it.</p>
     </section>
-    <form onSubmit={read} noValidate>
+    <form onSubmit={read} noValidate inert={walletBusy}>
       <fieldset className="testnet-target"><legend>Explicit testnet target</legend><div className="testnet-template-actions"><button type="button" className="text-button" onClick={loadTarget}>Load RunLatch testnet target</button></div><div className="testnet-input-grid">
         <label>Read-only RPC<select aria-label="Read-only RPC" value={rpc} onChange={e => edit(setRpc, e.target.value)}><option>https://rpc.testnet.near.org/</option><option>https://test.rpc.fastnear.com/</option></select></label>
         <label>Contract account<input autoComplete="off" spellCheck={false} maxLength={64} value={contract} onChange={e => edit(setContract, e.target.value)} /></label>
@@ -245,7 +253,7 @@ export function TestnetWorkspace() {
         <label>Signer account<input value={signer} maxLength={64} autoComplete="off" spellCheck={false} onChange={e => edit(setSigner, e.target.value)} /></label>
         <label>Human wallet public key<input value={publicKey} maxLength={52} autoComplete="off" spellCheck={false} onChange={e => edit(setPublicKey, e.target.value)} /></label>
         <label>Exact gas limit (gas units)<input inputMode="numeric" value={gas} maxLength={20} autoComplete="off" onChange={e => edit(setGas, e.target.value)} /></label>
-      </div><div className="testnet-template-actions"><span>Prepared demo actions</span><button type="button" className="text-button" onClick={() => loadDemoAction("capsule")}>Load funded Capsule</button><button type="button" className="text-button" onClick={() => loadDemoAction("quote")}>Load canonical quote</button></div><label>Exact {method === "approve_purchase" ? "proposal and expected request hash" : "arguments"} JSON<textarea value={args} maxLength={16_384} spellCheck={false} autoComplete="off" rows={9} onChange={e => edit(setArgs, e.target.value)} /></label>
+      </div><div className="testnet-template-actions"><span>Prepared demo actions</span><button type="button" className="text-button" onClick={() => loadDemoAction("project")}>Load new work order</button><button type="button" className="text-button" onClick={() => loadDemoAction("capsule")}>Load funded Capsule</button><button type="button" className="text-button" onClick={() => loadDemoAction("quote")}>Load canonical quote</button></div><label>Exact {method === "approve_purchase" ? "proposal and expected request hash" : "arguments"} JSON<textarea value={args} maxLength={16_384} spellCheck={false} autoComplete="off" rows={9} onChange={e => edit(setArgs, e.target.value)} /></label>
         <p className="fine-print">Use the existing documented method schema. Amounts and nanoseconds are decimal strings; never floating-point money. Deposits are derived by the existing review, not a free payment field. No submit_purchase or administrative bypass is exposed.</p>
         {method === "record_task_check" ? <div><label>Explicit local fixture artifact (optional only for a report validated against missing bytes)<input ref={artifactRef} type="file" onChange={e => void loadArtifact(e.target.files?.[0])} /></label><p>{artifactLabel || "No artifact selected. A passed report cannot be prepared without its exact valid artifact."}</p></div> : null}
       </fieldset> : tab === "agent-key" ? <fieldset><legend>Exact restricted-agent key</legend><p>Install one finite ordinary function-call key on <code>{DEMO_AGENT_SCOPE.agent_id}</code>. It can call only <code>submit_purchase</code> on <code>{RUNLATCH_TESTNET_TARGET.contract_id}</code>; the separate human recovery key remains.</p><ExactFields rows={[["Agent account", DEMO_AGENT_SCOPE.agent_id], ["Human recovery public key", DEMO_AGENT_SCOPE.recovery_public_key], ["Restricted public key", DEMO_AGENT_SCOPE.public_key], ["Finite gas allowance (yoctoNEAR)", DEMO_AGENT_SCOPE.max_allowance]]} /></fieldset>

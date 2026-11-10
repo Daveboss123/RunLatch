@@ -148,11 +148,13 @@ Evidence is written to `.local/projects/latest.json` and per-project observation
 
 1. Open `https://runlatch.vercel.app/testnet` or local `/testnet`.
 2. Load the RunLatch testnet target and explicitly permit the read.
-3. Connect a compatible injected **testnet** wallet. RunLatch stores no wallet session or private key.
+3. Click **Connect browser wallet**. Meteor Wallet is supported through its injected extension-v2 transport; another wallet can answer the admitted NEAR injected interface. RunLatch requests no Meteor access key and stores no wallet session or private key.
 4. Load the funded Capsule or canonical quote template, prepare the current exact review, and inspect signer, receiver, method, arguments, gas and deposit.
 5. The signing button becomes available only after the connected account/public key matches and you check the exact-action confirmation. RunLatch re-reads current final state before opening the wallet.
 
-An external wallet prompt is a human action. A returned transaction hash is not settlement or Outcome Receipt evidence. Existing demo accounts held only in Windows Credential Manager use the separately reviewed own-terminal helpers instead; never paste those credentials into the app.
+An external wallet prompt is a human action. A returned transaction hash is not settlement or Outcome Receipt evidence. The connected account/key must already be held by the wallet. Existing demo accounts held only in Windows Credential Manager use `scripts/setup/human-demo-operation.ts` instead; never paste or import those credentials into the app.
+
+The original project expired on10 November without allocation/purchases. [New unsigned work-order and terminal steps](docs/HUMAN_DEMO_OPERATION_STEPS.md) preserve that history and require separate human signatures. Read-only preparation starts with `node scripts/setup/human-demo-operation.ts --preflight project`; it creates no authority, attempt or signature.
 
 ### 1. One eligible request (`BROWSER_FIXTURE`)
 
@@ -201,7 +203,7 @@ Imported records are read in memory only. Nothing is uploaded, saved or authenti
 | --- | --- |
 | Network | NEAR testnet only |
 | Gate contract | Deployed and initialized: `gate.runlatch-demo-1108.testnet`, schema 2, code hash `F1pev22VSu86qxxWicXpCixtzzNoQxEi1FHRF2eGXjGP`, deployment transaction `23jZ77SEAK3b4YwW6EjanToSSt1XtbCvvgTPxFXYJqg6` |
-| Project | `project_demo_1108`, ACTIVE revision 1, allocated 0, no capsules; create transaction `BU2DMrx9gi3zTTzcybvjuCp5Zm9HQdpoP96SLafjvTnB` |
+| Project | `project_demo_1108`, stored ACTIVE revision1, **expired10 November18:35 UTC**, allocation0/no Capsules; transaction `BU2DMrx9gi3zTTzcybvjuCp5Zm9HQdpoP96SLafjvTnB`. New `project_demo_1110` is only an unsigned template |
 | Database provider | `db_demo_1108`, active, immutable publisher/recipient `db.runlatch-demo-1108.testnet`, quote count 0; registration transaction `5DnrDArTCEN8rGaDCAqacX2CmxvCymYozNam7iys4DLu` |
 | Capsule, quote, restricted key, purchase, callback, provisioning, check, acceptance, report | **Absent** |
 
@@ -210,7 +212,7 @@ There is no public testnet purchase, transaction for a purchase, receipt, delive
 ## Known limitations
 
 - **No public testnet vertical slice yet.** The exact remaining calls and approval gates are in [docs/TESTNET_VERTICAL_SLICE_PLAN.md](docs/TESTNET_VERTICAL_SLICE_PLAN.md).
-- **No wallet or signer in the browser.** The website cannot approve, reserve, transfer or submit.
+- **Narrow browser wallet, no hosted signer.** Meteor extension-v2 and the admitted injected interface can prompt one exact reviewed transaction for a wallet-held testnet account. The site has no shared key, generated access key, stored session, web-wallet fallback or automatic authority. A returned hash is unverified until FINAL readback.
 - **Callback recovery:** a missing, failed or unproven callback keeps the reservation pending. There is no timer-based release, blind retry, public settlement setter or implemented reconciliation release procedure. An unknown result is never treated as success.
 - **Imported records are claims.** LOCAL observation validation checks internal consistency and bindings, not chain truth or provider delivery.
 - **Owner acceptance is not verified client satisfaction.** It is the operator's explicit recorded decision.

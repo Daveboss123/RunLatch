@@ -4,10 +4,21 @@
  */
 import { account, amount, fail, reference } from "./records.ts";
 import { publicKey } from "./testnet-evidence.ts";
+import { discoverMeteorWallet } from "./meteor-wallet.ts";
+import { canonicalReviewContent } from "./review-content.ts";
 
 const WALLET_EVENT = "near-wallet-injected";
 const READY_EVENT = "near-selector-ready";
 const MAX_WALLETS = 4;
+const walletAttempts = new WeakMap<object, Set<string>>();
+function claimWalletCall(connection: ConnectedInjectedWallet, call: unknown) {
+  const identity = canonicalReviewContent(call);
+  let attempts = walletAttempts.get(connection.wallet);
+  if (!attempts) { attempts = new Set(); walletAttempts.set(connection.wallet, attempts); }
+  if (attempts.has(identity)) return fail("WALLET_ACTION_ALREADY_ATTEMPTED_READBACK_ONLY");
+  if (attempts.size >= 8) return fail("WALLET_SESSION_ACTION_LIMIT");
+  attempts.add(identity); // Never released after error, timeout, disconnect or unknown wallet return.
+}
 const HUMAN_METHODS = new Set(["create_project", "register_provider", "publish_quote", "create_capsule", "approve_purchase",
   "record_provisioning", "record_task_check", "record_human_acceptance"]);
 
@@ -89,19 +100,20 @@ function transactionHash(value: unknown): string {
   const transaction = own(value, "transaction");
   return reference(own(transaction, "hash"));
 }
-export async function signExactHumanCall(connection: ConnectedInjectedWallet, call: ExactHumanCall) {
+export async function signExactHumanCall(connection: ConnectedInjectedWallet, call: ExactHumanCall, rpcUrl?: string) {
   if (call.network !== "testnet" || !HUMAN_METHODS.has(call.method)) return fail("WALLET_CALL_NOT_ADMITTED");
   const matched = connection.accounts.some(item => item.accountId === call.signer_id && item.publicKey === call.public_key);
   if (!matched) return fail("WALLET_REVIEW_IDENTITY_MISMATCH");
+  claimWalletCall(connection, call);
   const result = await method(connection.wallet, "signAndSendTransaction").call(connection.wallet, {
-    network: "testnet", signerId: call.signer_id, receiverId: call.receiver_id,
+    network: "testnet", signerId: call.signer_id, ...(connection.id === "meteor-wallet" ? { signerPublicKey: call.public_key, rpcUrl } : {}), receiverId: call.receiver_id,
     actions: [{ type: "FunctionCall", params: { methodName: call.method, args: call.args, gas: call.gas, deposit: call.attached_deposit } }],
   });
   return Object.freeze({ status: "WALLET_SUBMISSION_RETURNED_UNVERIFIED" as const, transaction_hash: transactionHash(result),
     signer_id: call.signer_id, receiver_id: call.receiver_id, method: call.method,
     limitation: "Wallet-returned public transaction identity only. Re-read FINAL receipts and contract state; this is not settlement, provisioning or acceptance." });
 }
-export async function signExactAgentKeyInstall(connection: ConnectedInjectedWallet, call: ExactAgentKeyCall) {
+export async function signExactAgentKeyInstall(connection: ConnectedInjectedWallet, call: ExactAgentKeyCall, rpcUrl?: string) {
   if (call.network !== "testnet" || account(call.signer_id) !== account(call.receiver_id) || publicKey(call.public_key) === publicKey(call.action.params.publicKey))
     return fail("WALLET_AGENT_KEY_CALL_INVALID");
   const permission = call.action.params.accessKey.permission;
@@ -111,8 +123,9 @@ export async function signExactAgentKeyInstall(connection: ConnectedInjectedWall
     return fail("WALLET_AGENT_KEY_CALL_INVALID");
   const matched = connection.accounts.some(item => item.accountId === call.signer_id && item.publicKey === call.public_key);
   if (!matched) return fail("WALLET_REVIEW_IDENTITY_MISMATCH");
+  claimWalletCall(connection, call);
   const result = await method(connection.wallet, "signAndSendTransaction").call(connection.wallet, {
-    network: "testnet", signerId: call.signer_id, receiverId: call.receiver_id, actions: [call.action],
+    network: "testnet", signerId: call.signer_id, ...(connection.id === "meteor-wallet" ? { signerPublicKey: call.public_key, rpcUrl } : {}), receiverId: call.receiver_id, actions: [call.action],
   });
   return Object.freeze({ status: "WALLET_AGENT_KEY_SUBMISSION_RETURNED_UNVERIFIED" as const, transaction_hash: transactionHash(result),
     signer_id: call.signer_id, restricted_public_key: call.action.params.publicKey, receiver_id: permission.receiverId,
@@ -124,6 +137,8 @@ export function discoverInjectedWallets(target: DiscoveryTarget = window, waitMs
   if (!Number.isSafeInteger(waitMs) || waitMs < 50 || waitMs > 2_000) return Promise.reject(new Error("INJECTED_WALLET_DISCOVERY_TIMEOUT_INVALID"));
   return new Promise(resolve => {
     const found = new Map<string, AdmittedInjectedWallet>();
+    try { const meteor = discoverMeteorWallet(target as DiscoveryTarget & Window); if (meteor) found.set(meteor.id, meteor); }
+    catch { /* An invalid injected Meteor object is ignored like any incompatible wallet. */ }
     const receive = (event: Event) => {
       if (!(event instanceof CustomEvent)) return;
       try { const wallet = admitInjectedWallet(event.detail); if (found.size < MAX_WALLETS || found.has(wallet.id)) found.set(wallet.id, wallet); }

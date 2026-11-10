@@ -11,7 +11,8 @@ export function importGeneratedOperatorRecord(input: Buffer, expectedKey: string
 }
 /** Generated in-memory test records only; no credential access. */
 export function importGeneratedHumanRecord(input: Buffer, expectedKey: string, expectedAccount: string) {
-  if (![parentAccount, `gate.${parentAccount}`].includes(expectedAccount)) throw Error("HUMAN_KEY_BINDING_INVALID");
+  const humanAccounts = [parentAccount, `gate.${parentAccount}`, `db.${parentAccount}`, `agent.${parentAccount}`];
+  if (!humanAccounts.includes(expectedAccount)) throw Error("HUMAN_KEY_BINDING_INVALID");
   const record = object(parseBoundedJson(input.toString("utf16le"), 2048), ["account_id", "public_key", "private_key"]);
   if (record.account_id !== expectedAccount || record.public_key !== expectedKey
     || typeof record.private_key !== "string" || !/^ed25519:[1-9A-HJ-NP-Za-km-z]{64,88}$/u.test(record.private_key)) throw Error("HUMAN_KEY_BINDING_INVALID");

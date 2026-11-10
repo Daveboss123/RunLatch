@@ -36,6 +36,8 @@ test("preview distinguishes recorded testnet setup from absent public purchase a
   assert.match(docs, /active provider <code>db_demo_1108/u);
   assert.match(docs, /5DnrDArTCEN8rGaDCAqacX2CmxvCymYozNam7iys4DLu/u);
   assert.match(docs, /No capsule, quote, restricted key, public purchase or outcome exists/u);
-  assert.match(docs, /This website has no connected signer/u);
+  assert.match(docs, /Meteor Wallet extension v2/u);
+  assert.match(docs, /expired on 10 November/u);
+  assert.match(docs, /A new unsigned work order is prepared, not created or renewed/u);
   assert.doesNotMatch(docs, /Not connected or deployed/u);
 });

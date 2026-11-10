@@ -1,5 +1,7 @@
 # New demo accounts — proposed scope, not execution approval
 
+> **10 November:** accounts/Gate/provider remain the completed setup; their actions must never repeat. The original Project expired with allocation0/no Capsules. A new unsigned work order is prepared rather than editing that immutable authority. [Current four-step human setup scope](HUMAN_DEMO_OPERATION_STEPS.md) supersedes old Capsule/quote IDs and expiries below; it creates no signature/authority by itself.
+
 **8–9 November 2026.** The human created the parent/three exact children, deployed/initialized the default Gate, created the unfunded project and registered the immutable database provider; independent read-only RPC verified FINAL transactions/code/configuration/keys/nonces/project/provider. The agent has not read human secrets or signed. Capsule/quote/key/purchase/outcome calls below remain proposed, not performed by this document. Never repeat account/key creation, deployment/init, project creation or provider registration.
 
 | Proposed account | Role | Human-controlled key |

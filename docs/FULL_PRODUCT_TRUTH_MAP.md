@@ -4,7 +4,7 @@
 
 ## Routes and controls
 
-**9 November addendum:** `/testnet` is no longer read-only-only: it can prompt a compatible injected testnet wallet for one exact freshly re-read human action or finite submit-only AddKey. Wallet-returned identity remains unverified until readback; agent purchases still use the separate restricted local runner. `/demo` routes public actions to that workspace instead of rendering disabled pseudo-actions. Compact page guides explain use without renaming navigation.
+**10 November addendum:** `/testnet` can discover Meteor Wallet through its official extension-v2 injection as well as a wallet implementing the admitted NEAR injected event. Meteor connection requests no access key and stores no session/key. One freshly re-read human action or finite submit-only AddKey can be prompted; wallet-returned identity stays unverified until readback. Existing WinCred demo accounts use fixed own-terminal helpers instead of browser import. Agent purchases still use the restricted local runner.
 
 | Surface | Implementation and action | Truth boundary |
 | --- | --- | --- |

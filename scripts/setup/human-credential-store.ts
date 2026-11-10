@@ -82,7 +82,9 @@ function nativeStore() {
   }
   return { writeNew, removeProbe,
     readExactOperator: (publicKey: string) => readExact("runlatch-demo-1108.testnet", publicKey),
-    readExactContract: (publicKey: string) => readExact("gate.runlatch-demo-1108.testnet", publicKey) };
+    readExactContract: (publicKey: string) => readExact("gate.runlatch-demo-1108.testnet", publicKey),
+    readExactProvider: (publicKey: string) => readExact("db.runlatch-demo-1108.testnet", publicKey),
+    readExactAgentRecovery: (publicKey: string) => readExact("agent.runlatch-demo-1108.testnet", publicKey) };
 }
 function store() { return loaded ??= nativeStore(); }
 
@@ -96,6 +98,18 @@ export function readHumanOperatorCredential(publicKey: string) {
 export function readHumanContractCredential(publicKey: string) {
   if (!process.stdin.isTTY || !process.stdout.isTTY || !/^ed25519:[1-9A-HJ-NP-Za-km-z]{32,44}$/u.test(publicKey)) throw Error("HUMAN_TERMINAL_REQUIRED");
   return store().readExactContract(publicKey);
+}
+
+/** Fixed provider publisher target, human terminal only. Never used by a purchase or agent run. */
+export function readHumanProviderCredential(publicKey: string) {
+  if (!process.stdin.isTTY || !process.stdout.isTTY || !/^ed25519:[1-9A-HJ-NP-Za-km-z]{32,44}$/u.test(publicKey)) throw Error("HUMAN_TERMINAL_REQUIRED");
+  return store().readExactProvider(publicKey);
+}
+
+/** Fixed agent recovery target for one AddKey, human terminal only. Never the restricted key. */
+export function readHumanAgentRecoveryCredential(publicKey: string) {
+  if (!process.stdin.isTTY || !process.stdout.isTTY || !/^ed25519:[1-9A-HJ-NP-Za-km-z]{32,44}$/u.test(publicKey)) throw Error("HUMAN_TERMINAL_REQUIRED");
+  return store().readExactAgentRecovery(publicKey);
 }
 
 export function probeHumanCredentialStore() {
