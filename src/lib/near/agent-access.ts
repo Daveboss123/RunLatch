@@ -43,3 +43,19 @@ export function inspectRestrictedAccess(scope: RestrictedAgentScope, target: Tes
     method_names: p.method_names, recovery_access_observed: true as const,
     limitation: "RPC-reported ordinary function-call permission and recovery key presence, not proof of human key control or payment authority." });
 }
+
+/** Exact pre-install state: one human recovery key, no restricted key or unknown additional authority. */
+export function inspectAgentKeyInstallState(scope: RestrictedAgentScope, target: TestnetTarget, rawList: unknown) {
+  target = parseTestnetTarget(target); scope = parseRestrictedAgentScope(scope, target);
+  const rows = list(object(rawList).keys, 8).map(value => {
+    const row = object(value, ["public_key", "access_key"]);
+    return Object.freeze({ public_key: publicKey(row.public_key), access_key: accessKey(row.access_key) });
+  });
+  if (new Set(rows.map(row => row.public_key)).size !== rows.length) return fail("DUPLICATE_AGENT_ACCESS_KEY");
+  if (rows.some(row => row.public_key === scope.public_key)) return fail("AGENT_RESTRICTED_KEY_ALREADY_EXISTS");
+  if (rows.length !== 1 || rows[0].public_key !== scope.recovery_public_key || rows[0].access_key.permission !== "FullAccess")
+    return fail("AGENT_PREINSTALL_AUTHORITY_UNEXPECTED");
+  return Object.freeze({ agent_id: scope.agent_id, restricted_public_key: scope.public_key, recovery_public_key: scope.recovery_public_key,
+    recovery_nonce: rows[0].access_key.nonce, receiver_id: target.contract_id, method_names: Object.freeze(["submit_purchase"]), allowance: scope.max_allowance,
+    limitation: "RPC-reported exact pre-install recovery authority and restricted-key absence. Not human control, signing consent or installed permission." });
+}

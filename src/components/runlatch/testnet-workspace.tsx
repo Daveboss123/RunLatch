@@ -1,11 +1,15 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { createTestnetReader, type ProjectSelection } from "@/lib/near/testnet-rpc";
 import { parseTestnetTarget } from "@/lib/near/testnet-target";
 import { object, parseBoundedJson } from "@/lib/near/records";
 import { parsePurchaseObservationIntent } from "@/lib/near/testnet-evidence";
-import { HUMAN_WORKSPACE_METHODS, exportHumanWorkspaceReview, readHumanWorkspaceReview, type HumanWorkspaceReview } from "@/lib/near/human-workspace";
+import { HUMAN_WORKSPACE_METHODS, confirmFreshHumanWorkspaceReview, exportHumanWorkspaceReview, readHumanWorkspaceReview, type HumanWorkspaceReview } from "@/lib/near/human-workspace";
+import { connectInjectedWallet, disconnectInjectedWallet, discoverInjectedWallets, signExactAgentKeyInstall, signExactHumanCall,
+  type AdmittedInjectedWallet, type ConnectedInjectedWallet } from "@/lib/near/injected-wallet";
+import { confirmFreshAgentKeyInstallReview, type AgentKeyInstallReview } from "@/lib/near/agent-key-review";
+import { DEMO_AGENT_SCOPE, DEMO_CAPSULE_ACTION, DEMO_QUOTE_ACTION, RUNLATCH_TESTNET_TARGET } from "@/lib/near/demo-operations";
 import { fillStyle } from "@/lib/dither/style";
 import { Status } from "./status";
 
@@ -13,6 +17,9 @@ type ReportRead = Awaited<ReturnType<ReturnType<typeof createTestnetReader>["rea
 type ReceiptRead = Awaited<ReturnType<ReturnType<typeof createTestnetReader>["observePurchase"]>>;
 const LABELS = ["Create project", "Register provider", "Publish canonical quote", "Create capsule", "Review exact purchase approval",
   "Record fixture provisioning", "Record objective task check", "Record human acceptance"];
+const subscribeToHydration = () => () => {};
+const clientReady = () => true;
+const serverReady = () => false;
 const words = (s: string) => s.toLowerCase().replaceAll("_", " ");
 function ExactFields({ rows }: { rows: readonly (readonly [string, string])[] }) {
   return <dl className="testnet-fields">{rows.map(([label, value]) => <div key={label}><dt>{label}</dt><dd>{value}</dd></div>)}</dl>;
@@ -44,19 +51,34 @@ function ReviewSheet({ value }: { value: HumanWorkspaceReview }) {
     <p className="fine-print">{r.limitation}</p>
   </article>;
 }
+function AgentKeySheet({ value }: { value: AgentKeyInstallReview }) {
+  const permission = value.call.action.params.accessKey.permission;
+  return <article className="testnet-review" aria-labelledby="agent-key-review-heading"><Status>Unsigned native key action</Status>
+    <h3 id="agent-key-review-heading">Exact restricted-agent key review</h3><p>This installs gas authority only. The key can call one method on one Gate with zero deposit; Rust still controls providers, quotes, budgets, commitments and recipients.</p>
+    <ExactFields rows={[["Network", value.call.network], ["Agent account", value.call.signer_id], ["Human recovery key", value.call.public_key],
+      ["Restricted public key", value.call.action.params.publicKey], ["Allowed receiver", permission.receiverId], ["Allowed method", permission.methodNames[0]],
+      ["Finite gas allowance (yoctoNEAR)", permission.allowance], ["Final block", value.reviewed_block.hash], ["Review hash", value.review_hash]]} />
+    <p className="fine-print">{value.limitation}</p></article>;
+}
 
 export function TestnetWorkspace() {
+  const hydrated = useSyncExternalStore(subscribeToHydration, clientReady, serverReady);
   const [rpc, setRpc] = useState("https://rpc.testnet.near.org/");
   const [contract, setContract] = useState(""), [operator, setOperator] = useState(""), [codeHash, setCodeHash] = useState("");
-  const [allowRead, setAllowRead] = useState(false), [tab, setTab] = useState<"review" | "receipt" | "report">("review");
+  const [allowRead, setAllowRead] = useState(false), [tab, setTab] = useState<"review" | "agent-key" | "receipt" | "report">("review");
   const [method, setMethod] = useState<typeof HUMAN_WORKSPACE_METHODS[number]>("create_project");
   const [signer, setSigner] = useState(""), [publicKey, setPublicKey] = useState(""), [gas, setGas] = useState("");
   const [args, setArgs] = useState(""), [intentText, setIntentText] = useState("");
   const [project, setProject] = useState(""), [capsules, setCapsules] = useState(""), [providers, setProviders] = useState(""), [quotes, setQuotes] = useState("");
   const [budget, setBudget] = useState(false), [expenses, setExpenses] = useState(false), [evidence, setEvidence] = useState(false);
   const [artifact, setArtifact] = useState<Uint8Array | null>(null), [artifactLabel, setArtifactLabel] = useState("");
-  const [review, setReview] = useState<HumanWorkspaceReview | null>(null), [receipt, setReceipt] = useState<ReceiptRead | null>(null), [report, setReport] = useState<ReportRead | null>(null);
+  const [review, setReview] = useState<HumanWorkspaceReview | null>(null), [keyReview, setKeyReview] = useState<AgentKeyInstallReview | null>(null);
+  const [receipt, setReceipt] = useState<ReceiptRead | null>(null), [report, setReport] = useState<ReportRead | null>(null);
   const [exportAllowed, setExportAllowed] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState("");
+  const [wallets, setWallets] = useState<readonly AdmittedInjectedWallet[]>([]), [wallet, setWallet] = useState<ConnectedInjectedWallet | null>(null);
+  const [walletBusy, setWalletBusy] = useState(false), [signConsent, setSignConsent] = useState(false);
+  const [submission, setSubmission] = useState<Awaited<ReturnType<typeof signExactHumanCall>> | null>(null);
+  const [keySubmission, setKeySubmission] = useState<Awaited<ReturnType<typeof signExactAgentKeyInstall>> | null>(null);
   const [notice, setNotice] = useState("No target selected. No network call or wallet connection.");
   const operation = useRef(0), controller = useRef<AbortController | null>(null), errorRef = useRef<HTMLParagraphElement>(null);
   const artifactRef = useRef<HTMLInputElement>(null);
@@ -64,7 +86,7 @@ export function TestnetWorkspace() {
   useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
   function invalidate(message = "Inputs changed. Previous reads cleared; no contract state or funds changed.") {
     operation.current++; controller.current?.abort(); controller.current = null;
-    setBusy(false); setReview(null); setReceipt(null); setReport(null); setExportAllowed(false); setError(""); setNotice(message);
+    setBusy(false); setReview(null); setKeyReview(null); setReceipt(null); setReport(null); setExportAllowed(false); setSignConsent(false); setSubmission(null); setKeySubmission(null); setError(""); setNotice(message);
   }
   function edit(set: (v: string) => void, v: string) { invalidate(); set(v); }
   function clear() {
@@ -72,6 +94,70 @@ export function TestnetWorkspace() {
     setAllowRead(false); setContract(""); setOperator(""); setCodeHash(""); setSigner(""); setPublicKey(""); setGas(""); setArgs(""); setIntentText("");
     setProject(""); setCapsules(""); setProviders(""); setQuotes(""); setBudget(false); setExpenses(false); setEvidence(false);
     setArtifact(null); setArtifactLabel(""); if (artifactRef.current) artifactRef.current.value = "";
+  }
+  function loadTarget() {
+    invalidate("RunLatch public testnet target loaded. Permit the read explicitly before querying it.");
+    setRpc(RUNLATCH_TESTNET_TARGET.rpc_url); setContract(RUNLATCH_TESTNET_TARGET.contract_id); setOperator(RUNLATCH_TESTNET_TARGET.operator_id); setCodeHash(RUNLATCH_TESTNET_TARGET.expected_code_hash);
+  }
+  function loadDemoAction(next: "capsule" | "quote") {
+    invalidate(next === "capsule" ? "Exact demo Capsule template loaded. Read current state before any wallet prompt."
+      : "Exact canonical quote template loaded. Read current provider state before any wallet prompt.");
+    if (next === "capsule") {
+      setMethod("create_capsule"); setSigner(DEMO_CAPSULE_ACTION.signer_id); setPublicKey(DEMO_CAPSULE_ACTION.public_key); setGas(DEMO_CAPSULE_ACTION.gas); setArgs(JSON.stringify(DEMO_CAPSULE_ACTION.args, null, 2));
+    } else {
+      setMethod("publish_quote"); setSigner(DEMO_QUOTE_ACTION.signer_id); setPublicKey(DEMO_QUOTE_ACTION.public_key); setGas(DEMO_QUOTE_ACTION.gas); setArgs(JSON.stringify(DEMO_QUOTE_ACTION.args, null, 2));
+    }
+  }
+  async function discover() {
+    if (walletBusy) return; setWalletBusy(true); setError(""); setNotice("Looking for compatible injected testnet wallets after your click…");
+    try {
+      const found = await discoverInjectedWallets(); setWallets(found);
+      setNotice(found.length ? `${found.length} compatible injected testnet wallet${found.length === 1 ? "" : "s"} found. Choose one to connect.`
+        : "No compatible injected testnet wallet answered. No key or account data was stored; use the reviewed own-terminal flow for these existing accounts.");
+    } catch { setError("Wallet discovery stopped safely. No connection, signature or transaction occurred."); }
+    finally { setWalletBusy(false); }
+  }
+  async function connect(selected: AdmittedInjectedWallet) {
+    if (walletBusy) return; setWalletBusy(true); setError(""); setNotice(`Opening ${selected.name} for testnet account selection…`);
+    try {
+      const connected = await connectInjectedWallet(selected), first = connected.accounts[0]; setWallet(connected);
+      invalidate(`Connected ${selected.name} in browser memory only. Prepare a fresh exact review before signing.`);
+      setSigner(first.accountId); setPublicKey(first.publicKey);
+    } catch { setError("Wallet connection was rejected or incompatible. No review was signed and no fallback key was used."); }
+    finally { setWalletBusy(false); }
+  }
+  async function disconnect() {
+    if (!wallet || walletBusy) return; setWalletBusy(true); setError("");
+    try { await disconnectInjectedWallet(wallet); } catch { /* Clear local connection even when wallet sign-out is unavailable. */ }
+    finally { setWallet(null); setWallets([]); setSignConsent(false); setSubmission(null); setKeySubmission(null); setWalletBusy(false); setNotice("Wallet session cleared from RunLatch memory. Contract authority and transactions are unchanged."); }
+  }
+  async function sign() {
+    if (!wallet || !review || !signConsent || walletBusy) return;
+    setWalletBusy(true); setError(""); setSubmission(null); setNotice("Re-reading the exact action at a fresh final block before opening the wallet…");
+    try {
+      const reader = createTestnetReader(review.review.target);
+      const fresh = await readHumanWorkspaceReview(reader, review.review.action,
+        review.review.action.method === "record_task_check" ? { artifact } : undefined);
+      const confirmed = confirmFreshHumanWorkspaceReview(review, fresh);
+      const result = await signExactHumanCall(wallet, confirmed.call); setSubmission(result); setSignConsent(false);
+      setNotice(`Wallet returned transaction ${result.transaction_hash}. This is not final settlement; inspect current state or captured purchase evidence next.`);
+    } catch (cause) {
+      const code = cause instanceof Error && /^[A-Z_]{1,80}$/u.test(cause.message) ? cause.message : "WALLET_ACTION_STOPPED";
+      setError(`Wallet action stopped (${code}). Check current chain state before deciding anything; do not blindly repeat an uncertain transaction.`);
+    } finally { setWalletBusy(false); }
+  }
+  async function signAgentKey() {
+    if (!wallet || !keyReview || !signConsent || walletBusy) return;
+    setWalletBusy(true); setError(""); setKeySubmission(null); setNotice("Re-reading the agent account and exact key absence before opening the wallet…");
+    try {
+      const reader = createTestnetReader(keyReview.target), fresh = await reader.readAgentKeyInstallReview(keyReview.scope);
+      const confirmed = confirmFreshAgentKeyInstallReview(keyReview, fresh, { review_hash: keyReview.review_hash, consent: true });
+      const result = await signExactAgentKeyInstall(wallet, confirmed.call); setKeySubmission(result); setSignConsent(false);
+      setNotice(`Wallet returned AddKey transaction ${result.transaction_hash}. Re-read the installed permission before any agent purchase.`);
+    } catch (cause) {
+      const code = cause instanceof Error && /^[A-Z_]{1,80}$/u.test(cause.message) ? cause.message : "AGENT_KEY_ACTION_STOPPED";
+      setError(`Restricted-key action stopped (${code}). Check current account keys before any repeat; no agent purchase is enabled by this error.`);
+    } finally { setWalletBusy(false); }
   }
   async function read(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (busy) return;
@@ -90,6 +176,10 @@ export function TestnetWorkspace() {
         const value = await readHumanWorkspaceReview(reader, action, method === "record_task_check" ? { artifact } : undefined, abort.signal);
         if (seq !== operation.current) return; setReview(value);
         setNotice("Unsigned review prepared at the displayed final block. Not signed, approved or sent.");
+      } else if (tab === "agent-key") {
+        const value = await reader.readAgentKeyInstallReview(DEMO_AGENT_SCOPE, abort.signal);
+        if (seq !== operation.current) return; setKeyReview(value);
+        setNotice("Exact restricted-key installation review prepared. No key was installed or wallet prompt opened.");
       } else if (tab === "receipt") {
         const intent = parsePurchaseObservationIntent(parseBoundedJson(intentText, 16_384));
         const value = await reader.observePurchase(intent, abort.signal);
@@ -127,27 +217,39 @@ export function TestnetWorkspace() {
     setExportAllowed(false); setNotice("Unsigned review exported by your request. It is not signing consent and contains no fixture artifact.");
   }
   return <div className="testnet-workspace">
-    <aside className="testnet-boundary"><Status>Read-only · testnet only</Status><h2>Human authority stays outside the agent.</h2>
-      <p>No wallet is connected and no signing adapter is admitted. This workspace prepares exact reviews, inspects a previously captured purchase and reads a selected project report. It cannot create accounts, deploy, install keys or send a transaction.</p>
+    <aside className="testnet-boundary"><Status>{wallet ? "Wallet connected · testnet only" : "Exact review · testnet only"}</Status><h2>Human authority stays outside the agent.</h2>
+      <p>RunLatch can prepare and sign one exact owner/provider contract action through a compatible injected testnet wallet. The wallet keeps the human key; RunLatch stores no wallet session or secret. Restricted agent purchases still use the separate scoped local runner.</p>
       <p>Never paste a private key, seed phrase or credential. Only public account IDs, public keys, exact contract arguments and explicitly selected fixture bytes belong here.</p></aside>
+    <section className="wallet-connection" aria-labelledby="wallet-connection-heading"><div><h3 id="wallet-connection-heading">Owner wallet</h3><p>{wallet
+      ? `${wallet.name} connected in memory with ${wallet.accounts.length} testnet account${wallet.accounts.length === 1 ? "" : "s"}. Every transaction still needs a fresh exact review and wallet confirmation.`
+      : "Discover only compatible injected testnet wallets after your click. No remote wallet manifest, automatic connection or persisted session."}</p></div>
+      <div className="wallet-actions">{wallet ? <button type="button" className="button button-secondary" disabled={walletBusy} onClick={() => void disconnect()}>Disconnect wallet</button>
+        : <button type="button" className="button" disabled={!hydrated || walletBusy} onClick={() => void discover()}>{walletBusy ? "Looking for wallets…" : "Connect testnet wallet"}</button>}
+        {!wallet && wallets.map(item => <button type="button" className="button button-secondary" key={item.id} disabled={walletBusy} onClick={() => void connect(item)}>Use {item.name}</button>)}</div>
+      {wallet ? <label>Connected signing account<select aria-label="Connected signing account" value={`${signer}:${publicKey}`} onChange={event => {
+        const selected = wallet.accounts.find(item => `${item.accountId}:${item.publicKey}` === event.target.value); if (!selected) return;
+        invalidate("Connected wallet account selected. Prepare a new exact review."); setSigner(selected.accountId); setPublicKey(selected.publicKey);
+      }}>{wallet.accounts.map(item => <option key={`${item.accountId}:${item.publicKey}`} value={`${item.accountId}:${item.publicKey}`}>{item.accountId} · {item.publicKey}</option>)}</select></label> : null}
+    </section>
     <form onSubmit={read} noValidate>
-      <fieldset className="testnet-target"><legend>Explicit testnet target</legend><div className="testnet-input-grid">
+      <fieldset className="testnet-target"><legend>Explicit testnet target</legend><div className="testnet-template-actions"><button type="button" className="text-button" onClick={loadTarget}>Load RunLatch testnet target</button></div><div className="testnet-input-grid">
         <label>Read-only RPC<select aria-label="Read-only RPC" value={rpc} onChange={e => edit(setRpc, e.target.value)}><option>https://rpc.testnet.near.org/</option><option>https://test.rpc.fastnear.com/</option></select></label>
         <label>Contract account<input autoComplete="off" spellCheck={false} maxLength={64} value={contract} onChange={e => edit(setContract, e.target.value)} /></label>
         <label>Operator account<input autoComplete="off" spellCheck={false} maxLength={64} value={operator} onChange={e => edit(setOperator, e.target.value)} /></label>
         <label>Expected deployed code hash<input autoComplete="off" spellCheck={false} maxLength={44} value={codeHash} onChange={e => edit(setCodeHash, e.target.value)} /></label>
       </div><label className="testnet-check"><input type="checkbox" checked={allowRead} onChange={e => { invalidate(); setAllowRead(e.target.checked); }} /><span>I permit read-only RPC requests to this target. Selected public IDs and contract data are visible to the RPC operator. This does not authorize signing or payment.</span></label></fieldset>
       <label className="testnet-mode">Workspace task<select aria-label="Workspace task" value={tab} onChange={e => { invalidate(); setTab(e.target.value as typeof tab); }}>
-        <option value="review">Prepare a human-action review</option><option value="receipt">Inspect a captured purchase</option><option value="report">Read a selected project report</option></select></label>
+        <option value="review">Prepare a human-action review</option><option value="agent-key">Install the restricted agent key</option><option value="receipt">Inspect a captured purchase</option><option value="report">Read a selected project report</option></select></label>
       {tab === "review" ? <fieldset><legend>Exact owner or provider action</legend><div className="testnet-input-grid">
         <label>Action<select aria-label="Action" value={method} onChange={e => { invalidate(); setMethod(e.target.value as typeof method); setArgs(""); setArtifact(null); setArtifactLabel(""); }}>{HUMAN_WORKSPACE_METHODS.map((m, i) => <option key={m} value={m}>{LABELS[i]}</option>)}</select></label>
         <label>Signer account<input value={signer} maxLength={64} autoComplete="off" spellCheck={false} onChange={e => edit(setSigner, e.target.value)} /></label>
         <label>Human wallet public key<input value={publicKey} maxLength={52} autoComplete="off" spellCheck={false} onChange={e => edit(setPublicKey, e.target.value)} /></label>
         <label>Exact gas limit (gas units)<input inputMode="numeric" value={gas} maxLength={20} autoComplete="off" onChange={e => edit(setGas, e.target.value)} /></label>
-      </div><label>Exact {method === "approve_purchase" ? "proposal and expected request hash" : "arguments"} JSON<textarea value={args} maxLength={16_384} spellCheck={false} autoComplete="off" rows={9} onChange={e => edit(setArgs, e.target.value)} /></label>
+      </div><div className="testnet-template-actions"><span>Prepared demo actions</span><button type="button" className="text-button" onClick={() => loadDemoAction("capsule")}>Load funded Capsule</button><button type="button" className="text-button" onClick={() => loadDemoAction("quote")}>Load canonical quote</button></div><label>Exact {method === "approve_purchase" ? "proposal and expected request hash" : "arguments"} JSON<textarea value={args} maxLength={16_384} spellCheck={false} autoComplete="off" rows={9} onChange={e => edit(setArgs, e.target.value)} /></label>
         <p className="fine-print">Use the existing documented method schema. Amounts and nanoseconds are decimal strings; never floating-point money. Deposits are derived by the existing review, not a free payment field. No submit_purchase or administrative bypass is exposed.</p>
         {method === "record_task_check" ? <div><label>Explicit local fixture artifact (optional only for a report validated against missing bytes)<input ref={artifactRef} type="file" onChange={e => void loadArtifact(e.target.files?.[0])} /></label><p>{artifactLabel || "No artifact selected. A passed report cannot be prepared without its exact valid artifact."}</p></div> : null}
-      </fieldset> : tab === "receipt" ? <fieldset><legend>Previously captured purchase identity</legend><label>Exact observation intent JSON<textarea rows={10} value={intentText} maxLength={16_384} spellCheck={false} autoComplete="off" onChange={e => edit(setIntentText, e.target.value)} /></label>
+      </fieldset> : tab === "agent-key" ? <fieldset><legend>Exact restricted-agent key</legend><p>Install one finite ordinary function-call key on <code>{DEMO_AGENT_SCOPE.agent_id}</code>. It can call only <code>submit_purchase</code> on <code>{RUNLATCH_TESTNET_TARGET.contract_id}</code>; the separate human recovery key remains.</p><ExactFields rows={[["Agent account", DEMO_AGENT_SCOPE.agent_id], ["Human recovery public key", DEMO_AGENT_SCOPE.recovery_public_key], ["Restricted public key", DEMO_AGENT_SCOPE.public_key], ["Finite gas allowance (yoctoNEAR)", DEMO_AGENT_SCOPE.max_allowance]]} /></fieldset>
+        : tab === "receipt" ? <fieldset><legend>Previously captured purchase identity</legend><label>Exact observation intent JSON<textarea rows={10} value={intentText} maxLength={16_384} spellCheck={false} autoComplete="off" onChange={e => edit(setIntentText, e.target.value)} /></label>
         <p>Use the captured transaction hash, sender/public key, method, gas, proposal and expected request hash. A hash alone never proves settlement. Only one explicit status lookup; no polling, resend or re-sign.</p></fieldset>
         : <fieldset><legend>Owner-selected report scope</legend><div className="testnet-input-grid">
           <label>Project ID<input value={project} maxLength={64} autoComplete="off" onChange={e => edit(setProject, e.target.value)} /></label>
@@ -156,12 +258,22 @@ export function TestnetWorkspace() {
           <label>Quote IDs (comma-separated, at most 16)<input value={quotes} maxLength={1040} autoComplete="off" onChange={e => edit(setQuotes, e.target.value)} /></label></div>
           <div className="testnet-disclosure">{([["Show budget", budget, setBudget], ["Show expenses", expenses, setExpenses], ["Show evidence", evidence, setEvidence]] as const).map(([label, checked, set]) => <label key={label} className="testnet-check"><input type="checkbox" checked={checked} onChange={e => { invalidate(); set(e.target.checked); }} />{label}</label>)}</div>
           <p>All visibility flags start off. The RPC still reads the selected canonical records to check consistency; these flags control the report shown here, not on-chain confidentiality.</p></fieldset>}
-      <div className="testnet-actions"><button type="submit" className="button button-primary" disabled={busy || !allowRead}>{busy ? "Reading selected records…" : tab === "review" ? "Read and prepare unsigned review" : tab === "receipt" ? "Inspect captured purchase once" : "Read selected project report"}</button>
+      <div className="testnet-actions"><button type="submit" className="button button-primary" disabled={busy || !allowRead}>{busy ? "Reading selected records…" : tab === "review" ? "Read and prepare unsigned review" : tab === "agent-key" ? "Review restricted key installation" : tab === "receipt" ? "Inspect captured purchase once" : "Read selected project report"}</button>
         {busy ? <button type="button" className="button button-secondary" onClick={() => invalidate("Read cancelled. No signature, payment, release or resend; late results cannot populate this view.")}>Cancel read</button> : null}
         <button type="button" className="button button-secondary" onClick={clear}>Clear workspace</button></div>
     </form>
     <p role="status" className="testnet-notice">{notice}</p><p ref={errorRef} tabIndex={-1} role={error ? "alert" : undefined} className="testnet-error">{error}</p>
-    <div aria-busy={busy}>{review ? <><ReviewSheet value={review} /><div className="testnet-export"><label className="testnet-check"><input type="checkbox" checked={exportAllowed} onChange={e => setExportAllowed(e.target.checked)} />I permit export of this full unsigned review, including public IDs, policy and commercial/evidence metadata. No fixture bytes or private keys are included.</label><button type="button" className="button button-secondary" disabled={!exportAllowed || busy} onClick={download}>Export unsigned review</button></div></> : null}
+    <div aria-busy={busy || walletBusy}>{review ? <><ReviewSheet value={review} /><div className="wallet-signing"><h3>Confirm this exact action</h3><p>The wallet prompt must show the same signer, receiver, method, gas and deposit. RunLatch re-reads current state before opening it. A wallet return is not settlement proof.</p>
+      <label className="testnet-check"><input type="checkbox" checked={signConsent} onChange={event => setSignConsent(event.target.checked)} disabled={!wallet || walletBusy} />I reviewed this exact action and want the connected wallet to prompt for this one testnet transaction.</label>
+      <button type="button" className="button" disabled={!wallet || !signConsent || walletBusy} onClick={() => void sign()}>{walletBusy ? "Re-reading exact state…" : "Sign exact reviewed action"}</button>
+      {!wallet ? <p className="fine-print">Connect a compatible injected testnet wallet above, or use the documented own-terminal helper for an account held only in Windows Credential Manager.</p> : null}
+      {submission ? <div className="wallet-submission" role="status"><strong>Wallet returned a transaction identity</strong><code>{submission.transaction_hash}</code><p>{submission.limitation}</p></div> : null}</div>
+      <div className="testnet-export"><label className="testnet-check"><input type="checkbox" checked={exportAllowed} onChange={e => setExportAllowed(e.target.checked)} />I permit export of this full unsigned review, including public IDs, policy and commercial/evidence metadata. No fixture bytes or private keys are included.</label><button type="button" className="button button-secondary" disabled={!exportAllowed || busy} onClick={download}>Export unsigned review</button></div></> : null}
+      {keyReview ? <><AgentKeySheet value={keyReview} /><div className="wallet-signing"><h3>Confirm this exact key installation</h3><p>The connected wallet must control the displayed human recovery key. RunLatch rechecks that it is the only current key and that the restricted key is still absent before opening the prompt.</p>
+        <label className="testnet-check"><input type="checkbox" checked={signConsent} onChange={event => setSignConsent(event.target.checked)} disabled={!wallet || walletBusy} />I reviewed the exact agent account, restricted key, Gate, submit-only method and finite gas allowance.</label>
+        <button type="button" className="button" disabled={!wallet || !signConsent || walletBusy} onClick={() => void signAgentKey()}>{walletBusy ? "Re-reading account keys…" : "Install exact restricted key"}</button>
+        {!wallet ? <p className="fine-print">Connect the wallet holding the agent recovery account, or use the separately reviewed own-terminal key-install flow.</p> : null}
+        {keySubmission ? <div className="wallet-submission" role="status"><strong>Wallet returned an AddKey transaction identity</strong><code>{keySubmission.transaction_hash}</code><p>{keySubmission.limitation}</p></div> : null}</div></> : null}
       {receipt ? <article className="testnet-review"><h3>Observed purchase evidence</h3><ExactFields rows={[["Transport source", receipt.transport_source], ["Purchase payment evidence", receipt.payment_evidence], ["Transaction status", receipt.submission],
         ["Actual Gate decision", receipt.actual_decision ?? "Not evidenced"], ["Initiating receipt", receipt.initial_receipt_id ?? "Not evidenced"],
         ["Native transfer receipt", receipt.transfer_receipt_id ?? "Not evidenced"], ["Private callback receipt", receipt.callback_receipt_id ?? "Not evidenced"]]} />

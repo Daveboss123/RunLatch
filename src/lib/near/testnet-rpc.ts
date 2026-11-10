@@ -3,6 +3,7 @@ import { buildProjectReport, type ProjectDisclosure } from "../reporting/project
 import { assertTerminalPurchaseEvidence, inspectPurchaseEvidence, parsePurchaseObservationIntent, unverifiedPurchase, type PurchaseObservationIntent } from "./testnet-evidence.ts";
 import { canonicalReviewContent } from "./review-content.ts";
 import { inspectRestrictedAccess, parseRestrictedAgentScope } from "./agent-access.ts";
+import { prepareAgentKeyInstallReview } from "./agent-key-review.ts";
 import { parsePurchaseAction, preparePurchaseReview } from "./action-review.ts";
 import { parseTestnetTarget, type FinalBlock } from "./testnet-target.ts";
 import { assertSetupRole, parseSetupAction, prepareSetupReview } from "./setup-review.ts";
@@ -158,6 +159,11 @@ export function createTestnetReader(input: unknown, injectedFetch?: typeof fetch
       const key = await query(block, { request_type: "view_access_key", public_key: publicKey }, signer);
       return { nonce: key.nonce, permission: key.permission };
     }
+    async function accessKeyList(block: FinalBlock, accountId: string) {
+      const keys = await query(block, { request_type: "view_access_key_list", limit: 9 }, accountId);
+      if (keys.next_key !== undefined && keys.next_key !== null) return fail("AGENT_ACCESS_KEY_LIST_INCOMPLETE");
+      return keys;
+    }
     async function observePurchase(intent: PurchaseObservationIntent) {
       if (intent.sender_id === target.contract_id) return fail("CONTRACT_CANNOT_BE_PURCHASE_SIGNER");
       const unavailable = (reason: string) => Object.freeze({ ...unverifiedPurchase(intent, reason), transport_source: transportSource,
@@ -217,13 +223,18 @@ export function createTestnetReader(input: unknown, injectedFetch?: typeof fetch
         throw error;
       }
     }
-    return { preflight, view, restrictedAccess, humanAccess, observePurchase };
+    return { preflight, view, restrictedAccess, humanAccess, accessKeyList, observePurchase };
   }
   return Object.freeze({ target,
     preflight: (signal?: AbortSignal) => operation(signal).preflight(),
     async readRestrictedAgent(inputScope: unknown, signal?: AbortSignal) {
       const scope = parseRestrictedAgentScope(inputScope, target), session = operation(signal), observed = await session.preflight();
       return Object.freeze({ ...observed, access: await session.restrictedAccess(observed.block, scope) });
+    },
+    async readAgentKeyInstallReview(inputScope: unknown, signal?: AbortSignal) {
+      const scope = parseRestrictedAgentScope(inputScope, target), session = operation(signal), observed = await session.preflight();
+      const keys = await session.accessKeyList(observed.block, scope.agent_id);
+      return prepareAgentKeyInstallReview(target, scope, { block: observed.block, access_keys: keys, transport_source: transportSource });
     },
     async readSetupReview(inputAction: unknown, signal?: AbortSignal) {
       const action = parseSetupAction(inputAction);

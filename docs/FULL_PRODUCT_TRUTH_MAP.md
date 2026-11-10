@@ -4,6 +4,8 @@
 
 ## Routes and controls
 
+**9 November addendum:** `/testnet` is no longer read-only-only: it can prompt a compatible injected testnet wallet for one exact freshly re-read human action or finite submit-only AddKey. Wallet-returned identity remains unverified until readback; agent purchases still use the separate restricted local runner. `/demo` routes public actions to that workspace instead of rendering disabled pseudo-actions. Compact page guides explain use without renaming navigation.
+
 | Surface | Implementation and action | Truth boundary |
 | --- | --- | --- |
 | `/` | `src/app/page.tsx`: centred proposition, project board, five-chapter problem story, Gate, commitment comparison, lifecycle, receipts, disclosure report, proof, architecture and FAQ | Fictional project throughout; no wallet/RPC/signing endpoint |
@@ -44,7 +46,7 @@ Financial invariants: `available_now = allocated - spent - reserved`; `available
 - Browser: imports only fixed public fixtures and pure helpers. `DEMO_DOMAIN.network=testnet` is a **hash domain**, not the execution environment. No fetch/RPC, credential or browser-storage writes in the product components.
 - Rust SDK: Linux `test-contract-linux.sh`, mock host promise results; not runtime settlement proof.
 - Isolated LOCAL Sandbox: `scripts/sandbox/src/main.rs` requires Linux/loopback, starts near-sandbox 2.14.0, generates ephemeral actors in memory, loads native production/fault artifacts, observes final transaction and receipt outcomes. Modes cover core/outcome/fault/maximum/scoped/research/project/agency. Does not use public testnet funds.
-- Public testnet: **absent**. No deployed account, network observer, wallet session or verifiable public transaction in the interface. A report import's source label alone is not independent observation.
+- Public testnet: Gate, project and provider are observed; Capsule, quote, restricted key, purchase and outcome are absent. The interface has bounded readback and an admitted external-wallet prompt, but no wallet session persists and no wallet-returned hash becomes settlement evidence by itself.
 - Tests: npm scripts cover independent hashes, untrusted artifact validation, commitments, report projection, preview parity, frontend and actual Chromium controls. BUILD_LOG is the dated recorded evidence, not a live dashboard metric.
 
 ## Motion and dither trace

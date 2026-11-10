@@ -521,7 +521,8 @@ tr.row-selected { background: var(--color-paper); }
 .button-secondary:hover, .button-secondary:focus-visible { background: var(--color-panel); color: var(--color-ink); border-color: var(--color-ink); }
 .button svg, .text-link svg { transition: transform var(--motion-fast) var(--ease-ui); }
 button:disabled, .button[aria-disabled="true"] { opacity: .55; cursor: not-allowed; transform: none; }
-button:not(.button), select, input { transition: border-color var(--motion-fast), background-color var(--motion-fast), color var(--motion-fast); }
+/* Controls flip text with the theme background; animating only the colour crosses unreadable mid-tones. */
+button:not(.button), select, input { transition: border-color var(--motion-fast), background-color var(--motion-fast); }
 .site-header { transition: border-color var(--motion-base), background-color var(--motion-base); }
 .header-inner { transition: min-height var(--motion-base) var(--ease-ui); }
 .site-header[data-compact="true"] .header-inner { min-height: 68px; }
@@ -1051,12 +1052,23 @@ button:not(.button), select, input { transition: border-color var(--motion-fast)
 .observation-review { margin-block: 24px; }
 .observation-network { margin-top: 32px; padding-top: 12px; border-top: 1px solid var(--color-line); }
 .observation-network-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-block: 20px; }
+.network-progress { list-style: none; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 0; margin-block: 24px; border-block: 1px solid var(--color-line); }
+.network-progress li { min-width: 0; padding: 16px; border-inline-end: 1px solid var(--color-line); }
+.network-progress li:nth-child(3n) { border-inline-end: 0; }
+.network-progress li:nth-child(-n + 3) { border-block-end: 1px solid var(--color-line); }
+.network-progress span, .network-progress strong { display: block; }
+.network-progress span { color: var(--color-muted); font-size: 12px; }
+.network-progress strong { margin-top: 6px; font-size: 14px; }
+.network-progress li[data-complete="true"] strong::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-inline-end: 8px; border-radius: 50%; background: var(--color-accent); }
 @media (max-width: 700px) {
   .observation-fields { grid-template-columns: 1fr; gap: 16px; }
   .observation-balances { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 16px; }
   .observation-import { gap: 12px; }
   .observation-import .button { margin-top: 0; }
   .observation-network-actions { flex-direction: column; align-items: stretch; }
+  .network-progress { grid-template-columns: 1fr; }
+  .network-progress li, .network-progress li:nth-child(3n), .network-progress li:nth-child(-n + 3) { border-inline-end: 0; border-block-end: 1px solid var(--color-line); }
+  .network-progress li:last-child { border-block-end: 0; }
   .observation-source { padding: 16px; }
 }
 /* Human review: centred proposition, compact interactive passage and directional ink. */
@@ -1122,7 +1134,7 @@ button:not(.button), select, input { transition: border-color var(--motion-fast)
 .button:active { transform: translateY(1px); box-shadow: none; }
 .button-secondary { background: transparent; border-color: var(--color-muted); color: var(--color-ink); }
 .button-secondary:hover, .button-secondary:focus-visible { background: var(--color-ink); border-color: var(--color-ink); color: var(--color-paper); box-shadow: 0 3px 0 var(--color-line); }
-button:not(.button), .mobile-menu summary { transition: background-color var(--motion-fast), border-color var(--motion-fast), color var(--motion-fast), transform var(--motion-instant) var(--ease-ui), box-shadow var(--motion-fast); }
+button:not(.button), .mobile-menu summary { transition: background-color var(--motion-fast), border-color var(--motion-fast), transform var(--motion-instant) var(--ease-ui), box-shadow var(--motion-fast); }
 button:not(.button):hover:not(:disabled):not([aria-pressed="true"]):not([aria-selected="true"]) { background-color: color-mix(in srgb, var(--color-ink) 7%, var(--color-paper)); box-shadow: inset 0 0 0 1px var(--color-muted); }
 button:not(.button):active:not(:disabled) { transform: translateY(1px); }
 button[aria-pressed="true"]:hover:not(:disabled), .tabs button[aria-selected="true"]:hover { box-shadow: inset 0 0 0 1px var(--color-ink); }
@@ -1307,3 +1319,19 @@ html:focus-within { scroll-behavior: auto; }
 
 .demo-sample { margin-top: 56px; padding-top: 40px; border-top: 1px solid var(--color-line); }
 .demo-sample .section-heading h2 { margin-top: 6px; }
+
+/* Page operating guide: one compact sequence, not another dashboard card grid. */
+.page-guide { position: relative; display: grid; grid-template-columns: minmax(200px, .85fr) minmax(320px, 1.4fr) minmax(180px, .75fr); gap: 24px 40px; margin-block: 20px 64px; padding-block: 24px; border-block: 1px solid var(--color-line); }
+.page-guide-signal { position: absolute; inset: 0 auto 0 -18px; width: 7px; pointer-events: none; }
+.page-guide-intro span { color: var(--color-muted); font-size: 12px; }
+.page-guide h2 { margin-top: 6px; font-size: clamp(20px, 2vw, 26px); }
+.page-guide p { color: var(--color-muted); font-size: 14px; line-height: 1.6; }
+.page-guide-intro p { margin-top: 8px; }
+.page-guide ol { counter-reset: guide; display: grid; gap: 10px; padding: 0; margin: 0; list-style: none; }
+.page-guide li { counter-increment: guide; display: grid; grid-template-columns: 24px 1fr; gap: 10px; font-size: 14px; line-height: 1.5; }
+.page-guide li::before { content: counter(guide); display: grid; place-items: center; width: 22px; height: 22px; border: 1px solid var(--color-line); border-radius: 50%; color: var(--color-muted); font: 11px var(--font-mono); }
+.page-guide-result { align-self: center; padding-inline-start: 20px; border-inline-start: 1px solid var(--color-line); }
+.page-guide-result strong { display: block; margin-bottom: 6px; color: var(--color-ink); font-size: 13px; }
+@media (max-width: 900px) { .page-guide { grid-template-columns: 1fr 1.5fr; } .page-guide-result { grid-column: 1 / -1; padding: 16px 0 0; border-inline-start: 0; border-block-start: 1px solid var(--color-line); } }
+@media (max-width: 620px) { .page-guide { grid-template-columns: 1fr; gap: 20px; margin-block-end: 48px; } .page-guide-result { grid-column: auto; } }
+[data-texture="off"] .page-guide-signal { display: none; }

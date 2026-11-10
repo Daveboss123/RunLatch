@@ -38,6 +38,8 @@ export function setupTransport(f: ReturnType<typeof setupFixture>, change?: (par
       let result: object;
       if (p.request_type === "view_account") result = { code_hash: target.expected_code_hash };
       else if (p.request_type === "view_access_key") result = f.context.signer_access;
+      else if (p.request_type === "view_access_key_list") result = { keys: [{ public_key: scope.recovery_public_key,
+        access_key: { nonce: 1, permission: "FullAccess" } }] };
       else if (p.request_type === "call_function") {
         const values: Record<string, unknown> = { get_operator: target.operator_id, get_schema_version: 2, get_network_tag: "testnet",
           get_storage_requirements: { ...f.context.storage, scope: "CONSERVATIVE_PREPAID_STATE_LIMITS_NOT_MEASURED_GAS" },

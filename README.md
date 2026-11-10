@@ -144,6 +144,16 @@ Evidence is written to `.local/projects/latest.json` and per-project observation
 
 ## Do X -> see Y
 
+### 0. Operate one exact owner action (`NEAR_TESTNET` preparation)
+
+1. Open `https://runlatch.vercel.app/testnet` or local `/testnet`.
+2. Load the RunLatch testnet target and explicitly permit the read.
+3. Connect a compatible injected **testnet** wallet. RunLatch stores no wallet session or private key.
+4. Load the funded Capsule or canonical quote template, prepare the current exact review, and inspect signer, receiver, method, arguments, gas and deposit.
+5. The signing button becomes available only after the connected account/public key matches and you check the exact-action confirmation. RunLatch re-reads current final state before opening the wallet.
+
+An external wallet prompt is a human action. A returned transaction hash is not settlement or Outcome Receipt evidence. Existing demo accounts held only in Windows Credential Manager use the separately reviewed own-terminal helpers instead; never paste those credentials into the app.
+
 ### 1. One eligible request (`BROWSER_FIXTURE`)
 
 1. Run `npm.cmd run dev` and open `http://127.0.0.1:3000/gate`.

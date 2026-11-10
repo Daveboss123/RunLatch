@@ -1,5 +1,7 @@
 # Human testnet workspace — read-only, not a wallet
 
+> **9 November superseding update:** the workspace now includes an admitted memory-only injected-wallet bridge for one freshly reviewed human FunctionCall and a separately reviewed native restricted AddKey. The historical read-only implementation/tests below remain evidence for the reader/review/report foundation. The bridge has no remote manifest/executor, persistence, auto-connect, browser key or hosted relay; an external wallet retains the human key. Public Capsule/quote/key/purchase evidence is still absent until an actual signature and readback occur. See [connected owner plan](CONNECTED_OWNER_APPLICATION_PLAN.md).
+
 **8 November 2026.** `/testnet` connects the existing unsigned human reviews, captured-purchase observer and selected project report to the browser. It does **not** finish human signing or the Working testnet MVP. No public account/deployment/key/run or wallet connection is configured.
 
 ## What works locally
@@ -38,9 +40,11 @@ npm.cmd run lint
 - 390/1440 screenshots in both themes, axe with zero reported violations, 320/768/1024 reflow, keyboard focus, reduced motion and CSS-mask fallback/texture reduction passed. No shader/GPU-performance claim, real-device/Safari/screen-reader certification or complete sitewide browser release QA.
 - Isolated built JavaScript search found none of `RUNLATCH_AGENT_PRIVATE_KEY`, `consumeRestrictedProcessKey`, `confirmTestnetAgentRun`, or the restricted single-attempt marker. This is a narrow bundle exclusion check, not a security audit.
 
-Ignored captures/logs stay in the isolated QA source, not public evidence. The current port-3000 preview intentionally remains the prior build. The separate loopback QA preview is `http://127.0.0.1:3001/testnet`; do not replace the root preview or reinterpret a synthetic screenshot as a public run. Future root build/browser commands must follow the current heads-up/preview rules.
+Ignored captures/logs stay in the isolated QA source, not public evidence. At the 8 November milestone the port-3000 preview intentionally remained the prior build and the isolated loopback preview was `http://127.0.0.1:3001/testnet`. That build-isolation rule no longer applies: section 80 rebuilt the root project because the human authorized the connected owner application. A synthetic screenshot is still never a public run.
 
-## Genuine remaining blocker
+**9 November connected milestone (supersedes the blocker below):** `injected-wallet.ts`, `agent-key-review.ts` and `demo-operations.ts` now implement the exact searched wallet path, the native restricted `AddKey` review and fixed public demo targets. Tests: 208/208 frontend, 244/244 near, 115/115 backend, 105/105 Chromium, type/lint/build/parity exit0. Public readiness reviews for the Capsule, quote and restricted key pass read-only. None of those actions is signed or on chain.
+
+## Genuine remaining blocker (8 November, historical)
 
 No fixed human-selected, reviewed owner/provider wallet/signing path exists. NEAR Connect's default mutable remote executors, discovery/persistence and earlier notice concerns remain unadmitted; its generic package API is not permission to silently activate a wallet. No SDK/key-plugin/new wallet package was installed or patched.
 

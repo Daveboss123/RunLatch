@@ -12,9 +12,12 @@ test.beforeEach(async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Inspect the local contract run." })).toBeVisible();
 });
 
-test("LOCAL empty boundary cannot connect a wallet, sign or submit", async ({ page }) => {
+test("LOCAL inspector stays read-only and routes public actions to the owner workspace", async ({ page }) => {
   await expect(inspector(page).getByRole("status")).toContainText("No contract records imported");
-  for (const label of ["Connect testnet owner wallet", "Sign owner approval", "Submit agent purchase", "Clear imported view"]) await expect(inspector(page).getByRole("button", { name: label, exact: true })).toBeDisabled();
+  await expect(inspector(page).getByRole("button", { name: "Clear imported view", exact: true })).toBeDisabled();
+  await expect(inspector(page).getByRole("link", { name: "Open owner workspace", exact: true })).toHaveAttribute("href", "/testnet");
+  await expect(inspector(page).locator(".network-progress")).toContainText("GateDeployedProjectActiveProviderRegistered");
+  for (const label of ["Connect testnet owner wallet", "Sign owner approval", "Submit agent purchase"]) await expect(inspector(page).getByRole("button", { name: label, exact: true })).toHaveCount(0);
   expect(await inspector(page).locator('a[href*="explorer"], a[href*="nearblocks"]').count()).toBe(0);
 });
 
@@ -63,7 +66,7 @@ test("tampered recipient, expired quote, replay, overspend and revoked authority
     await inspector(page).locator(".observation-purchases summary").click();
     await inspector(page).getByRole("button", { name: "Inspect exact owner approval" }).click();
     await expect(inspector(page).getByRole("alert")).toContainText("not reviewable");
-    await expect(inspector(page).getByRole("button", { name: "Sign owner approval" })).toBeDisabled();
+    await expect(inspector(page).getByRole("button", { name: "Sign owner approval" })).toHaveCount(0);
     await expect(inspector(page).locator(".observation-balances")).toContainText("Reserved now0");
   }
   const replay = await observationFixture(); replay.attempts.push({ ...replay.attempts[0], transaction_id: "6".repeat(32), initial: { receipt_id: "7".repeat(32), succeeded: true }, transfer: null, callback: null,
@@ -82,7 +85,7 @@ test("exact owner review shows bound hash without approving or signing", async (
   const review = JSON.parse(await page.getByLabel("Exact unsigned owner approval").innerText());
   expect(review.args.expected_request_hash).toBe(value.snapshots[0].purchases[0].request_hash); expect(review.signing_enabled).toBe(false); expect(review.deposit_yocto).toBe("1");
   await expect(inspector(page).getByRole("status").filter({ hasText: "not approved or signed" })).toBeVisible();
-  await expect(inspector(page).getByRole("button", { name: "Sign owner approval" })).toBeDisabled();
+  await expect(inspector(page).getByRole("button", { name: "Sign owner approval" })).toHaveCount(0);
 });
 
 test("failure and missing callback remain separate from provisioning and owner outcome", async ({ page }) => {
@@ -142,13 +145,14 @@ for (const width of [320, 390, 768, 1440]) for (const theme of ["dark", "light"]
   });
 }
 
-test("no-JS has a visible CLI fallback and no usable signing controls", async ({ browser }, testInfo) => {
+test("no-JS has a visible CLI fallback and routes operational work away from the LOCAL inspector", async ({ browser }, testInfo) => {
   const context = await browser.newContext({ javaScriptEnabled: false }); const page = await context.newPage();
   await page.goto(new URL("/demo", testInfo.project.use.baseURL).href);
   // Text-engine selectors intentionally skip NOSCRIPT. Verify the actual visible DOM instead.
   await expect(page.locator("noscript p")).toBeVisible();
   await expect(page.locator("noscript p")).toContainText("JavaScript is required for local file inspection.");
-  await expect(inspector(page).getByRole("button", { name: "Sign owner approval" })).toBeDisabled(); await context.close();
+  await expect(inspector(page).getByRole("button", { name: "Sign owner approval" })).toHaveCount(0);
+  await expect(inspector(page).getByRole("link", { name: "Open owner workspace" })).toBeVisible(); await context.close();
 });
 
 test("reimporting the same project/block invalidates prior unsigned drafts and owner review", async ({ page }) => {

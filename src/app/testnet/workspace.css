@@ -6,6 +6,14 @@ body:has(.testnet-page) .site-header { transition: border-color var(--motion-bas
 .testnet-boundary { border-inline-start: 3px solid var(--color-accent); padding-inline-start: 24px; margin-block-end: 40px; }
 .testnet-boundary h2 { font-size: clamp(24px, 3vw, 32px); margin-block: 16px; }
 .testnet-boundary p, .testnet-workspace fieldset > p, .testnet-review > p { max-width: 75ch; color: var(--color-muted); margin-block: 16px; }
+.wallet-connection { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px 32px; align-items: center; padding: 24px; margin-block-end: 40px; border: 1px solid var(--color-line); background: var(--color-panel); }
+.wallet-connection h3, .wallet-signing h3 { font-size: 20px; }
+.wallet-connection p, .wallet-signing p { max-width: 72ch; margin-top: 8px; color: var(--color-muted); font-size: 14px; line-height: 1.6; }
+.wallet-connection > label { grid-column: 1 / -1; }
+.wallet-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+.testnet-template-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-block: 0 20px; }
+.testnet-template-actions > span { color: var(--color-muted); font-size: 13px; }
+.testnet-template-actions .text-button { min-height: 44px; }
 .testnet-workspace fieldset { border: 0; border-block-start: 1px solid var(--color-line); padding: 24px 0 32px; min-width: 0; }
 .testnet-workspace legend { font: 500 22px var(--font-heading); padding-inline-end: 16px; }
 .testnet-workspace label { display: grid; gap: 8px; font-size: 14px; line-height: 1.6; }
@@ -29,6 +37,11 @@ body:has(.testnet-page) .site-header { transition: border-color var(--motion-bas
 .testnet-divider { height: 18px; max-width: 320px; margin-block-end: 24px; pointer-events: none; }
 [data-texture="off"] .testnet-divider { display: none; }
 .testnet-export { border-block-start: 1px solid var(--color-line); padding-block: 24px; }
+.wallet-signing { padding: 24px; margin-block: 24px; border-inline-start: 3px solid var(--color-accent); background: var(--color-panel); }
+.wallet-signing .button { margin-top: 8px; }
+.wallet-submission { display: grid; gap: 8px; margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--color-line); }
+.wallet-submission code { overflow-wrap: anywhere; }
 @media (min-width: 768px) { .testnet-input-grid, .testnet-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 479px) { .testnet-page { padding-block: 40px 64px; } .testnet-boundary { padding-inline-start: 16px; } .testnet-actions > .button { width: 100%; } }
+@media (max-width: 700px) { .wallet-connection { grid-template-columns: 1fr; padding: 20px; } .wallet-actions { justify-content: flex-start; } }
+@media (max-width: 479px) { .testnet-page { padding-block: 40px 64px; } .testnet-boundary { padding-inline-start: 16px; } .testnet-actions > .button, .wallet-actions > .button, .wallet-signing > .button { width: 100%; } }
 @media (prefers-reduced-motion: reduce) { .testnet-workspace *, .testnet-workspace *::before, .testnet-workspace *::after { transition: none; animation: none; } }

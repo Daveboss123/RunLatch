@@ -1,8 +1,8 @@
 /** Read-only browser workflow. No wallet, consent issuance, signer, agent key or writes. */
 import type { createTestnetReader } from "./testnet-rpc.ts";
-import { parseSetupAction, type SetupReview } from "./setup-review.ts";
-import { parseOwnerAction, type OwnerArtifact, type OwnerReview } from "./owner-review.ts";
-import { parsePurchaseAction, type PurchaseReview } from "./action-review.ts";
+import { confirmFreshSetupReview, parseSetupAction, type SetupReview } from "./setup-review.ts";
+import { confirmFreshOwnerReview, parseOwnerAction, type OwnerArtifact, type OwnerReview } from "./owner-review.ts";
+import { confirmFreshPurchaseReview, parsePurchaseAction, type PurchaseReview } from "./action-review.ts";
 import { canonicalReviewContent } from "./review-content.ts";
 import { fail, object, parseBoundedJson } from "./records.ts";
 
@@ -29,6 +29,15 @@ export async function readHumanWorkspaceReview(reader: Reader, input: unknown, e
   if (parsed.kind === "setup") return Object.freeze({ kind: "setup", review: await reader.readSetupReview(parsed.action, signal) });
   if (parsed.kind === "approval") return Object.freeze({ kind: "approval", review: await reader.readPurchaseReview(parsed.action, null, signal) });
   return Object.freeze({ kind: "owner", review: await reader.readOwnerReview(parsed.action, evidence, signal) });
+}
+/** Fresh exact-content match for one external wallet prompt; still not a signature or settlement fact. */
+export function confirmFreshHumanWorkspaceReview(original: HumanWorkspaceReview, fresh: HumanWorkspaceReview) {
+  if (original.kind !== fresh.kind) return fail("HUMAN_WORKSPACE_REVIEW_KIND_CHANGED");
+  const confirmation = { review_hash: original.review.review_hash, consent: true };
+  if (original.kind === "setup" && fresh.kind === "setup") return confirmFreshSetupReview(original.review, fresh.review, confirmation);
+  if (original.kind === "owner" && fresh.kind === "owner") return confirmFreshOwnerReview(original.review, fresh.review, confirmation);
+  if (original.kind === "approval" && fresh.kind === "approval") return confirmFreshPurchaseReview(original.review, fresh.review, confirmation);
+  return fail("HUMAN_WORKSPACE_REVIEW_KIND_CHANGED");
 }
 /** Human-triggered export, not a confirmation/token accepted by a signer. Artifacts are never included. */
 export function exportHumanWorkspaceReview(value: HumanWorkspaceReview): string {

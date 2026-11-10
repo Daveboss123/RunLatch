@@ -2,7 +2,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { readFile } from "node:fs/promises";
-import { HUMAN_WORKSPACE_METHODS, parseHumanWorkspaceAction, readHumanWorkspaceReview, exportHumanWorkspaceReview } from "../../src/lib/near/human-workspace.ts";
+import { HUMAN_WORKSPACE_METHODS, confirmFreshHumanWorkspaceReview, parseHumanWorkspaceAction, readHumanWorkspaceReview, exportHumanWorkspaceReview } from "../../src/lib/near/human-workspace.ts";
 import { createTestnetReader } from "../../src/lib/near/testnet-rpc.ts";
 import { target } from "./helpers/testnet-evidence.ts";
 import { setupFixture, setupTransport } from "./helpers/setup-review.ts";
@@ -66,10 +66,24 @@ test("unsigned export contains exact public terms/strings but no artifact, token
   assert.ok(!text.includes("health_body")); assert.ok(!text.includes("private_key")); assert.ok(!text.includes("signed_bytes")); assert.ok(!("consent" in out));
 });
 
-test("production workspace has no signer/injected transport, automatic reads, storage, URL or server-action path", async () => {
+test("fresh human workspace review confirms unchanged issued content and rejects changed kinds", async () => {
+  const f = setupFixture(), action = { ...f.actions.project, args: { project: { ...f.project.input, project_id: "new-project" } } };
+  const firstRpc = setupTransport(f), secondRpc = setupTransport(f);
+  const original = await readHumanWorkspaceReview(createTestnetReader(target, firstRpc.transport), action);
+  const fresh = await readHumanWorkspaceReview(createTestnetReader(target, secondRpc.transport), action);
+  assert.equal(confirmFreshHumanWorkspaceReview(original, fresh).call.method, "create_project");
+  const owner = await ownerFixture();
+  const ownerReview = await readHumanWorkspaceReview(createTestnetReader(target, ownerTransport(owner).transport), owner.actions.provisioning);
+  assert.throws(() => confirmFreshHumanWorkspaceReview(original, ownerReview), /REVIEW_KIND_CHANGED/u);
+});
+
+test("production workspace uses only the admitted memory-only injected bridge; no runner, persistence, URL or server-action path", async () => {
   const component = await readFile(new URL("../../src/components/runlatch/testnet-workspace.tsx", import.meta.url), "utf8");
   const workflow = await readFile(new URL("../../src/lib/near/human-workspace.ts", import.meta.url), "utf8");
-  assert.ok(!/scripts\/near|restricted-process-key|runner-admission|localStorage|sessionStorage|indexedDB|useSearchParams|signAndSend|wallet:|near-wallet-injected/u.test(component + workflow));
+  const bridge = await readFile(new URL("../../src/lib/near/injected-wallet.ts", import.meta.url), "utf8");
+  assert.ok(!/scripts\/near|restricted-process-key|runner-admission|localStorage|sessionStorage|indexedDB|useSearchParams|NearConnector|manifestUrl|WalletConnect/u.test(component + workflow + bridge));
+  assert.ok(!bridge.includes('createElement("iframe")'));
+  assert.match(bridge, /near-wallet-injected/u); assert.match(bridge, /signAndSendTransaction/u); assert.match(bridge, /WALLET_CALL_NOT_ADMITTED/u);
   assert.ok(component.includes("createTestnetReader(target)")); assert.ok(component.includes("controller.current?.abort()"));
   assert.ok(!component.includes('name="')); assert.ok(!component.includes('"use server"')); assert.ok(!component.includes("dangerouslySetInnerHTML"));
 });

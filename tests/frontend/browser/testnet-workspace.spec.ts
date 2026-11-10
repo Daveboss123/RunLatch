@@ -34,15 +34,74 @@ async function setupFields(page: Page) {
 }
 test.beforeEach(async ({ page }) => { await page.goto("/testnet"); });
 
-test("no auto-read/wallet/storage; missing scope and invalid identity cannot send; error receives focus", async ({ page }) => {
+test("no auto-read, wallet discovery or storage; missing scope and invalid identity cannot send", async ({ page }) => {
   const methods = await intercept(page, async () => { throw Error("NETWORK_MUST_NOT_RUN"); });
   await expect(page.getByRole("button", { name: "Read and prepare unsigned review" })).toBeDisabled();
-  await expect(view(page)).toContainText("No wallet is connected");
+  await expect(page.getByRole("button", { name: "Connect testnet wallet" })).toBeEnabled();
+  await expect(view(page)).toContainText("No remote wallet manifest, automatic connection or persisted session");
   await page.getByRole("checkbox", { name: "I permit read-only RPC requests" }).check();
   await page.getByRole("button", { name: "Read and prepare unsigned review" }).click();
   await expect(view(page).getByRole("alert")).toContainText("INVALID_CONTRACT_ACCOUNT");
   await expect(view(page).getByRole("alert")).toBeFocused(); expect(methods).toEqual([]);
   expect(await page.evaluate(() => ({ local: localStorage.length, session: sessionStorage.length, search: location.search }))).toEqual({ local: 0, session: 0, search: "" });
+});
+
+test("explicit injected wallet signs only a fresh exact reviewed testnet FunctionCall", async ({ page }) => {
+  const f = setupFixture();
+  await page.addInitScript(({ accountId, publicKey }) => {
+    const calls: unknown[] = []; Object.defineProperty(window, "__runlatchWalletCalls", { value: calls });
+    const wallet = { manifest: { id: "fixed-wallet", name: "Fixed wallet", type: "injected", features: {
+      testnet: true, signInWithoutAddKey: true, signAndSendTransaction: true } },
+    async signIn(input: unknown) { calls.push(["signIn", input]); return [{ accountId, publicKey }]; },
+    async signOut(input: unknown) { calls.push(["signOut", input]); },
+    async getAccounts(input: unknown) { calls.push(["getAccounts", input]); return [{ accountId, publicKey }]; },
+    async signAndSendTransaction(input: unknown) { calls.push(["sign", input]); return { transaction: { hash: "1".repeat(32) } }; } };
+    window.addEventListener("near-selector-ready", () => window.dispatchEvent(new CustomEvent("near-wallet-injected", { detail: wallet })));
+  }, { accountId: target.operator_id, publicKey: f.actions.project.public_key });
+  await page.reload(); const rpc = setupTransport(f), methods = await intercept(page, rpc.transport);
+  await targetFields(page); await page.getByRole("button", { name: "Connect testnet wallet" }).click();
+  await expect(page.getByRole("button", { name: "Use Fixed wallet" })).toBeVisible(); await page.getByRole("button", { name: "Use Fixed wallet" }).click();
+  await expect(page.getByLabel("Connected signing account")).toContainText(target.operator_id);
+  await page.getByLabel("Exact gas limit (gas units)").fill(f.actions.project.gas);
+  await page.getByLabel("Exact arguments JSON", { exact: true }).fill(JSON.stringify({ project: { ...f.project.input, project_id: "new-project" } }));
+  await page.getByRole("button", { name: "Read and prepare unsigned review" }).click();
+  await page.getByRole("checkbox", { name: "I reviewed this exact action" }).check();
+  await page.getByRole("button", { name: "Sign exact reviewed action" }).click();
+  await expect(page.getByText("Wallet returned a transaction identity", { exact: true })).toBeVisible();
+  await expect(page.getByText("1".repeat(32), { exact: true })).toBeVisible();
+  const walletCalls = await page.evaluate(() => (window as unknown as { __runlatchWalletCalls: unknown[] }).__runlatchWalletCalls);
+  const signed = walletCalls.find(item => Array.isArray(item) && item[0] === "sign") as unknown[];
+  expect(signed[1]).toEqual({ network: "testnet", signerId: target.operator_id, receiverId: target.contract_id, actions: [{ type: "FunctionCall", params: {
+    methodName: "create_project", args: { project: { ...f.project.input, project_id: "new-project" } }, gas: f.actions.project.gas, deposit: "8192" } }] });
+  expect(methods.every(method => ["status", "block", "query"].includes(method))).toBe(true);
+  expect(await page.evaluate(() => ({ local: localStorage.length, session: sessionStorage.length }))).toEqual({ local: 0, session: 0 });
+});
+
+test("agent recovery wallet installs only the exact finite submit-only key after fresh readback", async ({ page }) => {
+  const recovery = "ed25519:6JcrDrG1V7GarzGkJF8vCsTcfKHSWqGfcP5BVT5n19C8", restricted = "ed25519:ABWnTWVgg59wN1p7pYfjcUUf53FFYubzELSBPq57Z2hY";
+  const agent = "agent.runlatch-demo-1108.testnet", f = setupFixture();
+  await page.addInitScript(({ accountId, publicKey }) => {
+    const calls: unknown[] = []; Object.defineProperty(window, "__runlatchAgentWalletCalls", { value: calls });
+    const wallet = { manifest: { id: "agent-wallet", name: "Agent recovery wallet", type: "injected", features: {
+      testnet: true, signInWithoutAddKey: true, signAndSendTransaction: true } },
+    async signIn(input: unknown) { calls.push(["signIn", input]); return [{ accountId, publicKey }]; },
+    async signOut(input: unknown) { calls.push(["signOut", input]); }, async getAccounts() { return [{ accountId, publicKey }]; },
+    async signAndSendTransaction(input: unknown) { calls.push(["sign", input]); return { transaction: { hash: "2".repeat(32) } }; } };
+    window.addEventListener("near-selector-ready", () => window.dispatchEvent(new CustomEvent("near-wallet-injected", { detail: wallet })));
+  }, { accountId: agent, publicKey: recovery });
+  await page.reload(); const rpc = setupTransport(f, (params, value) => params.request_type === "view_access_key_list"
+    ? { ...(value as object), keys: [{ public_key: recovery, access_key: { nonce: 1, permission: "FullAccess" } }] } : value);
+  await intercept(page, rpc.transport); await targetFields(page); await page.getByRole("button", { name: "Connect testnet wallet" }).click();
+  await page.getByRole("button", { name: "Use Agent recovery wallet" }).click();
+  await page.getByLabel("Workspace task").selectOption("agent-key"); await page.getByRole("button", { name: "Review restricted key installation" }).click();
+  await expect(page.getByRole("heading", { name: "Exact restricted-agent key review" })).toBeVisible();
+  await page.getByRole("checkbox", { name: "I reviewed the exact agent account" }).check();
+  await page.getByRole("button", { name: "Install exact restricted key" }).click();
+  await expect(page.getByText("Wallet returned an AddKey transaction identity", { exact: true })).toBeVisible();
+  const calls = await page.evaluate(() => (window as unknown as { __runlatchAgentWalletCalls: unknown[] }).__runlatchAgentWalletCalls);
+  const signed = calls.find(item => Array.isArray(item) && item[0] === "sign") as unknown[];
+  expect(signed[1]).toEqual({ network: "testnet", signerId: agent, receiverId: agent, actions: [{ type: "AddKey", params: { publicKey: restricted,
+    accessKey: { nonce: 0, permission: { receiverId: target.contract_id, allowance: "50000000000000000000000", methodNames: ["submit_purchase"] } } } }] });
 });
 
 test("exact derived funding/key/call review, explicit unsigned export and edit invalidation", async ({ page }) => {
@@ -113,6 +172,9 @@ test("390/1440 light and dark, keyboard focus, dither fallback and reduced motio
     for (const dark of [true, false]) {
       const isDark = await page.locator("html").evaluate(e => e.classList.contains("dark"));
       if (isDark !== dark) await page.getByRole("button", { name: `Switch to ${dark ? "dark" : "light"} theme` }).click();
+      // Sample settled styles, not halfway through a theme transition (same rule as policy.spec).
+      await page.waitForFunction(() => document.getAnimations().filter(animation => animation instanceof CSSTransition)
+        .every(animation => animation.playState !== "running"));
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       expect((await new AxeBuilder({ page }).analyze()).violations).toEqual([]);
       await page.getByRole("heading", { name: "Review the action. Inspect the outcome." }).click();
@@ -135,8 +197,9 @@ test("390/1440 light and dark, keyboard focus, dither fallback and reduced motio
 
 test("no-JS remains honest: no form names/URL data, signer or enabled network action", async ({ browser, baseURL }) => {
   const context = await browser.newContext({ javaScriptEnabled: false }); const page = await context.newPage();
-  await page.goto(`${baseURL}/testnet`); await expect(page.getByText("JavaScript is required for explicit memory-only reads.", { exact: false })).toBeVisible();
+  await page.goto(`${baseURL}/testnet`); await expect(page.getByText("JavaScript is required for explicit reads and wallet prompts.", { exact: false })).toBeVisible();
   await expect(page.getByRole("button", { name: "Read and prepare unsigned review" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Connect testnet wallet" })).toBeDisabled();
   await expect(page.locator("form [name]")).toHaveCount(0); await context.close();
 });
 
