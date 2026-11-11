@@ -97,6 +97,30 @@ test("D-09 keyboard menu, tab arrows and visible focus", async ({ page }) => {
   await expect(page.getByRole("tabpanel")).toContainText("No transfer or reservation for this denied request");
 });
 
+for (const width of [390, 1440]) test(`Docs moves from header to footer Build column at ${width}px`, async ({ page }) => {
+  await page.setViewportSize({ width, height: 900 });
+  const header = page.locator(".site-header"), build = page.getByRole("navigation", { name: "Footer development" });
+  await expect(header.getByRole("link", { name: "Docs", exact: true })).toHaveCount(0);
+  if (width === 390) {
+    await page.locator(".mobile-menu summary").click();
+    await expect(page.getByRole("navigation", { name: "Mobile navigation" }).getByRole("link")).toHaveText(["Product", "The Gate", "Intelligence", "Evidence"]);
+    await page.keyboard.press("Escape");
+  } else await expect(page.getByRole("navigation", { name: "Main navigation" }).getByRole("link")).toHaveText(["Product", "The Gate", "Intelligence", "Evidence"]);
+  await expect(build.getByRole("heading", { name: "Build", exact: true })).toBeVisible();
+  await expect(build.getByRole("link", { name: "Reproduce locally", exact: true })).toHaveCount(0);
+  const docs = build.getByRole("link", { name: "Docs", exact: true });
+  await expect(docs).toHaveAttribute("href", "/docs");
+  await docs.focus(); await expect(docs).toBeFocused();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await mkdir(".local/docs-navigation", { recursive: true });
+  await header.screenshot({ path: `.local/docs-navigation/header-${width}.png` });
+  await build.screenshot({ path: `.local/docs-navigation/build-${width}.png` });
+  await docs.focus(); await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/docs$/u); await expect(page.getByRole("heading", { name: "Authority, explained.", exact: true })).toBeVisible();
+  await expect(page.getByRole("navigation", { name: "Documentation sections" }).getByRole("link", { name: "Reproduce locally", exact: true })).toHaveAttribute("href", "#reproduce");
+  await expect(page.locator(".site-header").getByRole("link", { name: "Docs", exact: true })).toHaveCount(0);
+});
+
 test("P-19 selected disclosure and local JSON export", async ({ page }) => {
   await expect(page.getByText("Nothing selected to share.", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Printable client report" })).toBeDisabled();
