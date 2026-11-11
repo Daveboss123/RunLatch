@@ -256,4 +256,5 @@ The human separately approved one exact 0.05 native purchase after setup. [Restr
 - [ACCEPTANCE_TESTS.md](ACCEPTANCE_TESTS.md) - adversarial cases and expected results.
 - [DESIGN.md](DESIGN.md) - visual system and dither rules.
 - [BUILD_LOG.md](BUILD_LOG.md) - chronological implementation and test evidence.
+- [Option C recording guide](docs/OPTION_C_DEMO_SCRIPT.md) - honest 90-second walkthrough, human-only X draft and remaining submission gates.
 - [docs/REMEDIATION_STATUS.md](docs/REMEDIATION_STATUS.md) - nine-prompt delivery scope, actual QA and remaining external gates.
