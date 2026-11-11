@@ -29,12 +29,12 @@ Do not publish until the human has reviewed and attached the actual video:
 
 > An agent's budget should belong to a job, not become a blank cheque. RunLatch binds purchases to project authority, canonical quotes and full commitments in a Rust Gate on NEAR. The demo separates four FINAL testnet setup steps and an unresolved purchase from the complete LOCAL Sandbox workflow. Built at NEAR HACKATHON. https://runlatch.vercel.app/ @NEARProtocol #NEARHackathon
 
-This draft makes no public-repository or completed-testnet-purchase claim. The human may add the repository link only after separately approving public visibility and verifying logged-out access.
+The repository is now public and logged-out access is verified: https://github.com/Daveboss123/RunLatch. The human may add that link to the reviewed post. This draft still makes no completed-testnet-purchase claim and has not been published.
 
 ## Before submission — still human gates
 
 1. Record and review a video showing the actual Option C workflow; the LOCAL end-to-end demo requires video, not screenshots alone.
-2. Review source/history privacy and existing licence/brand limitations before explicitly making the repository public. Keep it public through judging. No history rewriting or hidden reuse.
+2. Keep the already-public repository accessible through judging. Source/history publication was explicitly approved and checked; licence/brand limitations remain disclosed. No history rewriting or hidden reuse.
 3. Publish the X post personally with the video attached, “built at NEAR HACKATHON”, `@NEARProtocol` and `#NEARHackathon`; supply the real public URL.
 4. Confirm project name, lead name, contact email, team-size category, eligibility/other NEAR entries and mainnet payout account when needed. A payout account is form data, not permission for any mainnet transaction. Never commit these personal fields.
 5. Recheck https://nearhackathon.com/HACKATHON.md and logged-out repository/demo links. Deadline: **14 November 2026 23:59 UTC**. Security is the primary track; agents must be supported by the honestly labelled scripted LOCAL workflow, not an invented public settlement.

@@ -90,7 +90,7 @@ lint        exit 0
 npm test                 115 tests, 115 pass, 0 fail
 npm run test:frontend    216 tests, 216 pass, 0 fail
 npm run test:near        306 tests, 306 pass, 0 fail
-npx playwright test      108 tests, 108 pass, 0 fail
+npx playwright test      112 tests, 112 pass, 0 fail
 ```
 
 Run the app:
@@ -107,7 +107,7 @@ Browser suite (the dev server must be running):
 npx.cmd playwright test
 ```
 
-Observed 11 November: **108 Playwright tests pass**, including axe accessibility checks, keyboard paths, reduced motion, no-JavaScript fallback, responsive layouts at 320-1440 px, printable-report isolation and pre-hydration input protection. Wallet tests use synthetic extension/RPC replies, not real wallet approval. These checks are Chromium evidence, not a universal accessibility or real-device certification.
+Observed 11 November: **112 Playwright tests pass**, including axe accessibility checks, keyboard paths, reduced motion, no-JavaScript fallback, responsive layouts at 320-1440 px, printable-report isolation and pre-hydration input protection. A separate 32-view UI review covers all eight routes at 390/1440 in light/dark with no overflow or axe violations. Wallet tests use synthetic extension/RPC replies, not real wallet approval. These checks are Chromium evidence, not a universal accessibility or real-device certification.
 
 ### Rust contract tests
 
@@ -151,7 +151,7 @@ Evidence is written to `.local/projects/latest.json` and per-project observation
 2. Verify any hash independently through a public testnet RPC or explorer. The page and this README repeat recorded observations; they are not a light-client proof.
 3. In the original operator checkout with its retained local journals, run `node scripts/setup/human-db-purchase.ts --check`. The 11 November check returned the same intent/transaction identity, `submission UNAVAILABLE` and `payment_evidence SETTLEMENT_UNVERIFIED`. Later output depends on actual readback; the command loads no key, signs nothing and sends nothing. A clean checkout has no private journals and must not fabricate them or run the default signing command to reconstruct this attempt.
 
-The same page also hosts an optional owner workspace for wallet-held testnet accounts: explicitly load the target, connect a compatible extension, prepare one exact action, and review signer/key, receiver, method, arguments, gas and deposit. A matching account/key and confirmation are required, with a fresh final-block reread before the external wallet prompt. No real-extension approval is claimed. The recorded purchase used the human's own terminal and restricted agent key; no browser wallet is required to read the ledger.
+The same page also hosts an optional owner workspace for wallet-held testnet accounts. **Connect browser wallet** opens a single detected compatible extension; multiple detected wallets require an explicit choice. Missing-extension and connection feedback appear beside the button, not below the form. No real-extension approval is claimed. For an action, explicitly load the target, prepare one exact review, and inspect signer/key, receiver, method, arguments, gas and deposit. A matching account/key and confirmation are required, with a fresh final-block reread before the separate transaction prompt. The recorded purchase used the human's own terminal and restricted agent key; no browser wallet is required to read the ledger.
 
 An external wallet prompt is a human action. A returned transaction hash is not settlement or Outcome Receipt evidence. The connected account/key must already be held by the wallet. Existing demo accounts held only in Windows Credential Manager use `scripts/setup/human-demo-operation.ts` instead; never paste or import those credentials into the app.
 
@@ -228,7 +228,7 @@ The human separately approved one exact 0.05 native purchase after setup. [Restr
 - **Native NEAR only.** No fiat peg, exchange rate, stablecoin, cross-chain settlement, mainnet action or real funds.
 - **Single operator and project-bound demo.** No multi-tenant service, marketplace, agent swarm, production identity system or client share link.
 - **No Replay Lab yet.** The tested research/fixture workflow remains regression evidence, not the primary product story.
-- **Website is a hosted preview, not a completed testnet purchase.** The existing site is https://runlatch.vercel.app/, connected to the private repository's `main` branch. Updates to that site/private source are approved; [BUILD_LOG.md](BUILD_LOG.md) records the exact verified deployed revision and publication outcome. Local changes are not live until deployment is verified. Public repository visibility, demo post and submission remain separate human gates.
+- **Website is a hosted preview, not a completed testnet purchase.** The existing site is https://runlatch.vercel.app/, connected to the now-public repository's `main` branch at https://github.com/Daveboss123/RunLatch. Site/source publication is approved; [BUILD_LOG.md](BUILD_LOG.md) records exact deployed revisions and checks. Local changes are not live until deployment is verified. The actual demo video, X post and submission remain separate human gates.
 
 ## Repository and dependency disclosure
 

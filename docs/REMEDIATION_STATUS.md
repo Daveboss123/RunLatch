@@ -1,5 +1,7 @@
 # Nine-prompt remediation — delivery scope
 
+> **Historical 9 November checkpoint, not current status.** [README](../README.md), [the Option C guide](OPTION_C_DEMO_SCRIPT.md) and BUILD_LOG.md sections 85–87 describe the current release: live site, public repository, four FINAL testnet setup steps and one signed-and-unresolved purchase. Current test counts and publication checks are recorded there. Public outcome evidence remains unavailable; LOCAL Sandbox is the separately labelled complete workflow. Preserve the older results below as dated history, not claims that setup/source are still absent.
+
 9 November 2026. This is the existing RunLatch project, not a replacement. The human approved publishing the website update to `runlatch.vercel.app`; public source visibility, NEAR signing, X posting and hackathon submission remain separate gates.
 
 | Prompt | Delivered locally | Remaining boundary |

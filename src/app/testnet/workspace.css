@@ -1,16 +1,19 @@
 .testnet-page { padding-block: 64px 96px; }
-/* Theme ink and paper must change together: the shared header's background-only
-   transition crosses low contrast. Limit this correction to the new workspace. */
-body:has(.testnet-page) .site-header { transition: border-color var(--motion-base); }
 .testnet-workspace { max-width: 1024px; }
 .testnet-boundary { border-inline-start: 3px solid var(--color-accent); padding-inline-start: 24px; margin-block-end: 40px; }
 .testnet-boundary h2 { font-size: clamp(24px, 3vw, 32px); margin-block: 16px; }
 .testnet-boundary p, .testnet-workspace fieldset > p, .testnet-review > p { max-width: 75ch; color: var(--color-muted); margin-block: 16px; }
-.wallet-connection { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px 32px; align-items: center; padding: 24px; margin-block-end: 40px; border: 1px solid var(--color-line); background: var(--color-panel); }
+.wallet-connection { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px 32px; align-items: start; padding: 24px; margin-block-end: 40px; border: 1px solid var(--color-line); background: var(--color-panel); }
 .wallet-connection h3, .wallet-signing h3 { font-size: 20px; }
 .wallet-connection p, .wallet-signing p { max-width: 72ch; margin-top: 8px; color: var(--color-muted); font-size: 14px; line-height: 1.6; }
 .wallet-connection > label { grid-column: 1 / -1; }
 .wallet-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+.wallet-feedback { grid-column: 1 / -1; padding-block-start: 16px; border-top: 1px solid var(--color-line); }
+.wallet-feedback p { min-height: 44px; margin: 0; max-width: 78ch; color: var(--color-ink); }
+.wallet-feedback[data-error="true"] { border-inline-start: 3px solid var(--color-warning-text); padding-inline-start: 16px; }
+.wallet-feedback[data-error="true"] p { color: var(--color-warning-text); }
+.wallet-connection .wallet-demo-note { grid-column: 1 / -1; margin: 0; max-width: 80ch; font-size: 13px; line-height: 1.7; }
+.testnet-workspace :is(button, a, input, select, textarea, [tabindex]) { scroll-margin-block: 108px 24px; }
 .testnet-template-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px; margin-block: 0 20px; }
 .testnet-template-actions > span { color: var(--color-muted); font-size: 13px; }
 .testnet-template-actions .text-button { min-height: 44px; }
@@ -43,6 +46,10 @@ body:has(.testnet-page) .site-header { transition: border-color var(--motion-bas
 .wallet-submission code { overflow-wrap: anywhere; }
 @media (min-width: 768px) { .testnet-input-grid, .testnet-fields { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (max-width: 700px) { .wallet-connection { grid-template-columns: 1fr; padding: 20px; } .wallet-actions { justify-content: flex-start; } }
+@media (max-width: 700px) {
+  .wallet-connection p:not(.wallet-demo-note) { font-size: 16px; }
+  .testnet-workspace input:not([type="checkbox"]), .testnet-workspace select, .testnet-workspace textarea { font-size: 16px; }
+}
 @media (max-width: 479px) { .testnet-page { padding-block: 40px 64px; } .testnet-boundary { padding-inline-start: 16px; } .testnet-actions > .button, .wallet-actions > .button, .wallet-signing > .button { width: 100%; } }
 @media (prefers-reduced-motion: reduce) { .testnet-workspace *, .testnet-workspace *::before, .testnet-workspace *::after { transition: none; animation: none; } }
 

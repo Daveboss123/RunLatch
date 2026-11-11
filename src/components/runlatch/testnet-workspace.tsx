@@ -77,6 +77,9 @@ export function TestnetWorkspace() {
   const [exportAllowed, setExportAllowed] = useState(false), [busy, setBusy] = useState(false), [error, setError] = useState("");
   const [wallets, setWallets] = useState<readonly AdmittedInjectedWallet[]>([]), [wallet, setWallet] = useState<ConnectedInjectedWallet | null>(null);
   const [walletBusy, setWalletBusy] = useState(false), [signConsent, setSignConsent] = useState(false);
+  const [walletStatus, setWalletStatus] = useState("No wallet connected. Connection never signs a transaction."), [walletError, setWalletError] = useState(false);
+  const [walletPhase, setWalletPhase] = useState<"idle" | "discovering" | "connecting">("idle");
+  const walletOperation = useRef(0), walletLock = useRef(false);
   const [submission, setSubmission] = useState<Awaited<ReturnType<typeof signExactHumanCall>> | null>(null);
   const [keySubmission, setKeySubmission] = useState<Awaited<ReturnType<typeof signExactAgentKeyInstall>> | null>(null);
   const [notice, setNotice] = useState("No target selected. No network call or wallet connection.");
@@ -84,7 +87,7 @@ export function TestnetWorkspace() {
   const walletMatchesKeyReview = Boolean(keyReview && wallet?.accounts.some(item => item.accountId === keyReview.call.signer_id && item.publicKey === keyReview.call.public_key));
   const operation = useRef(0), controller = useRef<AbortController | null>(null), errorRef = useRef<HTMLParagraphElement>(null);
   const artifactRef = useRef<HTMLInputElement>(null);
-  useEffect(() => () => { operation.current++; controller.current?.abort(); }, []);
+  useEffect(() => () => { operation.current++; walletOperation.current++; controller.current?.abort(); }, []);
   useEffect(() => { if (error) errorRef.current?.focus(); }, [error]);
   function invalidate(message = "Inputs changed. Previous reads cleared; no contract state or funds changed.") {
     operation.current++; controller.current?.abort(); controller.current = null;
@@ -102,9 +105,7 @@ export function TestnetWorkspace() {
     setRpc(RUNLATCH_TESTNET_TARGET.rpc_url); setContract(RUNLATCH_TESTNET_TARGET.contract_id); setOperator(RUNLATCH_TESTNET_TARGET.operator_id); setCodeHash(RUNLATCH_TESTNET_TARGET.expected_code_hash);
   }
   function loadDemoAction(next: "project" | "capsule" | "quote") {
-    invalidate(next === "project" ? "New unsigned work order loaded. The original expired project is preserved, not renewed."
-      : next === "capsule" ? "Exact demo Capsule template loaded. Read current state before any wallet prompt."
-      : "Exact canonical quote template loaded. Read current provider state before any wallet prompt.");
+    invalidate("Recorded setup template loaded for inspection. This demo setup already completed; do not repeat its signing command or treat this template as new authority.");
     if (next === "project") {
       setMethod("create_project"); setSigner(DEMO_PROJECT_ACTION.signer_id); setPublicKey(DEMO_PROJECT_ACTION.public_key); setGas(DEMO_PROJECT_ACTION.gas); setArgs(JSON.stringify(DEMO_PROJECT_ACTION.args, null, 2));
     } else if (next === "capsule") {
@@ -113,28 +114,46 @@ export function TestnetWorkspace() {
       setMethod("publish_quote"); setSigner(DEMO_QUOTE_ACTION.signer_id); setPublicKey(DEMO_QUOTE_ACTION.public_key); setGas(DEMO_QUOTE_ACTION.gas); setArgs(JSON.stringify(DEMO_QUOTE_ACTION.args, null, 2));
     }
   }
+  async function connectSelected(selected: AdmittedInjectedWallet, seq: number) {
+    setWalletPhase("connecting"); setWalletStatus(`Opening ${selected.name}. Choose the testnet account already held by your wallet.`);
+    const connected = await connectInjectedWallet(selected);
+    if (seq !== walletOperation.current) { await disconnectInjectedWallet(connected).catch(() => undefined); return; }
+    const first = connected.accounts[0]; setWallet(connected); setWallets([]);
+    invalidate(`Connected ${selected.name} in browser memory only. Prepare a fresh exact review before signing.`);
+    setSigner(first.accountId); setPublicKey(first.publicKey);
+    setWalletStatus(`${selected.name} connected. No transaction was signed; every action still needs a fresh review and separate wallet confirmation.`);
+  }
+  function walletStopped(seq: number) {
+    if (seq !== walletOperation.current) return;
+    setWalletError(true); setWalletStatus("Wallet connection was not completed. Unlock a compatible testnet extension and try connecting again, or continue reading without a wallet. No signature or fallback key was used.");
+  }
   async function discover() {
-    if (walletBusy) return; setWalletBusy(true); setError(""); setNotice("Looking for Meteor Wallet or another compatible injected testnet wallet after your click…");
+    if (walletBusy || walletLock.current) return;
+    walletLock.current = true; const seq = ++walletOperation.current;
+    setWalletBusy(true); setWalletError(false); setWallets([]); setWalletPhase("discovering");
+    setWalletStatus("Checking this browser for compatible testnet wallet extensions…");
     try {
-      const found = await discoverInjectedWallets(); setWallets(found);
-      setNotice(found.length ? `${found.length} compatible injected testnet wallet${found.length === 1 ? "" : "s"} found. Choose one to connect.`
-        : "No supported browser wallet answered. Install or unlock Meteor Wallet for a wallet-held testnet account, or use the reviewed own-terminal flow for the existing Credential Manager accounts.");
-    } catch { setError("Wallet discovery stopped safely. No connection, signature or transaction occurred."); }
-    finally { setWalletBusy(false); }
+      const found = await discoverInjectedWallets(); if (seq !== walletOperation.current) return;
+      if (found.length === 1) await connectSelected(found[0], seq);
+      else if (found.length > 1) {
+        setWallets(found); setWalletStatus(`${found.length} compatible wallets found. Choose which wallet to open below.`);
+      } else {
+        setWalletError(true); setWalletStatus("No compatible wallet extension was detected in this browser. Use a browser with an installed, unlocked testnet extension, then check again. You can read the recorded demo without a wallet.");
+      }
+    } catch { walletStopped(seq); }
+    finally { if (seq === walletOperation.current) { walletLock.current = false; setWalletBusy(false); setWalletPhase("idle"); } }
   }
   async function connect(selected: AdmittedInjectedWallet) {
-    if (walletBusy) return; setWalletBusy(true); setError(""); setNotice(`Opening ${selected.name} for testnet account selection…`);
-    try {
-      const connected = await connectInjectedWallet(selected), first = connected.accounts[0]; setWallet(connected);
-      invalidate(`Connected ${selected.name} in browser memory only. Prepare a fresh exact review before signing.`);
-      setSigner(first.accountId); setPublicKey(first.publicKey);
-    } catch { setError("Wallet connection was rejected or incompatible. No review was signed and no fallback key was used. Unlock or update Meteor Wallet, or use the own-terminal flow — browser signing is optional and no fallback key or account is ever substituted."); }
-    finally { setWalletBusy(false); }
+    if (walletBusy || walletLock.current) return;
+    walletLock.current = true; const seq = ++walletOperation.current;
+    setWalletBusy(true); setWalletError(false);
+    try { await connectSelected(selected, seq); } catch { walletStopped(seq); }
+    finally { if (seq === walletOperation.current) { walletLock.current = false; setWalletBusy(false); setWalletPhase("idle"); } }
   }
   async function disconnect() {
     if (!wallet || walletBusy) return; setWalletBusy(true); setError("");
     try { await disconnectInjectedWallet(wallet); } catch { /* Clear local connection even when wallet sign-out is unavailable. */ }
-    finally { setWallet(null); setWallets([]); setSignConsent(false); setSubmission(null); setKeySubmission(null); setWalletBusy(false); setNotice("Wallet session cleared from RunLatch memory. Contract authority and transactions are unchanged."); }
+    finally { setWallet(null); setWallets([]); setSignConsent(false); setSubmission(null); setKeySubmission(null); setWalletBusy(false); setWalletError(false); setWalletStatus("Disconnected from RunLatch. Contract authority and existing transactions are unchanged."); setNotice("Wallet session cleared from RunLatch memory. Contract authority and transactions are unchanged."); }
   }
   async function sign() {
     if (!wallet || !review || !signConsent || walletBusy) return;
@@ -231,15 +250,16 @@ export function TestnetWorkspace() {
       <p>Never paste a private key, seed phrase or credential. Only public account IDs, public keys, exact contract arguments and explicitly selected fixture bytes belong here.</p></aside>
     <section className="wallet-connection" aria-labelledby="wallet-connection-heading"><div><h3 id="wallet-connection-heading">Owner wallet</h3><p>{wallet
       ? `${wallet.name} connected in memory with ${wallet.accounts.length} testnet account${wallet.accounts.length === 1 ? "" : "s"}. Every transaction still needs a fresh exact review and wallet confirmation.`
-      : "Connect a wallet-held testnet account with Meteor Wallet, or discover another compatible injected wallet. RunLatch loads no remote manifest, connects only after your click and persists no session."}</p></div>
+      : "Optional: connect an account already held by a testnet wallet extension. This button opens one detected wallet or lets you choose between several. No private key belongs in RunLatch."}</p></div>
       <div className="wallet-actions">{wallet ? <button type="button" className="button button-secondary" disabled={walletBusy} onClick={() => void disconnect()}>Disconnect wallet</button>
-        : <button type="button" className="button" disabled={!hydrated || walletBusy} onClick={() => void discover()}>{walletBusy ? "Looking for wallets…" : "Connect browser wallet"}</button>}
+        : <button type="button" className="button" aria-describedby="wallet-status" disabled={!hydrated} aria-disabled={walletBusy} onClick={() => void discover()}>{walletBusy ? walletPhase === "connecting" ? "Opening wallet…" : "Looking for wallets…" : "Connect browser wallet"}</button>}
         {!wallet && wallets.map(item => <button type="button" className="button button-secondary" key={item.id} disabled={walletBusy} onClick={() => void connect(item)}>Use {item.name}</button>)}</div>
       {wallet ? <label>Connected signing account<select aria-label="Connected signing account" disabled={walletBusy} value={`${signer}:${publicKey}`} onChange={event => {
         const selected = wallet.accounts.find(item => `${item.accountId}:${item.publicKey}` === event.target.value); if (!selected) return;
         invalidate("Connected wallet account selected. Prepare a new exact review."); setSigner(selected.accountId); setPublicKey(selected.publicKey);
       }}>{wallet.accounts.map(item => <option key={`${item.accountId}:${item.publicKey}`} value={`${item.accountId}:${item.publicKey}`}>{item.accountId} · {item.publicKey}</option>)}</select></label> : null}
-      <p className="fine-print">The existing demo keys are held in Windows Credential Manager, not Meteor. Those accounts use the separate own-terminal helpers. The original project expired on 10 November; the new work-order template is unsigned and does not revive it.</p>
+      <div className="wallet-feedback" data-error={walletError}><p id="wallet-status" role="status" aria-atomic="true">{walletStatus}</p>{walletError ? <a href="/docs#wallet" className="text-link">Read browser wallet requirements</a> : null}</div>
+      <p className="wallet-demo-note">Demo setup is FINAL and recorded above. The one terminal-signed purchase remains unresolved; never resend it or repeat setup. This browser holds none of the demo keys. Reading records needs no wallet.</p>
     </section>
     <form onSubmit={read} noValidate inert={walletBusy}>
       <fieldset className="testnet-target"><legend>Explicit testnet target</legend><div className="testnet-template-actions"><button type="button" className="text-button" onClick={loadTarget}>Load RunLatch testnet target</button></div><div className="testnet-input-grid">
@@ -255,7 +275,7 @@ export function TestnetWorkspace() {
         <label>Signer account<input value={signer} maxLength={64} autoComplete="off" spellCheck={false} onChange={e => edit(setSigner, e.target.value)} /></label>
         <label>Human wallet public key<input value={publicKey} maxLength={52} autoComplete="off" spellCheck={false} onChange={e => edit(setPublicKey, e.target.value)} /></label>
         <label>Exact gas limit (gas units)<input inputMode="numeric" value={gas} maxLength={20} autoComplete="off" onChange={e => edit(setGas, e.target.value)} /></label>
-      </div><div className="testnet-template-actions"><span>Prepared demo actions</span><button type="button" className="text-button" onClick={() => loadDemoAction("project")}>Load new work order</button><button type="button" className="text-button" onClick={() => loadDemoAction("capsule")}>Load funded Capsule</button><button type="button" className="text-button" onClick={() => loadDemoAction("quote")}>Load canonical quote</button></div><label>Exact {method === "approve_purchase" ? "proposal and expected request hash" : "arguments"} JSON<textarea value={args} maxLength={16_384} spellCheck={false} autoComplete="off" rows={9} onChange={e => edit(setArgs, e.target.value)} /></label>
+      </div><div className="testnet-template-actions"><span>Recorded setup templates · inspection only</span><button type="button" className="text-button" onClick={() => loadDemoAction("project")}>Load new work order</button><button type="button" className="text-button" onClick={() => loadDemoAction("capsule")}>Load funded Capsule</button><button type="button" className="text-button" onClick={() => loadDemoAction("quote")}>Load canonical quote</button></div><label>Exact {method === "approve_purchase" ? "proposal and expected request hash" : "arguments"} JSON<textarea value={args} maxLength={16_384} spellCheck={false} autoComplete="off" rows={9} onChange={e => edit(setArgs, e.target.value)} /></label>
         <p className="fine-print">Use the existing documented method schema. Amounts and nanoseconds are decimal strings; never floating-point money. Deposits are derived by the existing review, not a free payment field. No submit_purchase or administrative bypass is exposed.</p>
         {method === "record_task_check" ? <div><label>Explicit local fixture artifact (optional only for a report validated against missing bytes)<input ref={artifactRef} type="file" onChange={e => void loadArtifact(e.target.files?.[0])} /></label><p>{artifactLabel || "No artifact selected. A passed report cannot be prepared without its exact valid artifact."}</p></div> : null}
       </fieldset> : tab === "agent-key" ? <fieldset><legend>Exact restricted-agent key</legend><p>Install one finite ordinary function-call key on <code>{DEMO_AGENT_SCOPE.agent_id}</code>. It can call only <code>submit_purchase</code> on <code>{RUNLATCH_TESTNET_TARGET.contract_id}</code>; the separate human recovery key remains.</p><ExactFields rows={[["Agent account", DEMO_AGENT_SCOPE.agent_id], ["Human recovery public key", DEMO_AGENT_SCOPE.recovery_public_key], ["Restricted public key", DEMO_AGENT_SCOPE.public_key], ["Finite gas allowance (yoctoNEAR)", DEMO_AGENT_SCOPE.max_allowance]]} /></fieldset>

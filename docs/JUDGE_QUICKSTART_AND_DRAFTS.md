@@ -1,5 +1,7 @@
 # Judge quick-start and unpublished demo drafts
 
+> **Historical guide. Current entry point, 11 November 2026:** use [the Option C recording guide](OPTION_C_DEMO_SCRIPT.md), [README](../README.md) and BUILD_LOG.md sections 85–87. The site is live and the repository is public. Four testnet setup transactions are FINAL; the one signed purchase is unresolved, not failed or settled. The end-to-end workflow uses separately labelled LOCAL Sandbox evidence. Older counts, deployment-absence statements and drafts below describe their original checkpoint, not the current build. No default setup/purchase command may be repeated; no X post or submission has been made.
+
 Local-only prototype. These are preparation materials, not a submitted payload or a published post. Public repository, deployment, signing, X media and submission each require separate human approval.
 
 Release-hardening checkpoint:42 browser/36 frontend Node/115 backend Node pass, with140 Rust/SDK/15parity vectors and all-mode LOCAL Sandbox evidence separately recorded.16 read-only checks confirm default-empty/selected report export against the three existing generated canonical cases; they do not rerun contract execution or verify a public chain. Latest exact results, clone reproduction and remaining licence/privacy/platform limitations: [release record](release/RELEASE_STATUS.md) and BUILD_LOG.md section41. Human visual review remains deferred.

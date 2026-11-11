@@ -10,7 +10,19 @@ export function DisplayProvider({ children }: { children: React.ReactNode }) {
   // Preferences remain in memory only, never a persisted authority setting.
   const [dark, setDark] = useState(true);
   const [textures, setTextures] = useState(true);
-  useEffect(() => { document.documentElement.classList.toggle("dark", dark); }, [dark]);
+  useEffect(() => {
+    const root = document.documentElement;
+    if (root.classList.contains("dark") === dark) return;
+    // Switch all theme foreground/background pairs together, then restore the
+    // ordinary interaction transitions. Display state is still memory-only.
+    root.dataset.themeChanging = "true";
+    root.classList.toggle("dark", dark);
+    let secondFrame = 0;
+    const firstFrame = requestAnimationFrame(() => {
+      secondFrame = requestAnimationFrame(() => { delete root.dataset.themeChanging; });
+    });
+    return () => { cancelAnimationFrame(firstFrame); cancelAnimationFrame(secondFrame); delete root.dataset.themeChanging; };
+  }, [dark]);
   useEffect(() => { document.documentElement.dataset.texture = textures ? "on" : "off"; }, [textures]);
   const value = useMemo(() => ({ dark, textures, setDark, setTextures }), [dark, textures]);
   return <DisplayContext value={value}>{children}</DisplayContext>;

@@ -30,7 +30,8 @@ test("preview distinguishes recorded testnet setup from the unresolved purchase 
   const footer = await readFile("src/components/runlatch/footer.tsx", "utf8");
   assert.match(footer, /four FINAL transactions/u);
   assert.match(footer, /one signed purchase remains unresolved/u);
-  assert.match(footer, /Private source repository/u);
+  assert.match(footer, /Public source repository/u);
+  assert.match(footer, /https:\/\/github\.com\/Daveboss123\/RunLatch/u);
   assert.doesNotMatch(footer, /No public deployment|Repository not published/u);
   const docs = await readFile("src/app/docs/page.tsx", "utf8");
   assert.match(docs, /Human setup is observed on public testnet/u);

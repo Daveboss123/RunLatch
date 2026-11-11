@@ -22,7 +22,7 @@ for (const width of [320, 360, 390, 768, 1024, 1280, 1364, 1440]) {
 }
 
 test("D-03 reconstructed narrative order, labelled fixtures and honest deployment state", async ({ page }) => {
-  expect(await page.locator("main > section").evaluateAll(nodes => nodes.map(node => node.id || "hero"))).toEqual(["hero", "board", "problem", "simulator", "commitment", "receipts", "intelligence", "proof", "architecture", "questions"]);
+  expect(await page.locator("main > section").evaluateAll(nodes => nodes.map(node => node.id || "hero"))).toEqual(["hero", "board", "problem", "simulator", "commitment", "receipts", "intelligence", "proof", "architecture", "try-now", "questions"]);
   await expect(page.getByRole("contentinfo")).toBeVisible();
   await expect(page.locator(".run-board").getByText("Demo data", { exact: true })).toBeVisible();
   await expect(page.getByText("4 steps FINAL · purchase unresolved", { exact: true })).toBeVisible();
@@ -338,10 +338,25 @@ test("Publication: Docs omit personal paths and footer keeps truthful deployment
   await expect(page.locator("main")).not.toContainText("/mnt/c/Users/");
   await expect(page.locator("main")).not.toContainText("C:\\Users\\");
   await expect(page.locator("footer")).toContainText("NEAR testnet setup is recorded in four FINAL transactions; one signed purchase remains unresolved");
-  await expect(page.locator("footer")).toContainText("Private source repository");
+  await expect(page.locator("footer")).toContainText("Public source repository");
+  await expect(page.getByRole("link", { name: "Public source on GitHub" })).toHaveAttribute("href", "https://github.com/Daveboss123/RunLatch");
   await expect(page.locator("#credits")).toContainText("its unverified logo is not served");
   const artwork = await page.request.get("/marks/near.svg");
   expect(artwork.status()).toBe(404);
+});
+
+test("try-now is a standalone entry section before FAQs with real responsive links", async ({ page }) => {
+  const section = page.locator("#try-now");
+  expect(await page.locator(".faq-section #try-now").count()).toBe(0);
+  expect(await section.evaluate(el => Boolean(el.compareDocumentPosition(document.querySelector("#questions")!) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
+  for (const width of [390, 1440]) {
+    await page.setViewportSize({ width, height: 900 }); await section.scrollIntoViewIfNeeded();
+    await expect(section.getByRole("heading", { name: "What can I try right now?" })).toBeVisible();
+    expect(await section.locator(".try-now-paths a").evaluateAll(links => links.map(link => link.getAttribute("href")))).toEqual(["/gate", "/demo#contract-observation", "/intelligence"]);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)).toBe(false);
+  }
+  const first = section.locator(".try-now-paths a").first(); await first.focus(); await expect(first).toBeFocused();
+  await page.keyboard.press("Enter"); await expect(page).toHaveURL(/\/gate$/u);
 });
 
 test("Motion brief: bounded story scroll progression and manual keyboard selection", async ({ page }) => {

@@ -38,7 +38,7 @@ test("no auto-read, wallet discovery or storage; missing scope and invalid ident
   const methods = await intercept(page, async () => { throw Error("NETWORK_MUST_NOT_RUN"); });
   await expect(page.getByRole("button", { name: "Read and prepare unsigned review" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Connect browser wallet" })).toBeEnabled();
-  await expect(view(page)).toContainText("RunLatch loads no remote manifest");
+  await expect(view(page)).toContainText("No private key belongs in RunLatch");
   await page.getByRole("checkbox", { name: "I permit read-only RPC requests" }).check();
   await page.getByRole("button", { name: "Read and prepare unsigned review" }).click();
   await expect(view(page).getByRole("alert")).toContainText("INVALID_CONTRACT_ACCOUNT");
@@ -46,12 +46,62 @@ test("no auto-read, wallet discovery or storage; missing scope and invalid ident
   expect(await page.evaluate(() => ({ local: localStorage.length, session: sessionStorage.length, search: location.search }))).toEqual({ local: 0, session: 0, search: "" });
 });
 
+test("missing extension feedback stays beside the wallet button and keyboard focus stays usable", async ({ page }) => {
+  const methods = await intercept(page, async () => { throw Error("NETWORK_MUST_NOT_RUN"); });
+  const button = page.getByRole("button", { name: "Connect browser wallet" });
+  await button.focus(); await page.keyboard.press("Enter");
+  const feedback = page.locator(".wallet-connection #wallet-status");
+  await expect(feedback).toContainText("No compatible wallet extension was detected");
+  await expect(feedback).toBeInViewport(); await expect(button).toBeFocused();
+  await expect(page.locator(".wallet-connection")).toContainText("one terminal-signed purchase remains unresolved");
+  await expect(page.locator(".wallet-connection")).not.toContainText("template is unsigned");
+  await expect(page.locator(".wallet-connection .text-link")).toHaveAttribute("href", "/docs#wallet");
+  expect(methods).toEqual([]);
+});
+
+test("rejected wallet connection gives inline recovery without leaking wallet text or opening twice", async ({ page }) => {
+  await page.addInitScript(() => {
+    const calls: string[] = []; Object.defineProperty(window, "__rejectedWalletCalls", { value: calls });
+    const wallet = { manifest: { id: "reject-wallet", name: "Reject wallet", type: "injected", features: {
+      testnet: true, signInWithoutAddKey: true, signAndSendTransaction: true } },
+      async signIn() { calls.push("connect"); throw Error("PRIVATE_WALLET_CANARY"); }, async signOut() {},
+      async getAccounts() { return []; }, async signAndSendTransaction() { calls.push("SIGN_MUST_NOT_RUN"); } };
+    window.addEventListener("near-selector-ready", () => window.dispatchEvent(new CustomEvent("near-wallet-injected", { detail: wallet })));
+  });
+  await page.reload();
+  await page.getByRole("button", { name: "Connect browser wallet" }).evaluate(button => { (button as HTMLButtonElement).click(); (button as HTMLButtonElement).click(); });
+  await expect(page.locator(".wallet-connection #wallet-status")).toContainText("Wallet connection was not completed");
+  await expect(view(page)).not.toContainText("PRIVATE_WALLET_CANARY");
+  expect(await page.evaluate(() => (window as unknown as { __rejectedWalletCalls: string[] }).__rejectedWalletCalls)).toEqual(["connect"]);
+  await expect(page.getByRole("button", { name: "Connect browser wallet" })).toBeEnabled();
+});
+
+test("multiple injected wallets require a choice and never silently pick another account", async ({ page }) => {
+  const publicKey = setupFixture().actions.project.public_key;
+  await page.addInitScript(publicKey => {
+    const calls: string[] = []; Object.defineProperty(window, "__choiceWalletCalls", { value: calls });
+    for (const name of ["First", "Second"]) {
+      const wallet = { manifest: { id: name.toLowerCase() + "-wallet", name: name + " wallet", type: "injected", features: {
+        testnet: true, signInWithoutAddKey: true, signAndSendTransaction: true } },
+        async signIn() { calls.push(name); return [{ accountId: name.toLowerCase() + ".testnet", publicKey }]; }, async signOut() {},
+        async getAccounts() { return []; }, async signAndSendTransaction() { throw Error("SIGN_MUST_NOT_RUN"); } };
+      window.addEventListener("near-selector-ready", () => window.dispatchEvent(new CustomEvent("near-wallet-injected", { detail: wallet })));
+    }
+  }, publicKey);
+  await page.reload(); await page.getByRole("button", { name: "Connect browser wallet" }).click();
+  await expect(page.locator("#wallet-status")).toContainText("2 compatible wallets found");
+  expect(await page.evaluate(() => (window as unknown as { __choiceWalletCalls: string[] }).__choiceWalletCalls)).toEqual([]);
+  await page.getByRole("button", { name: "Use Second wallet", exact: true }).click();
+  await expect(page.getByLabel("Connected signing account")).toContainText("second.testnet");
+  expect(await page.evaluate(() => (window as unknown as { __choiceWalletCalls: string[] }).__choiceWalletCalls)).toEqual(["Second"]);
+});
+
 test("new work-order templates are unsigned, correctly bound and never auto-read", async ({ page }) => {
   const methods = await intercept(page, async () => { throw Error("NETWORK_MUST_NOT_RUN"); });
   await page.getByRole("button", { name: "Load new work order" }).click();
   const args = page.getByRole("textbox", { name: "Exact arguments JSON", exact: true });
   expect(JSON.parse(await args.inputValue()).project.project_id).toBe("project_demo_1110");
-  await expect(view(page)).toContainText("original expired project is preserved");
+  await expect(view(page)).toContainText("demo setup already completed");
   await page.getByRole("button", { name: "Load funded Capsule" }).click();
   const capsule = JSON.parse(await args.inputValue()); expect(capsule.capsule_id).toBe("capsule_demo_1110");
   expect(capsule.policy.project_id).toBe("project_demo_1110");
@@ -74,7 +124,6 @@ test("explicit injected wallet signs only a fresh exact reviewed testnet Functio
   }, { accountId: target.operator_id, publicKey: f.actions.project.public_key });
   await page.reload(); const rpc = setupTransport(f), methods = await intercept(page, rpc.transport);
   await targetFields(page); await page.getByRole("button", { name: "Connect browser wallet" }).click();
-  await expect(page.getByRole("button", { name: "Use Fixed wallet" })).toBeVisible(); await page.getByRole("button", { name: "Use Fixed wallet" }).click();
   await expect(page.getByLabel("Connected signing account")).toContainText(target.operator_id);
   await page.getByLabel("Exact gas limit (gas units)").fill(f.actions.project.gas);
   await page.getByLabel("Exact arguments JSON", { exact: true }).fill(JSON.stringify({ project: { ...f.project.input, project_id: "new-project" } }));
@@ -102,7 +151,8 @@ test("a connected wrong account cannot enable human consent or a signing prompt"
     window.addEventListener("near-selector-ready", () => window.dispatchEvent(new CustomEvent("near-wallet-injected", { detail: wallet })));
   }, f.actions.project.public_key);
   await page.reload(); await intercept(page, setupTransport(f).transport);
-  await page.getByRole("button", { name: "Connect browser wallet" }).click(); await page.getByRole("button", { name: "Use Wrong account wallet" }).click();
+  await page.getByRole("button", { name: "Connect browser wallet" }).click();
+  await expect(page.getByLabel("Connected signing account")).toContainText("different.testnet");
   await setupFields(page); await page.getByRole("button", { name: "Read and prepare unsigned review" }).click();
   await expect(page.getByRole("checkbox", { name: "I reviewed this exact action" })).toBeDisabled();
   await expect(page.getByRole("button", { name: "Sign exact reviewed action" })).toBeDisabled();
@@ -131,7 +181,6 @@ test("Meteor extension connects from the primary button without browser key crea
     await route.fulfill({ status: 200, headers: { "access-control-allow-origin": "*", "content-type": "application/json" }, body: await response.text() });
   });
   await targetFields(page); await page.getByRole("button", { name: "Connect browser wallet" }).click();
-  await page.getByRole("button", { name: "Use Meteor Wallet" }).click();
   await expect(page.getByLabel("Connected signing account")).toContainText(target.operator_id);
   const first = await page.evaluate(() => (window as unknown as { __runlatchMeteorCalls: { inputs: unknown }[] }).__runlatchMeteorCalls[0]);
   expect(first.inputs).toEqual({ methods: [] }); expect(JSON.stringify(first)).not.toContain("public_key"); expect(JSON.stringify(first)).not.toContain("contract_id");
@@ -161,7 +210,7 @@ test("agent recovery wallet installs only the exact finite submit-only key after
   await page.reload(); const rpc = setupTransport(f, (params, value) => params.request_type === "view_access_key_list"
     ? { ...(value as object), keys: [{ public_key: recovery, access_key: { nonce: 1, permission: "FullAccess" } }] } : value);
   await intercept(page, rpc.transport); await targetFields(page); await page.getByRole("button", { name: "Connect browser wallet" }).click();
-  await page.getByRole("button", { name: "Use Agent recovery wallet" }).click();
+  await expect(page.getByLabel("Connected signing account")).toContainText(agent);
   await page.getByLabel("Workspace task").selectOption("agent-key"); await page.getByRole("button", { name: "Review restricted key installation" }).click();
   await expect(page.getByRole("heading", { name: "Exact restricted-agent key review" })).toBeVisible();
   await page.getByRole("checkbox", { name: "I reviewed the exact agent account" }).check();
@@ -289,9 +338,13 @@ test("objective fixture bytes are explicitly selected, bounded and locally check
   await expect(page.locator(".testnet-review")).toContainText("not real-provider delivery or client acceptance");
 });
 
-test("workspace-only contrast rule does not change the shared header after navigating away", async ({ page }) => {
+test("shared header keeps ink and paper together on theme changes across routes", async ({ page }) => {
   expect(await page.locator("header.site-header").evaluate(e => getComputedStyle(e).transitionProperty)).not.toContain("background-color");
   await page.getByRole("link", { name: "Inspect LOCAL records", exact: true }).click();
   await expect(page).toHaveURL(/\/demo#contract-observation$/u);
-  expect(await page.locator("header.site-header").evaluate(e => getComputedStyle(e).transitionProperty)).toContain("background-color");
+  expect(await page.locator("header.site-header").evaluate(e => getComputedStyle(e).transitionProperty)).not.toContain("background-color");
+  await page.getByRole("button", { name: "Switch to light theme" }).click();
+  await expect(page.locator("html")).not.toHaveClass(/dark/u);
+  const result = await new AxeBuilder({ page }).include(".site-header").analyze();
+  expect(result.violations).toEqual([]);
 });

@@ -3,7 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 
 const pages = [
   ["/demo", "Inspect one project"], ["/gate", "Challenge one purchase"], ["/intelligence", "Read cost and outcome together"],
-  ["/docs", "Understand the operating model"], ["/testnet", "Review, sign and verify one action"],
+  ["/docs", "Understand the operating model"], ["/testnet", "Inspect evidence or review an action"],
 ] as const;
 
 for (const [route, heading] of pages) test(`${route} explains how to use the existing section without renaming it`, async ({ page }) => {
