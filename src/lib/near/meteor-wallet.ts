@@ -7,11 +7,11 @@ import { account, amount, count, fail, list, object, parseBoundedJson, reference
 import { canonicalReviewContent } from "./review-content.ts";
 import { publicKey } from "./testnet-evidence.ts";
 import type { AdmittedInjectedWallet, ExactAgentKeyCall, ExactHumanCall } from "./injected-wallet.ts";
+import { HUMAN_WORKSPACE_METHODS } from "./human-methods.ts";
 
 const RPC_URLS = new Set(["https://test.rpc.fastnear.com/", "https://rpc.testnet.near.org/"]);
 const MAX_RESPONSE = 65_536, MAX_MESSAGES = 240;
-const HUMAN_METHODS = new Set(["create_project", "register_provider", "publish_quote", "create_capsule", "approve_purchase",
-  "record_provisioning", "record_task_check", "record_human_acceptance"]);
+const HUMAN_METHODS: ReadonlySet<string> = new Set(HUMAN_WORKSPACE_METHODS);
 type MeteorStatus = "initializing" | "connected" | "attempting_reconnect" | "disconnected" | "closed_success" | "closed_fail" | "closed_window";
 interface MeteorTransport { readonly version: "v2"; readonly featureFlags: readonly string[]; sendMessageDataAndRespond(value: unknown): Promise<unknown> }
 interface Host { readonly meteorComV2?: unknown; readonly crypto?: Crypto }

@@ -6,9 +6,8 @@ import { confirmFreshPurchaseReview, parsePurchaseAction, type PurchaseReview } 
 import { canonicalReviewContent } from "./review-content.ts";
 import { fail, object, parseBoundedJson } from "./records.ts";
 
-export const HUMAN_WORKSPACE_METHODS = ["create_project", "register_provider", "publish_quote", "create_capsule",
-  "approve_purchase", "record_provisioning", "record_task_check", "record_human_acceptance"] as const;
-export type HumanWorkspaceMethod = typeof HUMAN_WORKSPACE_METHODS[number];
+import { HUMAN_WORKSPACE_METHODS } from "./human-methods.ts";
+export { HUMAN_WORKSPACE_METHODS, type HumanWorkspaceMethod } from "./human-methods.ts";
 type Reader = Pick<ReturnType<typeof createTestnetReader>, "readSetupReview" | "readOwnerReview" | "readPurchaseReview">;
 export type HumanWorkspaceReview = { readonly kind: "setup"; readonly review: SetupReview }
   | { readonly kind: "owner"; readonly review: OwnerReview } | { readonly kind: "approval"; readonly review: PurchaseReview };

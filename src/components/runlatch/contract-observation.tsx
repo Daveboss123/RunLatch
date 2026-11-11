@@ -1,4 +1,5 @@
 "use client";
+import { PublicProject } from "./public-project";
 
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { approvalReview, importLocalObservation, quoteExposure, type LocalObservation, type ObservedPurchase } from "@/lib/near/observation";
@@ -141,7 +142,7 @@ export function ContractObservation() {
     sequence.current++; setObservation(null); setBusy(false); setError(""); setNotice("Imported records cleared from this view. Contract funds and authority are unchanged.");
     if (fileRef.current) fileRef.current.value = "";
   }
-  return <section id="contract-observation" className="contract-observation" aria-labelledby="observation-heading">
+  return <><section id="contract-observation" className="contract-observation" aria-labelledby="observation-heading">
     <header><h2 id="observation-heading">Inspect the local contract run.</h2><p>Import the agent harness’s canonical quote and purchase records. Read only: no signer, live vendor or public network is connected.</p></header>
     <p><a href="/intelligence">Open Outcome Receipts and Run Intelligence</a> to select local run files and inspect record-derived costs. Files are not carried between pages or saved.</p>
     <div className="observation-import"><div><label htmlFor="observation-file">LOCAL observation JSON</label><input ref={fileRef} id="observation-file" type="file" accept=".json,application/json" aria-describedby="observation-import-help observation-import-error" aria-invalid={Boolean(error)} onChange={load} />
@@ -153,5 +154,5 @@ export function ContractObservation() {
       <ol className="network-progress"><li data-complete="true"><span>Gate</span><strong>Deployed</strong></li><li data-complete="true"><span>Work order</span><strong>FINAL</strong></li><li data-complete="true"><span>Capsule</span><strong>0.30 NEAR</strong></li><li data-complete="true"><span>Quote</span><strong>One use</strong></li><li data-complete="true"><span>Restricted key</span><strong>Submit only</strong></li><li data-state="unresolved"><span>Purchase</span><strong>Unresolved</strong></li><li><span>Outcome Receipt</span><strong>Needs accepted evidence</strong></li></ol>
       <div className="observation-network-actions"><a className="button" href="/testnet">Open owner workspace</a><a className="button button-secondary" href="/docs#execution">Inspect testnet evidence</a></div>
       <p>Owner/provider wallet signatures and scoped agent execution stay separate. There is no owner-signature fallback, browser agent key, arbitrary receiver or timeout resend.</p></aside>
-  </section>;
+  </section><PublicProject /></>;
 }

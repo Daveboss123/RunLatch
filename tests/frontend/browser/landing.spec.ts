@@ -359,6 +359,16 @@ test("try-now is a standalone entry section before FAQs with real responsive lin
   await page.keyboard.press("Enter"); await expect(page).toHaveURL(/\/gate$/u);
 });
 
+test("lifecycle hover highlights its number circle and text tabs never paint a square", async ({ page }) => {
+  const circleButton = page.locator('.lifecycle-rail button:not([aria-pressed="true"])').first(), circle = circleButton.locator("span");
+  const before = await circle.evaluate(el => getComputedStyle(el).backgroundColor);
+  await circleButton.hover();
+  await expect(circleButton).toHaveCSS("background-color", "rgba(0, 0, 0, 0)"); await expect(circleButton).toHaveCSS("box-shadow", "none");
+  await expect(circle).not.toHaveCSS("background-color", before); await expect(circle).toHaveCSS("border-radius", "50%");
+  const tab = page.locator('.tabs button[aria-selected="false"]').first(), ink = await page.locator("body").evaluate(el => getComputedStyle(el).color);
+  await tab.hover(); await expect(tab).toHaveCSS("color", ink); await expect(tab).toHaveCSS("background-color", "rgba(0, 0, 0, 0)"); await expect(tab).toHaveCSS("box-shadow", "none");
+});
+
 test("Motion brief: bounded story scroll progression and manual keyboard selection", async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   const visual = page.locator(".story-visual");

@@ -33,9 +33,21 @@ test("provisioning and exact artifact check use the existing owner reader and ne
 });
 
 test("only the connected human methods are admitted; agent/admin/pay/key/settlement entry cannot be routed", () => {
-  assert.equal(HUMAN_WORKSPACE_METHODS.length, 8);
-  for (const method of ["submit_purchase", "resolve_purchase", "pay", "set_project_status", "add_key", "close_capsule", "record_validation"])
+  assert.equal(HUMAN_WORKSPACE_METHODS.length, 16);
+  for (const method of ["submit_purchase", "resolve_purchase", "resolve_owner_refund", "pay", "add_key", "record_validation"])
     assert.throws(() => parseHumanWorkspaceAction({ method }), /HUMAN_WORKSPACE_METHOD_NOT_ADMITTED/u);
+});
+
+test("all eight owner controls reuse the existing role/state review and exact one-yocto call", async () => {
+  for (const key of ["project", "revision", "provider", "pause", "revoke", "close", "reject", "cancel"] as const) {
+    const f = await ownerFixture(key === "reject" || key === "cancel" ? "APPROVAL_PENDING" : "SETTLED");
+    if (key === "close") f.snapshot.capsule.status = "PAUSED";
+    const reader = createTestnetReader(target, ownerTransport(f).transport), action = f.actions[key];
+    const original = await readHumanWorkspaceReview(reader, action), fresh = await readHumanWorkspaceReview(reader, action);
+    assert.equal(original.kind, "owner"); assert.equal(original.review.call.attached_deposit, "1");
+    assert.equal(confirmFreshHumanWorkspaceReview(original, fresh).call.method, action.method);
+    if (original.kind === "owner" && key === "close") assert.equal(original.review.potential_owner_return, "250");
+  }
 });
 
 test("exact approval and acceptance inputs are detached, validated without overwriting identity or money fields", async () => {

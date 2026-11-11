@@ -110,6 +110,35 @@ test("new work-order templates are unsigned, correctly bound and never auto-read
   expect(JSON.parse(await args.inputValue()).quote.quote_id).toBe("db_quote_demo_1110"); expect(methods).toEqual([]);
 });
 
+test("guided project control creates an exact one-yocto review without changing authority", async ({ page }) => {
+  const f = await ownerFixture(), methods = await intercept(page, ownerTransport(f).transport);
+  await targetFields(page); await page.getByLabel("Action", { exact: true }).selectOption("set_project_status");
+  await page.getByLabel("Signer account", { exact: true }).fill(target.operator_id);
+  await page.getByLabel("Human wallet public key", { exact: true }).fill(f.actions.project.public_key);
+  await page.getByLabel("Exact gas limit (gas units)").fill(f.actions.project.gas);
+  await page.getByLabel("Project to control").fill(f.snapshot.project.input.project_id);
+  await page.getByLabel("Expected current project revision").fill("1");
+  await page.getByRole("button", { name: "Read and prepare unsigned review" }).click();
+  await expect(page.locator(".testnet-review")).toContainText("set_project_status");
+  await expect(page.locator(".testnet-review")).toContainText("Old mandates");
+  await expect(page.getByRole("button", { name: "Sign exact reviewed action" })).toBeDisabled();
+  expect(methods.every(method => ["status", "block", "query"].includes(method))).toBe(true);
+});
+
+test("inactive Capsule close previews only unused funding and never returns it from a review", async ({ page }) => {
+  const f = await ownerFixture(); f.snapshot.capsule.status = "PAUSED";
+  await intercept(page, ownerTransport(f).transport); await targetFields(page);
+  await page.getByLabel("Action", { exact: true }).selectOption("close_capsule");
+  await page.getByLabel("Signer account", { exact: true }).fill(target.operator_id);
+  await page.getByLabel("Human wallet public key", { exact: true }).fill(f.actions.close.public_key);
+  await page.getByLabel("Exact gas limit (gas units)").fill(f.actions.close.gas);
+  await page.getByLabel("Capsule to control").fill("work");
+  await page.getByRole("button", { name: "Read and prepare unsigned review" }).click();
+  await expect(page.locator(".testnet-review")).toContainText("Potential owner return");
+  await expect(page.locator(".testnet-review")).toContainText("250");
+  await expect(page.locator(".testnet-review")).toContainText("No — unsigned review only");
+});
+
 test("explicit injected wallet signs only a fresh exact reviewed testnet FunctionCall", async ({ page }) => {
   const f = setupFixture();
   await page.addInitScript(({ accountId, publicKey }) => {

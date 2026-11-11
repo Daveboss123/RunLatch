@@ -6,6 +6,7 @@ import { account, amount, fail, reference } from "./records.ts";
 import { publicKey } from "./testnet-evidence.ts";
 import { discoverMeteorWallet } from "./meteor-wallet.ts";
 import { canonicalReviewContent } from "./review-content.ts";
+import { HUMAN_WORKSPACE_METHODS, OWNER_CONTROL_METHODS } from "./human-methods.ts";
 
 const WALLET_EVENT = "near-wallet-injected";
 const READY_EVENT = "near-selector-ready";
@@ -19,8 +20,7 @@ function claimWalletCall(connection: ConnectedInjectedWallet, call: unknown) {
   if (attempts.size >= 8) return fail("WALLET_SESSION_ACTION_LIMIT");
   attempts.add(identity); // Never released after error, timeout, disconnect or unknown wallet return.
 }
-const HUMAN_METHODS = new Set(["create_project", "register_provider", "publish_quote", "create_capsule", "approve_purchase",
-  "record_provisioning", "record_task_check", "record_human_acceptance"]);
+const HUMAN_METHODS: ReadonlySet<string> = new Set(HUMAN_WORKSPACE_METHODS);
 
 export interface WalletAccount { readonly accountId: string; readonly publicKey: string }
 export interface ExactHumanCall {
@@ -102,6 +102,7 @@ function transactionHash(value: unknown): string {
 }
 export async function signExactHumanCall(connection: ConnectedInjectedWallet, call: ExactHumanCall, rpcUrl?: string) {
   if (call.network !== "testnet" || !HUMAN_METHODS.has(call.method)) return fail("WALLET_CALL_NOT_ADMITTED");
+  if (OWNER_CONTROL_METHODS.some(method => method === call.method) && amount(call.attached_deposit) !== "1") return fail("OWNER_CONTROL_DEPOSIT_MISMATCH");
   const matched = connection.accounts.some(item => item.accountId === call.signer_id && item.publicKey === call.public_key);
   if (!matched) return fail("WALLET_REVIEW_IDENTITY_MISMATCH");
   claimWalletCall(connection, call);

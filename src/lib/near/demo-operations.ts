@@ -2,6 +2,7 @@
 import { parseRestrictedAgentScope } from "./agent-access.ts";
 import { parseSetupAction, type SetupAction } from "./setup-review.ts";
 import { parseTestnetTarget } from "./testnet-target.ts";
+import { VERIFIED_TESTNET } from "./verified-demo.ts";
 
 function fixedSetup<M extends SetupAction["method"]>(value: unknown, method: M) {
   const action = parseSetupAction(value);
@@ -36,3 +37,8 @@ export const DEMO_QUOTE_ACTION = fixedSetup({ method: "publish_quote", signer_id
     recipient_id: "db.runlatch-demo-1108.testnet", service_id: "database-plan", category: "database", resource_key: "booking-database",
     quantity: 1, price: "50000000000000000000000", asset: "near-native", recurring: false, expires_at_ns: "1794495600000000000",
     previous_quote_id: null, commercial_terms: null } } }, "publish_quote");
+/** Retained public attempt identity only. Never approval, settlement, signing or resend input. */
+export const DEMO_CAPTURED_PURCHASE = Object.freeze({ transaction_hash: VERIFIED_TESTNET.steps[4].transaction_hash,
+  sender_id: DEMO_AGENT_SCOPE.agent_id, public_key: DEMO_AGENT_SCOPE.public_key, method: "submit_purchase" as const, gas: "100000000000000",
+  proposal: Object.freeze({ project_id: DEMO_PROJECT_ID, project_revision: "1", capsule_id: "capsule_demo_1110", request_id: "db_purchase_demo_1111",
+    quote_id: "db_quote_demo_1110", expected_quote_hash: "ae846302dbae490ba2352bbce89162821b8882a9c237903f97692ad9007231a3" }), expected_request_hash: null });

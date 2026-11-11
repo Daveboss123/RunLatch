@@ -5,6 +5,13 @@ import { RESOURCE_CHECK_IDS, resourceCriteriaHash, type ResourceCheckStatus } fr
 import { researchCriteriaHash } from "../validation/research.ts";
 import { analyzeRunCosts, type RunCostFact } from "./cohort.ts";
 
+/** Common validated projection shape. LOCAL file admission remains strict and separate. */
+export type CanonicalObservation = Omit<LocalObservation, "source" | "public_testnet"> & {
+  readonly source: "IMPORTED_LOCAL_SANDBOX_RECORDS" | "TESTNET_RPC_RECORDS" | "INJECTED_TESTNET_RECORDS";
+  readonly public_testnet: boolean;
+  readonly unverified_requests?: readonly { readonly capsule_id: string; readonly request_id: string; readonly transaction_hash: string; readonly limitation: string }[];
+};
+
 const STATES = ["VALIDATION_PASSED", "VALIDATION_FAILED", "VALIDATION_ERROR"] as const;
 const nullableHash = (v: unknown) => v === null ? null : hash(v);
 const version = (v: unknown) => typeof v === "string" && /^[0-9]{1,8}\.[0-9]{1,8}\.[0-9]{1,8}$/u.test(v) ? v : fail("INVALID_VALIDATOR_VERSION");
@@ -49,7 +56,7 @@ export interface OutcomeReceipt {
   readonly provisioning_at_ns: string | null; readonly provisioning_source: string | null;
 }
 
-async function validation(snapshot: Record<string, unknown>, observation: LocalObservation, capsuleId: string,
+async function validation(snapshot: Record<string, unknown>, observation: CanonicalObservation, capsuleId: string,
   policyHash: string, criteria: string, owner: string, created: string): Promise<ValidationEvidence | null> {
   const raw = snapshot.task_check ?? snapshot.outcome;
   if (raw === null) return null;
@@ -107,10 +114,14 @@ async function validation(snapshot: Record<string, unknown>, observation: LocalO
 /** No raw artifact/prompt objects survive this adapter. Outcome hashes are references, not truth guarantees. */
 export async function importOutcomeObservation(serialized: string) {
   const observation = await importLocalObservation(serialized);
+  return projectOutcomeObservation(observation, object(parseBoundedJson(serialized)).snapshots);
+}
+/** Pure projection, not file admission, signing or independent verification. */
+export async function projectOutcomeObservation(observation: CanonicalObservation, snapshots: unknown) {
+  if (observation.public_testnet !== (observation.source === "TESTNET_RPC_RECORDS")) return fail("OUTCOME_SOURCE_MISMATCH");
   for (const q of observation.quotes) timestamp(q.published_at_ns, observation.observed_at_ns);
-  const input = object(parseBoundedJson(serialized));
   const runs: RunEvidence[] = [], receipts: OutcomeReceipt[] = [];
-  for (const v of list(input.snapshots, 4)) {
+  for (const v of list(snapshots, 4)) {
     const s = object(v), c = object(s.capsule), policy = object(c.policy), capsuleId = id(c.capsule_id);
     if (c.policy_schema_version !== 2) return fail("UNSUPPORTED_POLICY_VERSION");
     const created = timestamp(c.created_at_ns, observation.observed_at_ns), policyHash = hash(c.policy_hash);
@@ -131,10 +142,13 @@ export async function importOutcomeObservation(serialized: string) {
       providers.set(q.provider_id, (providers.get(q.provider_id) ?? 0n) + BigInt(q.price));
     }
     const evidenced = [...providers.values()].reduce((sum, n) => sum + n, 0n).toString();
-    const ledger = amount(c.spent), incomplete = purchases.some(p => p.payment_evidence === "SETTLEMENT_UNVERIFIED");
+    const ledger = amount(c.spent), incomplete = purchases.some(p => p.payment_evidence === "SETTLEMENT_UNVERIFIED")
+      || observation.unverified_requests?.some(p => p.capsule_id === capsuleId);
     let exclusion: string | null = incomplete || evidenced !== ledger ? "SETTLEMENT_UNVERIFIED" : null;
     const fact: RunCostFact | null = exclusion ? null : {
-      capsule_id: capsuleId, contract_id: observation.contract_id, source: "LOCAL_NEAR_SANDBOX", network_tag: "local", workflow_id: workflowId,
+      capsule_id: capsuleId, contract_id: observation.contract_id,
+      source: observation.source === "IMPORTED_LOCAL_SANDBOX_RECORDS" ? "LOCAL_NEAR_SANDBOX" : observation.public_testnet ? "NEAR_TESTNET_OBSERVATION" : "SIMULATED",
+      network_tag: observation.source === "IMPORTED_LOCAL_SANDBOX_RECORDS" ? "local" : "testnet", workflow_id: workflowId,
       criteria_hash: criteria, validator_id: checked?.validator_id ?? "not-recorded", validator_version: checked?.validator_version ?? "0.0.0", asset: "near-native",
       capsule_status: enumValue(c.status, ["ACTIVE", "PAUSED", "REVOKED", "COMPLETED", "CLOSING", "CLOSED"]), validation_status: checked?.status ?? null,
       attestation: checked ? "OWNER_ATTESTED" : "UNATTESTED", recorded_at_ns: checked?.recorded_at_ns ?? null,

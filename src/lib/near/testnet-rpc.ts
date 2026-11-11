@@ -8,6 +8,7 @@ import { parsePurchaseAction, preparePurchaseReview } from "./action-review.ts";
 import { parseTestnetTarget, type FinalBlock } from "./testnet-target.ts";
 import { assertSetupRole, parseSetupAction, prepareSetupReview } from "./setup-review.ts";
 import { assertOwnerRole, parseOwnerAction, prepareOwnerReview, type OwnerArtifact } from "./owner-review.ts";
+import { inspectOwnerReturnEvidence, parseOwnerReturnIntent, unverifiedOwnerReturn, type OwnerReturnIntent } from "./owner-return-evidence.ts";
 export { namedTestnetAccount, parseTestnetTarget, type TestnetTarget, type FinalBlock } from "./testnet-target.ts";
 import { amount, count, enumValue, fail, hash, id, list, object, parseBoundedJson,
   parseProvider, parsePurchase, parseQuote, reference, time } from "./records.ts";
@@ -33,6 +34,7 @@ function parseSelection(value: unknown): ProjectSelection {
   return Object.freeze({ project_id: project, capsule_ids: capsules, provider_ids: identifiers(s.provider_ids, 3), quote_ids: identifiers(s.quote_ids, 16),
     disclosure: Object.freeze({ project_id: project, budget: disclosure.budget as boolean, expenses: disclosure.expenses as boolean, evidence: disclosure.evidence as boolean }) });
 }
+export { parseSelection as parseProjectSelection };
 async function boundedResponse(response: Response): Promise<unknown> {
   if (!response.ok) return fail("TESTNET_RPC_HTTP_ERROR");
   const type = response.headers.get("content-type") ?? "";
@@ -164,6 +166,27 @@ export function createTestnetReader(input: unknown, injectedFetch?: typeof fetch
       if (keys.next_key !== undefined && keys.next_key !== null) return fail("AGENT_ACCESS_KEY_LIST_INCOMPLETE");
       return keys;
     }
+    async function executionBlocks(raw: Record<string, unknown>, observed: Awaited<ReturnType<typeof preflight>>, finality: string) {
+      const hashes = finality === "FINAL" ? [...new Set([object(raw.transaction_outcome).block_hash,
+        ...list(raw.receipts_outcome, 32).map(v => object(v).block_hash)].map(reference))] : [];
+      if (hashes.length > 16) return fail("TESTNET_OUTCOME_BLOCK_LIMIT");
+      const blocks: Record<string, FinalBlock> = Object.create(null);
+      for (const blockHash of hashes) {
+        if (blockHash === observed.block.hash) { blocks[blockHash] = observed.block; continue; }
+        const header = object(object(await rpc("block", { block_id: blockHash })).header);
+        const block = Object.freeze({ hash: reference(header.hash), height: count(header.height, Number.MAX_SAFE_INTEGER), timestamp_ns: time(header.timestamp_nanosec) });
+        if (block.hash !== blockHash) return fail("TESTNET_OUTCOME_BLOCK_MISMATCH"); blocks[blockHash] = block;
+      }
+      const outcomes = finality === "FINAL" ? list(raw.receipts_outcome, 32).map(v => object(v)) : [];
+      const rootStatus = raw.transaction_outcome === undefined ? undefined : object(object(raw.transaction_outcome).outcome).status;
+      const rootId = rootStatus && typeof rootStatus === "object" ? object(rootStatus).SuccessReceiptId : undefined;
+      const initial = outcomes.find(o => o.id === rootId), initialStatus = initial === undefined ? undefined : object(initial.outcome).status;
+      const callbackId = initialStatus && typeof initialStatus === "object" ? object(initialStatus).SuccessReceiptId : undefined;
+      const callback = outcomes.find(o => o.id === callbackId);
+      const codeBlocks = [...new Set([initial, callback].filter(o => o !== undefined).map(o => reference(o!.block_hash)))];
+      for (const blockHash of codeBlocks) await verifyCode(blocks[blockHash]);
+      return { blocks, codeBlocks };
+    }
     async function observePurchase(intent: PurchaseObservationIntent) {
       if (intent.sender_id === target.contract_id) return fail("CONTRACT_CANNOT_BE_PURCHASE_SIGNER");
       const unavailable = (reason: string) => Object.freeze({ ...unverifiedPurchase(intent, reason), transport_source: transportSource,
@@ -193,27 +216,7 @@ export function createTestnetReader(input: unknown, injectedFetch?: typeof fetch
           if (provider.provider_id !== providerId) return fail("TESTNET_PROVIDER_SCOPE_MISMATCH");
           quote = await parseQuote(await view(observed.block, "get_quote", { quote_id: p.proposal.quote_id }), target.contract_id, [provider]);
         }
-        const hashes = finality === "FINAL" ? [...new Set([object(raw.transaction_outcome).block_hash,
-          ...list(raw.receipts_outcome, 32).map(v => object(v).block_hash)].map(reference))] : [];
-        if (hashes.length > 16) return fail("TESTNET_OUTCOME_BLOCK_LIMIT");
-        const blocks: Record<string, FinalBlock> = Object.create(null);
-        for (const blockHash of hashes) {
-          if (blockHash === observed.block.hash) { blocks[blockHash] = observed.block; continue; }
-          const header = object(object(await rpc("block", { block_id: blockHash })).header);
-          const block = Object.freeze({ hash: reference(header.hash), height: count(header.height, Number.MAX_SAFE_INTEGER), timestamp_ns: time(header.timestamp_nanosec) });
-          if (block.hash !== blockHash) return fail("TESTNET_OUTCOME_BLOCK_MISMATCH");
-          blocks[blockHash] = block;
-        }
-        // Current code alone cannot establish which code executed the historical Gate/callback.
-        const executionOutcomes = finality === "FINAL" ? list(raw.receipts_outcome, 32).map(v => object(v)) : [];
-        const initialId = raw.transaction_outcome === undefined ? undefined : object(object(raw.transaction_outcome).outcome).status;
-        const rootId = initialId && typeof initialId === "object" ? object(initialId).SuccessReceiptId : undefined;
-        const initiating = executionOutcomes.find(o => o.id === rootId);
-        const initiatingStatus = initiating === undefined ? undefined : object(initiating.outcome).status;
-        const callbackId = initiatingStatus && typeof initiatingStatus === "object" ? object(initiatingStatus).SuccessReceiptId : undefined;
-        const callback = executionOutcomes.find(o => o.id === callbackId);
-        const codeBlocks = [...new Set([initiating, callback].filter(o => o !== undefined).map(o => reference(o!.block_hash)))];
-        for (const blockHash of codeBlocks) await verifyCode(blocks[blockHash]);
+        const { blocks, codeBlocks } = await executionBlocks(raw, observed, finality);
         const evidence = inspectPurchaseEvidence(intent, execution, { contract_id: target.contract_id, operator_id: target.operator_id,
           block: observed.block, capsule, purchase: p, quote, outcome_blocks: blocks });
         return { observation: Object.freeze({ ...observed, ...evidence, financials: report.financials, execution_code_blocks: Object.freeze(codeBlocks) }),
@@ -223,7 +226,31 @@ export function createTestnetReader(input: unknown, injectedFetch?: typeof fetch
         throw error;
       }
     }
-    return { preflight, view, restrictedAccess, humanAccess, accessKeyList, observePurchase };
+    async function observeOwnerReturn(intent: OwnerReturnIntent) {
+      if (intent.sender_id !== target.operator_id) return fail("OWNER_RETURN_SIGNER_MISMATCH");
+      const unavailable = (reason: string) => Object.freeze({ ...unverifiedOwnerReturn(intent, reason), transport_source: transportSource,
+        source: "NEAR_TESTNET_OBSERVATION" as const, target });
+      try {
+        const before = await preflight();
+        const raw = object(await rpc(before.receipt_status_method, { tx_hash: intent.transaction_hash, sender_account_id: intent.sender_id, wait_until: "FINAL" }));
+        const finality = enumValue(raw.final_execution_status, ["NONE", "INCLUDED", "EXECUTED_OPTIMISTIC", "INCLUDED_FINAL", "EXECUTED", "FINAL"]);
+        if (finality !== "FINAL" && raw.transaction === undefined) return Object.freeze({ ...unavailable("OWNER_RETURN_NOT_FINAL"), submission: "NOT_FINAL" as const });
+        const observed = await preflight();
+        const snapshot = object(await view(observed.block, "get_capsule_report_snapshot", { capsule_id: intent.capsule_id }));
+        const capsule = object(snapshot.capsule), project = object(snapshot.project), policy = object(capsule.policy), projectId = id(policy.project_id);
+        if (capsule.capsule_id !== intent.capsule_id || capsule.owner_id !== target.operator_id || capsule.policy_schema_version !== 2
+          || object(project.input).project_id !== projectId || project.owner_id !== target.operator_id) return fail("TESTNET_SNAPSHOT_BINDING_MISMATCH");
+        const projectRead = await view(observed.block, "get_project", { project_id: projectId });
+        if (JSON.stringify(projectRead) !== JSON.stringify(project)) return fail("TESTNET_SNAPSHOT_BINDING_MISMATCH");
+        const report = await buildProjectReport(JSON.stringify({ source: "NEAR_TESTNET_OBSERVATION", contract_id: target.contract_id, network_tag: "testnet",
+          block_hash: observed.block.hash, project_id: projectId, snapshots: [snapshot] }), { project_id: projectId, budget: true, expenses: false, evidence: false });
+        const { blocks, codeBlocks } = await executionBlocks(raw, observed, finality);
+        const evidence = inspectOwnerReturnEvidence(intent, raw, { contract_id: target.contract_id, operator_id: target.operator_id,
+          block: observed.block, capsule, outcome_blocks: blocks });
+        return Object.freeze({ ...observed, ...evidence, financials: report.financials, execution_code_blocks: Object.freeze(codeBlocks) });
+      } catch (error) { if (error instanceof Error && UNAVAILABLE_EVIDENCE.has(error.message)) return unavailable(error.message); throw error; }
+    }
+    return { preflight, view, restrictedAccess, humanAccess, accessKeyList, observePurchase, observeOwnerReturn };
   }
   return Object.freeze({ target,
     preflight: (signal?: AbortSignal) => operation(signal).preflight(),
@@ -302,6 +329,9 @@ export function createTestnetReader(input: unknown, injectedFetch?: typeof fetch
     async observePurchase(inputIntent: unknown, signal?: AbortSignal) {
       const intent = parsePurchaseObservationIntent(inputIntent);
       return (await operation(signal).observePurchase(intent)).observation;
+    },
+    async observeOwnerReturn(inputIntent: unknown, signal?: AbortSignal) {
+      return operation(signal).observeOwnerReturn(parseOwnerReturnIntent(inputIntent));
     },
     /** Read-only exact prior transaction/key nonce reconciliation. No nonce allocation or resend. */
     async reconcileAgentNonce(input: unknown, signal?: AbortSignal) {

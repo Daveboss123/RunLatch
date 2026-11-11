@@ -3,10 +3,24 @@ import { createFixtureWorkflow } from "../../../scripts/near/fixture-workflow.ts
 import { createTestnetReader } from "../../../src/lib/near/testnet-rpc.ts";
 import { object } from "../../../src/lib/near/records.ts";
 import { ownerFixture, ownerTransport } from "../../frontend/helpers/owner-review.ts";
-import { target } from "../../frontend/helpers/testnet-evidence.ts";
+import { target, encode, functionCall } from "../../frontend/helpers/testnet-evidence.ts";
+import { commercialQuoteHash } from "../../../src/lib/purchasing/hashing.ts";
+import { parsePurchase } from "../../../src/lib/near/records.ts";
+import { parsePurchaseObservationIntent } from "../../../src/lib/near/testnet-evidence.ts";
 
-export async function fixtureWorkflowRehearsal(mode = "PROVISIONED", state = "SETTLED") {
+export async function fixtureWorkflowRehearsal(mode = "PROVISIONED", state = "SETTLED", providerId = "database-fixture") {
   const d = await ownerFixture(state);
+  if (providerId !== "database-fixture") {
+    const terms = { ...d.f.quote.terms, input: { ...d.f.quote.terms.input, provider_id: providerId } };
+    const quoteHash = await commercialQuoteHash(terms, "testnet", target.contract_id);
+    const p = parsePurchase({ ...d.snapshot.purchases[0], canonical_quote: terms, proposal: { ...d.snapshot.purchases[0].proposal, expected_quote_hash: quoteHash } });
+    d.snapshot.purchases = [p]; d.f.quote = { ...d.f.quote, terms, quote_hash: quoteHash }; d.f.provider = { ...d.f.provider, provider_id: providerId };
+    d.f.intent = parsePurchaseObservationIntent({ ...d.f.intent, proposal: p.proposal });
+    const action = functionCall("submit_purchase", { proposal: p.proposal }); d.f.raw.transaction.actions = [action];
+    d.f.raw.receipts[0].receipt.Action.actions = [action];
+    const reply = { decision: p.decision, reason_codes: p.reason_codes, transfer_scheduled: false, source: "CONTRACT_EXECUTION_RECORD", request: p };
+    d.f.raw.status = { SuccessValue: encode(reply) }; d.f.raw.receipts_outcome[2].outcome.status = { SuccessValue: encode(reply) };
+  }
   const snapshot = JSON.parse(JSON.stringify(d.snapshot)) as Record<string, unknown>;
   const transport = ownerTransport(d, (p, result) => p.method_name === "get_capsule_report_snapshot"
     ? { ...object(result), result: [...Buffer.from(JSON.stringify(snapshot))] } : result);

@@ -73,6 +73,10 @@ function receipt(value: unknown): Receipt {
   list(a.actions, 8); list(a.input_data_ids, 8); list(a.output_data_receivers, 8);
   return { id: reference(r.receipt_id), predecessor: account(r.predecessor_id), receiver: account(r.receiver_id), action: a };
 }
+// Shared bounded protocol parsing for other read-only evidence inspectors.
+// These helpers perform no RPC, signature, authorization or state mutation.
+export { canonical as canonicalEvidence, status as executionStatus, call as inspectFunctionCall,
+  outcome as executionOutcome, receipt as executionReceipt };
 function response(value: string) {
   const r = object(parseBoundedJson(value, 65_536), ["decision", "reason_codes", "transfer_scheduled", "source", "request"]);
   const decision = enumValue(r.decision, ["APPROVED", "APPROVAL_REQUIRED", "DENIED"]), reasons = Object.freeze(list(r.reason_codes, 32).map(id));
