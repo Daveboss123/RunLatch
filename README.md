@@ -4,7 +4,7 @@
 
 RunLatch is a prototype for small AI-native agencies that let software agents buy project resources. A **Client Work Capsule** gives one project task a bounded budget, one agent, an approved provider/service scope and an expiry. The project-bound **Gate** checks a canonical, provider-published quote and the full commitment in Rust before reserving anything. **Outcome Receipts** keep approval, settlement, provisioning, objective checks and explicit human acceptance separate.
 
-**Status: local prototype, public NEAR testnet partially set up, no public purchase or outcome yet.** The browser is a `BROWSER_FIXTURE` preview and never signs, reserves or transfers. The LOCAL Sandbox agency workflow is reproducible. The testnet contract, project and immutable database-provider registration exist; no capsule, quote, restricted key or purchase does. Read [the exact remaining testnet plan and approval gate](docs/TESTNET_VERTICAL_SLICE_PLAN.md).
+**Status: local prototype with four FINAL NEAR testnet setup transactions; one signed purchase is unresolved, so no public testnet settlement, provisioning or acceptance is claimed.** Product previews use `BROWSER_FIXTURE` and never sign, reserve or transfer. The optional `/testnet` owner workspace routes exact human-reviewed actions to an external wallet; it holds no private key and is not needed for the recorded demo. Real-extension approval remains unverified and further wallet work is deferred. The LOCAL Sandbox agency workflow is reproducible. On testnet a human completed four separately reviewed setup transactions: a 0.30 NEAR work order, one task Capsule, one one-use 0.05 NEAR quote and a submit-only restricted key. One purchase was then signed exactly once by that restricted key and had no on-chain record in three independent read-only checks recorded on 11 November; it stays fail-closed and is never resent, re-signed or released. Read [the exact remaining testnet plan and approval gate](docs/TESTNET_VERTICAL_SLICE_PLAN.md).
 
 NEAR HACKATHON 2026 project. Tracks this fits: **security** (primary) and **agents** (the workflow it actually supports). `business` is a possible secondary track if procurement for AI-native studios is accepted as a business use case.
 
@@ -54,7 +54,7 @@ Every money or policy surface uses one canonical label:
 | `LOCAL_SANDBOX` | Isolated Local NEAR Sandbox execution. Not public testnet. | Local runtime behaviour under the recorded test setup |
 | `NEAR_TESTNET` | Observed public testnet account/transaction reference. | Only the exact observed public references |
 
-The current website is **BROWSER_FIXTURE** throughout. The reproducible backend evidence is **LOCAL_SANDBOX**. No `NEAR_TESTNET` purchase or outcome exists.
+Product previews use **BROWSER_FIXTURE**; explicitly imported backend records use **LOCAL_SANDBOX**, not that fixture label. `/testnet` separately displays recorded **NEAR_TESTNET** setup references and a retained signed-attempt identity. The four setup transactions are FINAL; the purchase has no observed on-chain record. Neither its hash nor the source label proves settlement, provisioning, an objective check, acceptance or a report.
 
 ## Prerequisites and clean checkout
 
@@ -82,14 +82,15 @@ npm run test:frontend
 npm run test:near
 ```
 
-Observed 9 November 2026 with the current source:
+Observed 11 November 2026 with the current source:
 
 ```text
 typecheck   exit 0
 lint        exit 0
 npm test                 115 tests, 115 pass, 0 fail
-npm run test:frontend    200 tests, 200 pass, 0 fail
-npm run test:near        244 tests, 244 pass, 0 fail
+npm run test:frontend    216 tests, 216 pass, 0 fail
+npm run test:near        306 tests, 306 pass, 0 fail
+npx playwright test      108 tests, 108 pass, 0 fail
 ```
 
 Run the app:
@@ -106,7 +107,7 @@ Browser suite (the dev server must be running):
 npx.cmd playwright test
 ```
 
-Observed 9 November: **98 Playwright tests pass**, including axe accessibility checks, keyboard paths, reduced motion, no-JavaScript fallback, responsive layouts at 320-1440 px, printable-report isolation and pre-hydration input protection. These checks are Chromium evidence, not a universal accessibility or real-device certification.
+Observed 11 November: **108 Playwright tests pass**, including axe accessibility checks, keyboard paths, reduced motion, no-JavaScript fallback, responsive layouts at 320-1440 px, printable-report isolation and pre-hydration input protection. Wallet tests use synthetic extension/RPC replies, not real wallet approval. These checks are Chromium evidence, not a universal accessibility or real-device certification.
 
 ### Rust contract tests
 
@@ -122,7 +123,7 @@ cargo fmt --manifest-path contracts/runlatch/Cargo.toml -- --check
 wsl --distribution Ubuntu-24.04 --user runlatch --exec sh /mnt/c/Users/David/RunLatch/scripts/setup/test-contract-linux.sh
 ```
 
-Observed: **147 Rust tests pass**; Clippy and format pass. These are SDK/unit tests with mocked host outcomes. They are not Sandbox or testnet execution.
+Re-run 11 November: **147 Rust tests pass**; strict Clippy and format pass, all exit 0 in the approved WSL environment. These are SDK/unit tests with mocked host outcomes. They are not Sandbox or testnet execution. The agency Sandbox result below is the separately recorded 9 November run, not a new run inferred from the Rust tests.
 
 ### LOCAL Sandbox golden path
 
@@ -144,17 +145,17 @@ Evidence is written to `.local/projects/latest.json` and per-project observation
 
 ## Do X -> see Y
 
-### 0. Operate one exact owner action (`NEAR_TESTNET` preparation)
+### 0. Read the recorded testnet setup (`NEAR_TESTNET`)
 
-1. Open `https://runlatch.vercel.app/testnet` or local `/testnet`.
-2. Load the RunLatch testnet target and explicitly permit the read.
-3. Click **Connect browser wallet**. Meteor Wallet is supported through its injected extension-v2 transport; another wallet can answer the admitted NEAR injected interface. RunLatch requests no Meteor access key and stores no wallet session or private key.
-4. Load the funded Capsule or canonical quote template, prepare the current exact review, and inspect signer, receiver, method, arguments, gas and deposit.
-5. The signing button becomes available only after the connected account/public key matches and you check the exact-action confirmation. RunLatch re-reads current final state before opening the wallet.
+1. Open `https://runlatch.vercel.app/testnet` or local `/testnet`. The first section lists five rows: work order, Capsule, canonical quote and restricted key as **FINAL**, and the purchase attempt as **UNRESOLVED**, each with the recorded transaction hash and FINAL block height (or "none observed").
+2. Verify any hash independently through a public testnet RPC or explorer. The page and this README repeat recorded observations; they are not a light-client proof.
+3. In the original operator checkout with its retained local journals, run `node scripts/setup/human-db-purchase.ts --check`. The 11 November check returned the same intent/transaction identity, `submission UNAVAILABLE` and `payment_evidence SETTLEMENT_UNVERIFIED`. Later output depends on actual readback; the command loads no key, signs nothing and sends nothing. A clean checkout has no private journals and must not fabricate them or run the default signing command to reconstruct this attempt.
+
+The same page also hosts an optional owner workspace for wallet-held testnet accounts: explicitly load the target, connect a compatible extension, prepare one exact action, and review signer/key, receiver, method, arguments, gas and deposit. A matching account/key and confirmation are required, with a fresh final-block reread before the external wallet prompt. No real-extension approval is claimed. The recorded purchase used the human's own terminal and restricted agent key; no browser wallet is required to read the ledger.
 
 An external wallet prompt is a human action. A returned transaction hash is not settlement or Outcome Receipt evidence. The connected account/key must already be held by the wallet. Existing demo accounts held only in Windows Credential Manager use `scripts/setup/human-demo-operation.ts` instead; never paste or import those credentials into the app.
 
-The original project expired on10 November without allocation/purchases. [New unsigned work-order and terminal steps](docs/HUMAN_DEMO_OPERATION_STEPS.md) preserve that history and require separate human signatures. Read-only preparation starts with `node scripts/setup/human-demo-operation.ts --preflight project`; it creates no authority, attempt or signature.
+Creating a new exact owner action still needs separate approval and a human signature. The earlier `project_demo_1108` expired on 10 November without allocation or purchases; the follow-up `project_demo_1110` is the work order recorded above. All four recorded setup defaults and the purchase default are permanently consumed/readback-only. Do not repeat creation, install another key, replace IDs or use an owner/recovery purchase to bypass the unresolved attempt.
 
 ### 1. One eligible request (`BROWSER_FIXTURE`)
 
@@ -203,21 +204,22 @@ Imported records are read in memory only. Nothing is uploaded, saved or authenti
 | --- | --- |
 | Network | NEAR testnet only |
 | Gate contract | Deployed and initialized: `gate.runlatch-demo-1108.testnet`, schema 2, code hash `F1pev22VSu86qxxWicXpCixtzzNoQxEi1FHRF2eGXjGP`, deployment transaction `23jZ77SEAK3b4YwW6EjanToSSt1XtbCvvgTPxFXYJqg6` |
-| Original Project | `project_demo_1108`, stored ACTIVE revision1, **expired10 November18:35 UTC**, allocation0/no Capsules; transaction `BU2DMrx9gi3zTTzcybvjuCp5Zm9HQdpoP96SLafjvTnB`, retained and never repeated |
-| Current Project | `project_demo_1110`, ACTIVE revision1, ceiling/allocated authority0.30 NEAR, one Capsule; FINAL project transaction `FMKZhn3JU6k7KxEE9BLezanQoZmHufCHrrqHwSZudBza` |
-| Funded Capsule | `capsule_demo_1110`, ACTIVE, allocated0.30 NEAR, spent/reserved/future commitments0; separate2.62144 NEAR storage. FINAL creation transaction `AeNBkfXrftqN85JEFgJAwXdnHnbr4Nb8A65ysi4drKKj`; funding is not a database purchase |
-| Database provider | `db_demo_1108`, active, immutable publisher/recipient `db.runlatch-demo-1108.testnet`, quote count1; registration `5DnrDArTCEN8rGaDCAqacX2CmxvCymYozNam7iys4DLu` |
-| Canonical quote | `db_quote_demo_1110`,0.05 native NEAR/all-inclusive one-time/quantity1, hash `ae846302dbae490ba2352bbce89162821b8882a9c237903f97692ad9007231a3`, unconsumed; FINAL publication `2TYs5yEFkjFRWiAMTuMqETQ2FosvoaLZnKhjRZEWF1Pn`. Publication is not purchase approval or payment |
-| Restricted key | Ordinary function-call key installed and independently FINAL: `H4cqJTWvx2GvSAaFMPt4JUjPk2EvrjsbpoYUuLfWufMK`; agent account/ABW... public key, Gate-only/`submit_purchase`, finite0.05 NEAR gas allowance; human recovery retained. No purchase authority outside Rust |
-| Purchase, callback, provisioning, check, acceptance, report | **Absent** |
+| Original Project | `project_demo_1108`, stored ACTIVE revision 1, **expired 10 November 18:35 UTC**, allocation 0 and no Capsules; transaction `BU2DMrx9gi3zTTzcybvjuCp5Zm9HQdpoP96SLafjvTnB`, retained and never repeated |
+| Current Project | Recorded 11 November: `project_demo_1110`, stored ACTIVE revision 1, 0.30 NEAR ceiling, allocated authority 0.30 NEAR, one Capsule; FINAL transaction `FMKZhn3JU6k7KxEE9BLezanQoZmHufCHrrqHwSZudBza`, block 277134275. Fixed expiry: 12 November 18:00 UTC; stored ACTIVE is not authority after expiry |
+| Funded Capsule | `capsule_demo_1110`, ACTIVE, allocated 0.30 NEAR, spent/reserved/future commitments 0, separate 2.62144 NEAR storage. FINAL creation transaction `AeNBkfXrftqN85JEFgJAwXdnHnbr4Nb8A65ysi4drKKj`, block 277134741; funding is not a database purchase |
+| Database provider | `db_demo_1108`, active, immutable publisher/recipient `db.runlatch-demo-1108.testnet`, quote count 1; registration `5DnrDArTCEN8rGaDCAqacX2CmxvCymYozNam7iys4DLu` |
+| Canonical quote | `db_quote_demo_1110`, 0.05 native NEAR all-inclusive one-time, quantity 1, hash `ae846302dbae490ba2352bbce89162821b8882a9c237903f97692ad9007231a3`, unconsumed; FINAL publication `2TYs5yEFkjFRWiAMTuMqETQ2FosvoaLZnKhjRZEWF1Pn`, block 277136000. Publication is not purchase approval or payment |
+| Restricted key | Ordinary function-call key installed and independently FINAL: `H4cqJTWvx2GvSAaFMPt4JUjPk2EvrjsbpoYUuLfWufMK`, block 277138478; `agent.runlatch-demo-1108.testnet`, Gate-only `submit_purchase`, finite 0.05 NEAR gas allowance; human recovery retained. No purchase authority outside Rust |
+| Purchase attempt | Signed exactly once by the restricted key: transaction `3N98awqyrxUbGqA7zGVsZtpT28pmdJf5j2cdXR8c3GkP`, nonce `277138475000001`, 100 Tgas, zero deposit, signed block height 277143147, last valid 277229547. Three independent checks recorded 11 November (FastNEAR, official NEAR RPC, NEAR Blocks v3) found **no on-chain record**; the recorded contract snapshot showed 0.30 NEAR available with no spend, reservation, request or consumed quote. **Unresolved, not failed and not settled**; validity expiry releases no local claim |
+| Settlement, callback, provisioning, check, acceptance, report | **NOT_RECORDED** - each needs observed settlement evidence, which does not exist |
 
-There is no public testnet purchase, transaction for a purchase, receipt, delivery or acceptance. Do not read the deployment above as a completed product run. Verify any reference through a public testnet RPC; this README does not assert a light-client proof.
+The recorded ledger supports four RPC-reported setup transactions, not a completed purchase, delivery or acceptance. Do not read deployment or recorded zero-spend state as proof the unresolved transaction can never execute. Verify any reference through a public testnet RPC; this README does not assert a light-client proof.
 
-The human has separately approved one exact0.05native purchase after setup. [Restricted-only human terminal scope](docs/DEMO_DB_PURCHASE_SCOPE.md) uses `human-db-purchase.ts`, one fixed request/quote/hash/100Tgas/zero deposit, short-lived in-memory restricted key and durable one-send journals. No real signature/payment is inferred from that approval or the tested read-only preparation; owner full-access keys never buy the resource.
+The human separately approved one exact 0.05 native purchase after setup. [Restricted-only human terminal scope](docs/DEMO_DB_PURCHASE_SCOPE.md) uses `human-db-purchase.ts`, one fixed request/quote/hash/100 Tgas/zero deposit, a short-lived in-memory restricted key and durable one-send journals. That one attempt was made and remains unresolved. It is never resent, re-signed, moved to a recovery or owner key, or released on timeout; `node scripts/setup/human-db-purchase.ts --check` only re-reads the retained record. Owner full-access keys never buy the resource.
 
 ## Known limitations
 
-- **No public testnet vertical slice yet.** The exact remaining calls and approval gates are in [docs/TESTNET_VERTICAL_SLICE_PLAN.md](docs/TESTNET_VERTICAL_SLICE_PLAN.md).
+- **Public testnet purchase unresolved; vertical slice incomplete.** Option C is the chosen demo: four FINAL setup steps plus the retained unresolved purchase, with LOCAL Sandbox providing end-to-end purchase/receipt evidence. Public provisioning/check/acceptance/report stay blocked on real settlement evidence. No second send or timeout release; see [the retained plan and current decision](docs/TESTNET_VERTICAL_SLICE_PLAN.md).
 - **Narrow browser wallet, no hosted signer.** Meteor extension-v2 and the admitted injected interface can prompt one exact reviewed transaction for a wallet-held testnet account. The site has no shared key, generated access key, stored session, web-wallet fallback or automatic authority. A returned hash is unverified until FINAL readback.
 - **Callback recovery:** a missing, failed or unproven callback keeps the reservation pending. There is no timer-based release, blind retry, public settlement setter or implemented reconciliation release procedure. An unknown result is never treated as success.
 - **Imported records are claims.** LOCAL observation validation checks internal consistency and bindings, not chain truth or provider delivery.
@@ -226,11 +228,12 @@ The human has separately approved one exact0.05native purchase after setup. [Res
 - **Native NEAR only.** No fiat peg, exchange rate, stablecoin, cross-chain settlement, mainnet action or real funds.
 - **Single operator and project-bound demo.** No multi-tenant service, marketplace, agent swarm, production identity system or client share link.
 - **No Replay Lab yet.** The tested research/fixture workflow remains regression evidence, not the primary product story.
-- **Website is a hosted preview, not a completed testnet purchase.** The existing site is https://runlatch.vercel.app/, connected to the private repository's `main` branch. The human approved the 9 November website update; [BUILD_LOG.md](BUILD_LOG.md) records the exact verified deployed revision and publication outcome. Until that deployment is verified, local changes are not evidence of live changes.
+- **Website is a hosted preview, not a completed testnet purchase.** The existing site is https://runlatch.vercel.app/, connected to the private repository's `main` branch. Updates to that site/private source are approved; [BUILD_LOG.md](BUILD_LOG.md) records the exact verified deployed revision and publication outcome. Local changes are not live until deployment is verified. Public repository visibility, demo post and submission remain separate human gates.
 
 ## Repository and dependency disclosure
 
 - Original RunLatch source was checkpointed into this repository on 7 November 2026, within the NEAR HACKATHON development window. Any earlier local work is baseline and is not re-dated or claimed as new.
+- Development used OpenCode and GPT-6.1 Sol for AI-assisted planning, implementation, testing and copy, with human steering and human-only administrative signing. The reproducible agent workflow is scripted, not a paid LLM integration or autonomous claim of human acceptance.
 - Reused libraries and tools are listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) and `docs/release/DEPENDENCY_INVENTORY.json`.
 - Engine: Next.js 16.4.5, React 19.3.1, Tailwind CSS 4.3.5, TypeScript 5.9.3, Playwright 1.64.1 and axe-core 4.14.0. Licences are recorded in the generated notices.
 - Dither engine: the `dithercn` implementation vendored under `src/lib/dither` is MIT-licensed; see `licenses/dithercn-MIT.txt`.
@@ -241,7 +244,7 @@ The human has separately approved one exact0.05native purchase after setup. [Res
 
 ## Hackathon references
 
-- Rules: https://nearhackathon.com/HACKATHON.md (re-checked 9 November 2026).
+- Rules: https://nearhackathon.com/HACKATHON.md (re-checked 11 November 2026).
 - NEAR documentation: https://docs.near.org/
 - Submission deadline: 2026-11-14T23:59:00Z. Public repository, public X demo post and the single submission are human actions and are not performed by this repository.
 - Submission fields, the demo post and the final payload must be supplied and approved by the human. No example or duplicate identity is used.

@@ -1,5 +1,7 @@
 # One restricted database purchase — exact human-approved scope
 
+> **Current decision, 11 November: Option C.** The one authorized attempt was signed and sent once, retained as `3N98awqyrxUbGqA7zGVsZtpT28pmdJf5j2cdXR8c3GkP`, and remains unresolved. Three independent read-only sources found no on-chain record; this is observed absence, not confirmed failure or settlement. The default command below is historical and permanently consumed: use `--check` only in the original checkout. No re-sign, resend, new ID/namespace, marker deletion, expiry release or broader-key fallback. Public provisioning/check/acceptance/report are blocked until actual settlement is observed. Demo the four FINAL setup steps and the LOCAL Sandbox end-to-end workflow separately.
+
 **11 November2026.** The human explicitly approved **one**0.05native testnet NEAR database purchase after all four setup actions were independently observed FINAL. This is not broad agent authority, a mainnet approval, permission for another request or an owner/recovery-key fallback.
 
 ## Exact call and money
@@ -31,7 +33,7 @@ The helper reads **only** the fixed restricted WinCred key after typed humanTTY 
 
 ## One send and read-only recovery
 
-The existing restricted runner owns the durable request/key journals and exact signature/hash capture **before** one native `broadcast_tx_async`. An acknowledgement is not inclusion or settlement. The helper separately observes the same exact transaction's FINAL call/native transfer/private callback/historical code/current state; missing or failed evidence stays pending/unverified. No timer releases funds or claims.
+The original attempt used one native `broadcast_tx_async` and returned only an unverified acknowledgement. The hardened runner now uses exactly one bounded `send_tx` with `wait_until: FINAL` for a future separately authorized scope; this does not re-execute the retained attempt. The durable request/key journals and exact signature/hash capture precede any send. A FINAL call outcome is not settlement. The helper separately observes the exact transaction's native transfer/private callback/historical code/current state; missing or failed evidence stays pending/unverified. No timer releases funds or claims.
 
 Any existing `.local/human-key-setup/demo-db-purchase-attempt/` is permanently readback-only, including pre-send failures. Never delete/edit any attempt/request/key marker, change IDs/nonces, re-sign/resend, choose another endpoint/key or use recovery/owner authority for the purchase.
 
@@ -45,4 +47,4 @@ Return public `DB_PURCHASE_SETTLEMENT_OBSERVED` or the pending/stopped result; n
 
 ## Verification boundary
 
-New helper control-flow/consent/cost/identity/unknown/concurrency cases use explicit synthetic RPC/runner ports and generated in-memory credential conversion. Existing original restricted runner and independent Node/Rust wire/signature tests are separate evidence; no real combined signature/settlement is inferred from mocks. Exact commands/results and native unsigned preflight are in BUILD_LOG.md. A real public purchase is absent until the human executes this reviewed scope and actual receipt/state evidence is verified.
+Helper control-flow/consent/cost/identity/unknown/concurrency cases use explicit synthetic RPC/runner ports and generated in-memory credential conversion. Original restricted runner and independent Node/Rust wire/signature tests are separate evidence; no settlement is inferred from mocks. Exact commands/results and the retained one-attempt outcome are in BUILD_LOG.md. A signature exists, but no public purchase execution or settlement has been verified.

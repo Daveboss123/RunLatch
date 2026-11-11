@@ -25,8 +25,8 @@ test("D-03 reconstructed narrative order, labelled fixtures and honest deploymen
   expect(await page.locator("main > section").evaluateAll(nodes => nodes.map(node => node.id || "hero"))).toEqual(["hero", "board", "problem", "simulator", "commitment", "receipts", "intelligence", "proof", "architecture", "questions"]);
   await expect(page.getByRole("contentinfo")).toBeVisible();
   await expect(page.locator(".run-board").getByText("Demo data", { exact: true })).toBeVisible();
-  await expect(page.getByText("Gate + project + provider", { exact: true })).toBeVisible();
-  await expect(page.locator(".deployment-status")).toContainText("Provider registered; no capsule, quote, purchase or outcome yet.");
+  await expect(page.getByText("4 steps FINAL · purchase unresolved", { exact: true })).toBeVisible();
+  await expect(page.locator(".deployment-status")).toContainText("The one signed purchase has no on-chain record at three independent sources and stays fail-closed.");
   expect(await page.locator('a[href="#"]').count()).toBe(0);
   const broken = await page.locator('a[href^="#"]').evaluateAll(nodes => nodes.map(node => (node as HTMLAnchorElement).hash).filter(hash => !document.getElementById(decodeURIComponent(hash.slice(1)))));
   expect(broken).toEqual([]);
@@ -337,7 +337,7 @@ test("Publication: Docs omit personal paths and footer keeps truthful deployment
   await page.goto("/docs");
   await expect(page.locator("main")).not.toContainText("/mnt/c/Users/");
   await expect(page.locator("main")).not.toContainText("C:\\Users\\");
-  await expect(page.locator("footer")).toContainText("Testnet setup exists; no public purchase or outcome yet");
+  await expect(page.locator("footer")).toContainText("NEAR testnet setup is recorded in four FINAL transactions; one signed purchase remains unresolved");
   await expect(page.locator("footer")).toContainText("Private source repository");
   await expect(page.locator("#credits")).toContainText("its unverified logo is not served");
   const artwork = await page.request.get("/marks/near.svg");

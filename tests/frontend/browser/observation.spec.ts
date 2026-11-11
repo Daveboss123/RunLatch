@@ -16,7 +16,7 @@ test("LOCAL inspector stays read-only and routes public actions to the owner wor
   await expect(inspector(page).getByRole("status")).toContainText("No contract records imported");
   await expect(inspector(page).getByRole("button", { name: "Clear imported view", exact: true })).toBeDisabled();
   await expect(inspector(page).getByRole("link", { name: "Open owner workspace", exact: true })).toHaveAttribute("href", "/testnet");
-  await expect(inspector(page).locator(".network-progress")).toContainText("GateDeployedProjectActiveProviderRegistered");
+  await expect(inspector(page).locator(".network-progress")).toContainText("GateDeployedWork orderFINALCapsule0.30 NEARQuoteOne useRestricted keySubmit onlyPurchaseUnresolved");
   for (const label of ["Connect testnet owner wallet", "Sign owner approval", "Submit agent purchase"]) await expect(inspector(page).getByRole("button", { name: label, exact: true })).toHaveCount(0);
   expect(await inspector(page).locator('a[href*="explorer"], a[href*="nearblocks"]').count()).toBe(0);
 });
