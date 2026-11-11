@@ -640,6 +640,12 @@ button:not(.button), select, input { transition: border-color var(--motion-fast)
 .lifecycle-explanation p { font-size: 16px; color: var(--color-muted); max-width: 690px; }
 .lifecycle-explanation > .fine-print { grid-column: 2; }
 .receipts-section { gap: 64px; padding-top: 56px; }
+/* Three children in a two-column grid: pin the intro to column 1 and stack the
+   lifecycle + receipt example in column 2. Auto-placement put the receipt card
+   in row 2 column 1, under the sticky intro, which overlapped the copy. */
+.receipts-section > .receipt-intro { grid-column: 1; grid-row: 1 / span 2; }
+.receipts-section > .lifecycle-merged { grid-column: 2; grid-row: 1; }
+.receipts-section > .receipt-example { grid-column: 2; grid-row: 2; }
 .receipt-intro { position: sticky; top: 112px; padding-top: 46px; }
 .receipt-paper { position: relative; }
 .receipt-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
@@ -788,6 +794,7 @@ button:not(.button), select, input { transition: border-color var(--motion-fast)
   .section-heading { align-items: flex-start; }
   .section-heading p { font-size: 16px; }
   .receipts-section { grid-template-columns: 1fr; gap: 32px; }
+  .receipts-section > .receipt-intro, .receipts-section > .lifecycle-merged, .receipts-section > .receipt-example { grid-column: 1; grid-row: auto; }
   .receipt-intro { padding-top: 0; max-width: 580px; }
   .receipt-principle { margin-block: 24px 8px; }
   .receipt-example { max-width: 760px; width: 100%; }

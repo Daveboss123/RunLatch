@@ -128,7 +128,7 @@ export function TestnetWorkspace() {
       const connected = await connectInjectedWallet(selected), first = connected.accounts[0]; setWallet(connected);
       invalidate(`Connected ${selected.name} in browser memory only. Prepare a fresh exact review before signing.`);
       setSigner(first.accountId); setPublicKey(first.publicKey);
-    } catch { setError("Wallet connection was rejected or incompatible. No review was signed and no fallback key was used."); }
+    } catch { setError("Wallet connection was rejected or incompatible. No review was signed and no fallback key was used. Unlock or update Meteor Wallet, or use the own-terminal flow — browser signing is optional and no fallback key or account is ever substituted."); }
     finally { setWalletBusy(false); }
   }
   async function disconnect() {
