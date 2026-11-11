@@ -2,6 +2,7 @@
 //! a refused scoped purchase with broader authority. All secrets stay in memory.
 use super::*;
 use near_api::types::transaction::actions::{AccessKeyPermission, FunctionCallPermission};
+use near_api::types::transaction::result::ValueOrReceiptId;
 
 fn protocol_rejected(error: &dyn Error, expected: &str) {
     let detail = format!("{error:?}");
@@ -55,6 +56,39 @@ impl Harness {
             scoped_actor(&self.agent, &self.contract.0, &self.network, allowance).await?;
         self.remember("scoped_key_added", &added);
         let recovery = std::mem::replace(&mut self.agent, restricted);
+        // Ordinary AddKey input nonce0 is not the final key nonce: nearcore
+        // initializes it from the actual execution height. No purchase has run.
+        let ValueOrReceiptId::ReceiptId(root_id) = added.outcome().clone().into_result()? else {
+            return Err("LOCAL AddKey transaction has no root receipt".into());
+        };
+        let creation_receipt = added
+            .receipt_outcomes()
+            .iter()
+            .find(|r| r.transaction_hash == root_id)
+            .ok_or("LOCAL AddKey root receipt missing")?;
+        assert_eq!(creation_receipt.executor_id, self.agent.id);
+        assert!(creation_receipt.is_success());
+        let creation_block = Chain::block()
+            .at(Reference::AtBlockHash(creation_receipt.block_hash))
+            .fetch_from(&self.network)
+            .await?;
+        let seeded_nonce = creation_block
+            .header
+            .height
+            .checked_sub(1)
+            .and_then(|height| height.checked_mul(1_000_000))
+            .ok_or("LOCAL seeded nonce overflow")?;
+        let key_readback = self
+            .raw_access_key(&self.agent.id, self.agent.public_key)
+            .await?;
+        let actual_nonce = key_readback["result"]["nonce"]
+            .as_u64()
+            .ok_or("LOCAL key nonce missing")?;
+        assert_eq!(actual_nonce, seeded_nonce);
+        assert!(actual_nonce > 0);
+        self.evidence.push(json!({"case":"ordinary_key_seeded_nonce","source":"LOCAL_NEAR_SANDBOX",
+            "execution_height":creation_block.header.height,"nonce":actual_nonce.to_string(),
+            "basis":"EXECUTION_HEIGHT_MINUS_ONE_TIMES_1000000","action_input_nonce":0,"public_testnet":false}));
         let permission = Account(self.agent.id.clone())
             .access_key(self.agent.public_key)
             .at(Reference::Final)

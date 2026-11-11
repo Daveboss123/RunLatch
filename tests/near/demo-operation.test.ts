@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 import { prepareDemoOperation, executeDemoOperation, writeDemoRecord } from "../../scripts/setup/human-demo-operation.ts";
 import { encodeDemoTransaction, verifyDemoSignature, type DemoKind } from "../../scripts/setup/demo-operation-codec.ts";
-import { demoRpc, inspectDemoExecution } from "../../scripts/setup/demo-operation-rpc.ts";
+import { demoRpc, initialRegularKeyNonce, inspectDemoExecution } from "../../scripts/setup/demo-operation-rpc.ts";
 import { admitHumanDemoSigner, signHumanDemo } from "../../scripts/setup/human-demo-operation-signer.ts";
 import { demoFixture } from "./helpers/demo-operation.ts";
 import { DEMO_CAPSULE_ACTION, DEMO_PROJECT_ACTION, DEMO_QUOTE_ACTION } from "../../src/lib/near/demo-operations.ts";
@@ -26,7 +26,7 @@ for (const kind of ["project", "capsule", "quote", "agent-key"] as DemoKind[]) {
     assert.match(result.status, /OBSERVED$/u); assert.equal(f.state.sends, 1); assert.equal(f.state.signatures, 1);
     assert.equal(result.gas_burnt, "3"); assert.equal(result.transport_source, "INJECTED_TEST_TRANSPORT_NOT_CHAIN_EVIDENCE");
     if (kind === "capsule") { assert.equal(result.project_revision, "1"); assert.equal(result.capsule.allocated, "300000000000000000000000"); }
-    if (kind === "agent-key") assert.equal(result.recovery_retained, true);
+    if (kind === "agent-key") { assert.equal(result.recovery_retained, true); assert.equal(result.initialized_nonce, "999000000"); }
     await assert.rejects(executeDemoOperation(dir, r, f.signer, f.transport, () => undefined), { code: "EEXIST" });
   });
   test(`${kind}: wire rejects changed money/signer/recipient/terms and bad signature`, async () => {
@@ -86,6 +86,20 @@ test("new work order and Capsule criteria bind the actual offline validator", as
   const criteria = await resourceCriteriaHash();
   assert.equal(DEMO_PROJECT_ACTION.args.project.outcome_definition_hash, criteria);
   assert.equal(DEMO_CAPSULE_ACTION.args.policy.validation_spec_hash, criteria);
+});
+test("regular-key nonce is seeded from the execution height, not action nonce0", () => {
+  assert.equal(initialRegularKeyNonce(277136000), "277135999000000");
+  assert.equal(initialRegularKeyNonce(1), "0");
+  for (const height of [0, -1, 1.5, Number.MAX_SAFE_INTEGER + 1]) assert.throws(() => initialRegularKeyNonce(height));
+});
+test("AddKey final proof rejects zero, wrong-height or already-used key nonce", async () => {
+  for (const nonce of [0, 1, 999_000_001]) {
+    const fixture = await demoFixture("agent-key"), review = await prepareDemoOperation("agent-key", fixture.publicKey, fixture.transport);
+    fixture.state.installed_nonce = nonce;
+    const dir = await directory(); await assert.rejects(executeDemoOperation(dir, review, fixture.signer, fixture.transport, () => undefined));
+    await readFile(join(dir, "intent.json")); await readFile(join(dir, "entered.json"));
+    await assert.rejects(readFile(join(dir, "verified.json")), { code: "ENOENT" }); assert.equal(fixture.state.sends, 1);
+  }
 });
 for (const flag of ["badKey", "badCode", "badStorage", "extraKey", "syncing"] as const) test(`${flag}: initial preflight fails before sign/send`, async () => {
   const f = await demoFixture("capsule"); f.state[flag] = true; await assert.rejects(prepareDemoOperation("capsule", f.publicKey, f.transport));

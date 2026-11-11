@@ -23,6 +23,7 @@ export async function demoFixture(kind: DemoKind) {
     quote_hash: await commercialQuoteHash({ input: DEMO_QUOTE_ACTION.args.quote, publisher_id: DEMO_QUOTE_ACTION.signer_id, schema_version: 2 }, "testnet", target.contract_id),
     consumed: false, consumed_by: null, published_at_ns: "1794250000000000000" };
   const state = { nonce: 100, amount: "9000000000000000000000000", now: "1794250000000000000", project, capsule, quote,
+    installed_nonce: 999_000_000,
     chain: "testnet", syncing: false, badCode: false, badHistorical: false, badKey: false, feeChanged: false, failSend: false, badFinal: false,
     badStorage: false, extraKey: false, hasProject: kind !== "project", hasCapsule: ["quote", "agent-key"].includes(kind), hasQuote: kind === "agent-key", installed: false,
     get sends() { return sends; }, get signatures() { return signatures; } };
@@ -67,7 +68,7 @@ export async function demoFixture(kind: DemoKind) {
       else if (p.request_type === "view_access_key") result = { ...common, ...access };
       else if (p.request_type === "view_access_key_list") {
         const rows: unknown[] = [{ public_key: publicKey, access_key: access }];
-        if (state.installed) rows.push({ public_key: DEMO_AGENT_SCOPE.public_key, access_key: { nonce: 0, permission: { FunctionCall: {
+        if (state.installed) rows.push({ public_key: DEMO_AGENT_SCOPE.public_key, access_key: { nonce: state.installed_nonce, permission: { FunctionCall: {
           allowance: DEMO_AGENT_SCOPE.max_allowance, receiver_id: target.contract_id, method_names: ["submit_purchase"] } } } });
         if (state.extraKey) rows.push({ public_key: DEMO_AGENT_SCOPE.public_key, access_key: access });
         result = { ...common, keys: rows };

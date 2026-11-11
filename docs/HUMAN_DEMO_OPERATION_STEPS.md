@@ -1,6 +1,60 @@
 # Demo setup — exact human-terminal steps
 
+> **Next purchase, not setup:** the human has approved only the exact one-call0.05native database purchase; the restricted-only terminal helper is prepared separately. [Complete scope, command, gas/funding separation and readback-only rules](DEMO_DB_PURCHASE_SCOPE.md). All four setup commands below remain permanently consumed. Do not paste or export keys; provisioning/check/acceptance are later steps.
+
+> **All four setup actions now completed11November:** native AddKey `H4cqJTWvx2GvSAaFMPt4JUjPk2EvrjsbpoYUuLfWufMK` is independently FINAL with initialized nonce277138475000000, exact Gate/submit-only/finite0.05gas permission and retained recovery FullAccess key. Project/Capsule/quote/key default commands must never repeat; --check only. No purchase has happened. The next step is a **distinct, exact human-reviewed one-call restricted-agent purchase**, not another setup approval or a recovery-key payment. All setup command examples below are historical/readback-only.
+
+> **Current11November key-install handoff:** the ordinary-key nonce readback correction passed actual isolated Sandbox and all46helper/620Node checks plus independent Rust wire tests. Project/Capsule/quote are FINAL and must never repeat. Quote remains unused. Native public AddKey initial/fresh review passes with one recovery FullAccess key and restricted key absent; no key-install attempt exists.
+
+### Next: install only the restricted agent key
+
+```powershell
+node scripts/setup/human-demo-operation.ts agent-key
+```
+
+Review the agent account, retained human recovery key, added public key, Gate receiver, `submit_purchase`-only method and finite **0.05 NEAR gas cap**. This cap pays gas, not a separate purchase budget or transfer. No FunctionCall/transfer/deposit is bundled. If you approve only this native AddKey, type:
+
+```text
+INSTALL AGENT KEY ed25519:ABWnTWVgg59wN1p7pYfjcUUf53FFYubzELSBPq57Z2hY ON agent.runlatch-demo-1108.testnet USING LOCAL RECOVERY KEY
+```
+
+Return public `DEMO_AGENT_KEY_INSTALL_OBSERVED` JSON. The helper proves the actual seeded key nonce and exact permission before any agent signature. Human recovery remains FullAccess; the agent key cannot change policy, approve, attest outcomes or transfer freely. Any error/unknown/interruption is `--check agent-key` only; never re-sign/resend/delete markers/change the nonce or fall back to the recovery key for a purchase.
+
+> **Latest11November checkpoint:** Project1110, Capsule1110 and quote1110 are independently FINAL and consumed creation/publication commands. Quote `2TYs5yEFkjFRWiAMTuMqETQ2FosvoaLZnKhjRZEWF1Pn` is published but unconsumed; no purchase. Do not repeat any of those commands. The last setup action is restricted AddKey; signing is temporarily held while its protocol-nonce readback is tested in isolated Sandbox. Action input nonce0 is not the final ordinary-key nonce: nearcore seeds `(execution_height - 1) * 1000000`. Never manually reset or change it. Key receiver/method/finite0.05NEAR gas cap and retained human recovery access remain unchanged.
+
+> **Latest11November gate:** Project1110 and Capsule1110 are independently observed FINAL and must never be created again. Capsule transaction `AeNBkfXrftqN85JEFgJAwXdnHnbr4Nb8A65ysi4drKKj` funded0.30 NEAR with zero spent/reserved/future commitments and2.62144 storage. The next separate human command is **quote** below. Earlier Project/Capsule creation examples are now historical/readback-only.
+
+### Next: publish the canonical quote
+
+```powershell
+node scripts/setup/human-demo-operation.ts quote
+```
+
+This uses only the registered provider account `db.runlatch-demo-1108.testnet` to publish one-use `db_quote_demo_1110`. Review the fixed database-plan/booking-database/quantity1/native0.05 NEAR all-inclusive one-time price, pinned recipient,12Nov15:00UTC expiry and50Tgas. Attached **0.08192 testnet NEAR is provider-paid quote storage**, not the0.05 purchase price or Capsule funding. If approved, type:
+
+```text
+PUBLISH QUOTE db_quote_demo_1110 ON gate.runlatch-demo-1108.testnet USING LOCAL NODE SIGNER
+```
+
+Return public `DEMO_QUOTE_PUBLICATION_OBSERVED` JSON. Publication is not purchase approval, settlement or provisioning. On any error/interruption/unknown, `--check quote` only; no repeated command, new ID, key/RPC fallback or marker removal.
+
 **10 November2026.** These are separate human signatures, not agent signing permission. The original `project_demo_1108` expired at **2026-11-10T18:35:20.864Z** with allocation0/no Capsules and remains untouched. It cannot be extended in place. A new **unsigned** work order is prepared, not created or renewed.
+
+> **11 November update:** the human created `project_demo_1110`; independent `--check project` verified FINAL transaction `FMKZhn3JU6k7KxEE9BLezanQoZmHufCHrrqHwSZudBza`, exact owner/terms/revision1 and allocation0/no Capsules. **Project creation is completed and must never repeat.** Its ceiling is still unfunded. The next separate human action is `capsule`, total2.92144 testnet NEAR:0.30 purchase funding +2.62144 prepaid history storage. New Capsule/quote/key/purchase remain absent. Project examples below are historical/readback-only; use the Capsule instructions here next.
+
+### Next: fund the Capsule
+
+```powershell
+node scripts/setup/human-demo-operation.ts capsule
+```
+
+Review exact `capsule_demo_1110` under Project1110 revision1, same operator/Gate/agent key, database-only scope,50Tgas and12Nov16:00UTC expiry. If you approve its displayed **2.92144 NEAR** attached deposit and policy, type:
+
+```text
+CREATE CAPSULE capsule_demo_1110 ON gate.runlatch-demo-1108.testnet USING LOCAL NODE SIGNER
+```
+
+Return only public `DEMO_CAPSULE_CREATION_OBSERVED` JSON. This funds bounded authority; it does not buy the database or install a key. Any error/interruption/unknown result means `--check capsule` only, never repeat default or delete its attempt directory.
 
 ## Fixed planned scope
 

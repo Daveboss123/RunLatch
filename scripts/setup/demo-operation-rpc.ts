@@ -10,6 +10,12 @@ import { demoGas, demoQuoteDeposit, demoSetupAction, encodeDemoTransaction, pars
   type DemoTransaction } from "./demo-operation-codec.ts";
 import type { ChildTransport } from "./child-account-rpc.ts";
 type Block = { hash: string; height: number; timestamp_ns: string };
+/** nearcore regular-key initialization, not the AddKey action's serialized input nonce. */
+export function initialRegularKeyNonce(executionHeight: number) {
+  const height = count(executionHeight, Number.MAX_SAFE_INTEGER);
+  if (height < 1) throw Error("DEMO_KEY_EXECUTION_HEIGHT_INVALID");
+  return time(((BigInt(height) - 1n) * 1_000_000n).toString());
+}
 function base64(value: unknown, maximum: number) {
   if (typeof value !== "string" || value.length > Math.ceil(maximum / 3) * 4
     || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(value)) throw Error("DEMO_BYTES_INVALID");
@@ -256,14 +262,16 @@ export function demoRpc(transport: ChildTransport) {
       const restricted = rows.find(row => row.public_key === DEMO_AGENT_SCOPE.public_key), recovery = rows.find(row => row.public_key === tx.public_key);
       const access = restricted ? object(restricted.access_key) : null, permission = access ? object(access.permission) : null;
       const functionCall = permission ? object(permission.FunctionCall, ["allowance", "receiver_id", "method_names"]) : null;
-      if (!restricted || !access || count(access.nonce, Number.MAX_SAFE_INTEGER) !== 0 || !permission || permission.FullAccess !== undefined || !functionCall
+      const initializedNonce = initialRegularKeyNonce(historic.height);
+      if (!restricted || !access || count(access.nonce, Number.MAX_SAFE_INTEGER).toString() !== initializedNonce || !permission || permission.FullAccess !== undefined || !functionCall
         || functionCall.receiver_id !== gateAccount || functionCall.allowance !== DEMO_AGENT_SCOPE.max_allowance
         || !Array.isArray(functionCall.method_names) || functionCall.method_names.length !== 1 || functionCall.method_names[0] !== "submit_purchase"
         || !recovery) throw Error("DEMO_FINAL_STATE_UNPROVEN");
       const recoveryAccess = object(recovery.access_key);
-      if (recoveryAccess.permission !== "FullAccess") throw Error("DEMO_FINAL_STATE_UNPROVEN");
+      if (recoveryAccess.permission !== "FullAccess" || count(recoveryAccess.nonce, Number.MAX_SAFE_INTEGER).toString() !== tx.nonce) throw Error("DEMO_FINAL_STATE_UNPROVEN");
       return { status: "DEMO_AGENT_KEY_INSTALL_OBSERVED", network: "testnet", contract_id: gateAccount, agent_id: DEMO_AGENT_SCOPE.agent_id,
-        restricted_public_key: DEMO_AGENT_SCOPE.public_key, allowance: functionCall.allowance, receiver_id: functionCall.receiver_id,
+        restricted_public_key: DEMO_AGENT_SCOPE.public_key, initialized_nonce: initializedNonce,
+        nonce_basis: "REGULAR_KEY_EXECUTION_HEIGHT_MINUS_ONE_TIMES_1000000", allowance: functionCall.allowance, receiver_id: functionCall.receiver_id,
         method_names: functionCall.method_names, recovery_public_key: tx.public_key, recovery_retained: true,
         block_hash: current.hash, block_height: current.height, execution_block_hash: historic.hash, execution_block_height: historic.height,
         limitation: "RPC-reported FINAL ordinary function-call key and retained recovery key only. No purchase, settlement or provisioning." };

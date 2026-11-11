@@ -203,11 +203,17 @@ Imported records are read in memory only. Nothing is uploaded, saved or authenti
 | --- | --- |
 | Network | NEAR testnet only |
 | Gate contract | Deployed and initialized: `gate.runlatch-demo-1108.testnet`, schema 2, code hash `F1pev22VSu86qxxWicXpCixtzzNoQxEi1FHRF2eGXjGP`, deployment transaction `23jZ77SEAK3b4YwW6EjanToSSt1XtbCvvgTPxFXYJqg6` |
-| Project | `project_demo_1108`, stored ACTIVE revision1, **expired10 November18:35 UTC**, allocation0/no Capsules; transaction `BU2DMrx9gi3zTTzcybvjuCp5Zm9HQdpoP96SLafjvTnB`. New `project_demo_1110` is only an unsigned template |
-| Database provider | `db_demo_1108`, active, immutable publisher/recipient `db.runlatch-demo-1108.testnet`, quote count 0; registration transaction `5DnrDArTCEN8rGaDCAqacX2CmxvCymYozNam7iys4DLu` |
-| Capsule, quote, restricted key, purchase, callback, provisioning, check, acceptance, report | **Absent** |
+| Original Project | `project_demo_1108`, stored ACTIVE revision1, **expired10 November18:35 UTC**, allocation0/no Capsules; transaction `BU2DMrx9gi3zTTzcybvjuCp5Zm9HQdpoP96SLafjvTnB`, retained and never repeated |
+| Current Project | `project_demo_1110`, ACTIVE revision1, ceiling/allocated authority0.30 NEAR, one Capsule; FINAL project transaction `FMKZhn3JU6k7KxEE9BLezanQoZmHufCHrrqHwSZudBza` |
+| Funded Capsule | `capsule_demo_1110`, ACTIVE, allocated0.30 NEAR, spent/reserved/future commitments0; separate2.62144 NEAR storage. FINAL creation transaction `AeNBkfXrftqN85JEFgJAwXdnHnbr4Nb8A65ysi4drKKj`; funding is not a database purchase |
+| Database provider | `db_demo_1108`, active, immutable publisher/recipient `db.runlatch-demo-1108.testnet`, quote count1; registration `5DnrDArTCEN8rGaDCAqacX2CmxvCymYozNam7iys4DLu` |
+| Canonical quote | `db_quote_demo_1110`,0.05 native NEAR/all-inclusive one-time/quantity1, hash `ae846302dbae490ba2352bbce89162821b8882a9c237903f97692ad9007231a3`, unconsumed; FINAL publication `2TYs5yEFkjFRWiAMTuMqETQ2FosvoaLZnKhjRZEWF1Pn`. Publication is not purchase approval or payment |
+| Restricted key | Ordinary function-call key installed and independently FINAL: `H4cqJTWvx2GvSAaFMPt4JUjPk2EvrjsbpoYUuLfWufMK`; agent account/ABW... public key, Gate-only/`submit_purchase`, finite0.05 NEAR gas allowance; human recovery retained. No purchase authority outside Rust |
+| Purchase, callback, provisioning, check, acceptance, report | **Absent** |
 
 There is no public testnet purchase, transaction for a purchase, receipt, delivery or acceptance. Do not read the deployment above as a completed product run. Verify any reference through a public testnet RPC; this README does not assert a light-client proof.
+
+The human has separately approved one exact0.05native purchase after setup. [Restricted-only human terminal scope](docs/DEMO_DB_PURCHASE_SCOPE.md) uses `human-db-purchase.ts`, one fixed request/quote/hash/100Tgas/zero deposit, short-lived in-memory restricted key and durable one-send journals. No real signature/payment is inferred from that approval or the tested read-only preparation; owner full-access keys never buy the resource.
 
 ## Known limitations
 

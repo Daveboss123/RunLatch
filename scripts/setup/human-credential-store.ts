@@ -84,6 +84,7 @@ function nativeStore() {
     readExactOperator: (publicKey: string) => readExact("runlatch-demo-1108.testnet", publicKey),
     readExactContract: (publicKey: string) => readExact("gate.runlatch-demo-1108.testnet", publicKey),
     readExactProvider: (publicKey: string) => readExact("db.runlatch-demo-1108.testnet", publicKey),
+    readExactRestrictedAgent: () => readExact("agent.runlatch-demo-1108.testnet", "ed25519:ABWnTWVgg59wN1p7pYfjcUUf53FFYubzELSBPq57Z2hY"),
     readExactAgentRecovery: (publicKey: string) => readExact("agent.runlatch-demo-1108.testnet", publicKey) };
 }
 function store() { return loaded ??= nativeStore(); }
@@ -110,6 +111,12 @@ export function readHumanProviderCredential(publicKey: string) {
 export function readHumanAgentRecoveryCredential(publicKey: string) {
   if (!process.stdin.isTTY || !process.stdout.isTTY || !/^ed25519:[1-9A-HJ-NP-Za-km-z]{32,44}$/u.test(publicKey)) throw Error("HUMAN_TERMINAL_REQUIRED");
   return store().readExactAgentRecovery(publicKey);
+}
+
+/** Human-terminal bridge for the exact restricted key only; no public-key/account choice or recovery fallback. */
+export function readHumanRestrictedAgentCredential() {
+  if (!process.stdin.isTTY || !process.stdout.isTTY) throw Error("HUMAN_TERMINAL_REQUIRED");
+  return store().readExactRestrictedAgent();
 }
 
 export function probeHumanCredentialStore() {
