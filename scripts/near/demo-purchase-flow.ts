@@ -119,14 +119,15 @@ export async function executeDemoDbPurchase(directory: string, approval: DemoDbE
       limitation: "RPC-reported purchase evidence only. Native transfer/private callback are separate from a returned hash and from provisioning/check/acceptance. No light-client proof or automatic retry." });
   } finally { if (key) (ports.testDispose ?? disposeRestrictedProcessKey)(key); }
 }
-export async function readDemoDbIntent(directory: string) {
+export async function readDemoDbIntent(directory: string, journalRoot?: string) {
   await safeDbDirectory(directory);
   try { const record = object(await readDbPublicJson(join(directory, "identity.json")), ["source", "intent"]);
     if (record.source !== "EXACT_CAPTURED_DB_PURCHASE_IDENTITY_NOT_SETTLEMENT") throw Error("DB_PURCHASE_RECORD_SOURCE_INVALID"); return assertDemoPurchaseIntent(record.intent);
   } catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
   // Crash recovery is READ ONLY. A captured public journal identity can be
   // observed, never adopted as a signing approval or used to release a claim.
-  const root = fileURLToPath(new URL("../../", import.meta.url));
+  // Tests pass an empty root so a real local journal cannot leak into unit results.
+  const root = journalRoot ?? fileURLToPath(new URL("../../", import.meta.url));
   const journal = join(root, ".local", "testnet-mvp", "single-attempt", "working-mvp");
   try { await safeDbDirectory(journal); } catch (error) { if ((error as NodeJS.ErrnoException).code === "ENOENT") return null; throw error; }
   const p = DEMO_PURCHASE_ACTION.proposal;

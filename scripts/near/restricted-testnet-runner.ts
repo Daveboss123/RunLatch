@@ -31,8 +31,9 @@ export async function runRestrictedTestnetPurchase(admission: TestnetRunAdmissio
   assertRunnerTransport(transport, admission);
   if (canonicalReviewContent(ports.reader.target) !== canonicalReviewContent(admission.review.target)) return fail("TESTNET_RUN_READER_TARGET_MISMATCH");
   const nowNs = ports.testNowNs ?? (() => BigInt(Date.now()) * 1_000_000n);
-  const timeout = ports.timeoutMs ?? 15_000;
-  if (!Number.isSafeInteger(timeout) || timeout < 1 || timeout > 15_000) return fail("INVALID_INVOCATION_TIMEOUT");
+  // Final-wait submission is one bounded call; the larger ceiling still refuses unbounded waits.
+  const timeout = ports.timeoutMs ?? 45_000;
+  if (!Number.isSafeInteger(timeout) || timeout < 1 || timeout > 60_000) return fail("INVALID_INVOCATION_TIMEOUT");
   if (ports.signal?.aborted) return fail("ATTEMPT_CANCELLED_BEFORE_INVOCATION");
   const signer = createInjectedTestnetSigning(key, admission); // Issued, live handle plus exact target/agent/recovery/cap binding.
   consumed.add(admission); // I/O/errors cannot reopen this operator confirmation.
@@ -56,10 +57,10 @@ export async function runRestrictedTestnetPurchase(admission: TestnetRunAdmissio
       const checked = inspectSignedAgentEnvelope(prepared.signed_bytes);
       observation.identity = parseLocalSignedIdentity({ transaction_hash: checked.transaction_hash, transaction: checked.transaction });
       if (signal.aborted) return fail("LOCAL_RUNNER_CANCELLED");
-      const send = createBoundedBroadcast(fresh, prepared.signed_bytes, transport, nowNs, timeout, admission);
+      const send = createBoundedBroadcast(fresh, prepared.signed_bytes, transport, nowNs, timeout, admission, "final");
       return { intent: prepared.intent, invoke: async (invokeSignal: AbortSignal) => {
         observation.broadcast = await send.invoke(invokeSignal);
-        if (observation.broadcast.status !== "ACKNOWLEDGED_UNVERIFIED") return fail("LOCAL_RUNNER_BROADCAST_UNKNOWN");
+        if (!["FINAL_OUTCOME_OBSERVED", "SEND_ERROR_OBSERVED", "ACKNOWLEDGED_UNVERIFIED"].includes(observation.broadcast.status)) return fail("LOCAL_RUNNER_BROADCAST_UNKNOWN");
       } };
     },
   }, admission);

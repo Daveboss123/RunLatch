@@ -55,7 +55,7 @@ test("one consumed helper review, permanent public records and synthetic no-run 
   const intent = JSON.parse(await readFile(join(dir, "intent.json"), "utf8")); assert.equal(intent.call.attached_deposit, "0");
   assert.equal(JSON.stringify(intent).includes("private_key"), false);
   await assert.rejects(executeDemoDbPurchase(dir, approval, { loadKey: () => fakeHandle, transport: f.transport }), /CONSUMED/u);
-  assert.equal(await readDemoDbIntent(dir), null);
+  assert.equal(await readDemoDbIntent(dir, await directory()), null);
 });
 test("cloned/expired/changed fresh review or costs never loads a key or invokes a runner", async () => {
   const f = await dbPurchaseFixture(), review = await prepareDemoDbPurchase(f.transport);

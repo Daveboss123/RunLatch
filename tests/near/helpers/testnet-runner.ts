@@ -62,7 +62,8 @@ export async function testnetRunFixture() {
   const read = currentRunReader(f); let sends = 0;
   const transport: typeof fetch = async (_url, init) => {
     sends++; const r = JSON.parse(String(init?.body));
-    return Response.json({ jsonrpc: "2.0", id: r.id, result: r.id.replace("runlatch-local-broadcast-", "") });
+    return Response.json({ jsonrpc: "2.0", id: r.id, result: { final_execution_status: "FINAL",
+      transaction: { hash: r.id.replace("runlatch-local-broadcast-", "") }, status: { SuccessValue: "" } } });
   };
   const ports = { reader: read.reader, transport, testNowNs: () => BigInt(f.review.reviewed_at_ns) };
   return { key, f, namespace, read, confirm, ports, sends: () => sends,

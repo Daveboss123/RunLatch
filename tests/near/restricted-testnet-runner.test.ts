@@ -20,8 +20,8 @@ test("exact confirmation -> fresh shared RPC review -> request/key claim -> sign
     entered++;
     assert.equal(url, t.f.target.rpc_url); assert.equal(init?.method, "POST"); assert.equal(init.credentials, "omit");
     assert.equal(init.redirect, "error"); assert.equal(init.referrerPolicy, "no-referrer"); assert.equal(init.cache, "no-store");
-    const r = JSON.parse(String(init.body)); assert.equal(r.method, "broadcast_tx_async"); assert.equal(r.params.length, 1);
-    signed = inspectSignedAgentEnvelope(Buffer.from(r.params[0], "base64"));
+    const r = JSON.parse(String(init.body)); assert.equal(r.method, "send_tx"); assert.equal(r.params.wait_until, "FINAL");
+    signed = inspectSignedAgentEnvelope(Buffer.from(r.params.signed_tx_base64, "base64"));
     assert.equal(signed.transaction.method, "submit_purchase"); assert.equal(signed.transaction.attached_deposit, "0"); assert.equal(signed.transaction.nonce, "8");
     const req = await readdir(new URL(`../../.local/testnet-mvp/single-attempt/${t.namespace}/`, import.meta.url));
     const keys = await readdir(new URL(`../../.local/testnet-mvp/key-guard/${t.namespace}/`, import.meta.url));
@@ -30,10 +30,12 @@ test("exact confirmation -> fresh shared RPC review -> request/key claim -> sign
       const text = (await Promise.all(files.map(n => readFile(new URL(`../../.local/testnet-mvp/${folder}/${t.namespace}/${n}`, import.meta.url), "utf8")))).join("");
       assert.ok(text.includes(signed.transaction_hash)); assert.ok(!/privateKey|PRIVATE_KEY|signed_bytes/u.test(text));
     }
-    return Response.json({ jsonrpc: "2.0", id: r.id, result: signed.transaction_hash });
+    return Response.json({ jsonrpc: "2.0", id: r.id, result: { final_execution_status: "FINAL",
+      transaction: { hash: signed.transaction_hash }, status: { SuccessValue: "" } } });
   };
   const result = await runRestrictedTestnetPurchase(approval, t.key.handle, { ...t.ports, transport });
-  assert.equal(result.status, "RETURNED_UNVERIFIED"); assert.equal(result.broadcast?.status, "ACKNOWLEDGED_UNVERIFIED"); assert.equal(entered, 1);
+  assert.equal(result.status, "RETURNED_UNVERIFIED"); assert.equal(result.broadcast?.status, "FINAL_OUTCOME_OBSERVED"); assert.equal(entered, 1);
+  assert.equal(result.broadcast?.payment_evidence, "NOT_OBSERVED");
   assert.equal(result.identity?.transaction.nonce, "8"); assert.equal(result.payment_evidence, "NOT_OBSERVED");
   assert.equal(result.transport_source, "INJECTED_TEST_TRANSPORT_NOT_CHAIN_EVIDENCE"); assert.equal(result.public_execution, "NOT_PROVEN");
   assert.ok(!("signed_bytes" in result)); assert.equal(result.grants_payment_authority, false);
@@ -62,7 +64,7 @@ test("forged/clone admission and process key, substituted reader/transport or in
   await assert.rejects(runRestrictedTestnetPurchase(c, { ...t.key.handle }, t.ports), /UNISSUED_PROCESS_KEY_HANDLE/u);
   await assert.rejects(runRestrictedTestnetPurchase(c, t.key.handle, { ...t.ports, reader: { ...t.ports.reader, target: { ...t.f.target, contract_id: "other.testnet" } } }), /READER_TARGET_MISMATCH/u);
   await assert.rejects(runRestrictedTestnetPurchase(c, t.key.handle, { ...t.ports, transport: globalThis.fetch }), /INJECTED_TRANSPORT_REQUIRED/u);
-  for (const timeoutMs of [0, 15_001, 1.2]) await assert.rejects(runRestrictedTestnetPurchase(c, t.key.handle, { ...t.ports, timeoutMs }), /INVALID_INVOCATION_TIMEOUT/u);
+  for (const timeoutMs of [0, 60_001, 1.2]) await assert.rejects(runRestrictedTestnetPurchase(c, t.key.handle, { ...t.ports, timeoutMs }), /INVALID_INVOCATION_TIMEOUT/u);
   assert.equal(t.read.calls.length, 0); assert.equal(t.sends(), 0); disposeRestrictedProcessKey(t.key.handle);
 });
 
@@ -144,7 +146,8 @@ test("three distinct exact calls re-read prior shared FINAL transfer/callback/ke
     const prior = await priorRunReader(f, previous.identity!), next = await nextRunFixture(f, previous.identity!.transaction.nonce, request), current = currentRunReader(next);
     const admission = t.confirm(next), result = await runRestrictedTestnetPurchase(admission, t.key.handle, {
       reader: { ...current.reader, reconcileAgentNonce: prior.reader.reconcileAgentNonce }, transport: async (_url, init) => {
-        sends++; const r = JSON.parse(String(init?.body)); return Response.json({ jsonrpc: "2.0", id: r.id, result: r.id.replace("runlatch-local-broadcast-", "") }); },
+        sends++; const r = JSON.parse(String(init?.body)); return Response.json({ jsonrpc: "2.0", id: r.id, result: {
+          final_execution_status: "FINAL", transaction: { hash: r.id.replace("runlatch-local-broadcast-", "") }, status: { SuccessValue: "" } } }); },
       testNowNs: () => BigInt(next.review.reviewed_at_ns) });
     assert.equal(result.status, "RETURNED_UNVERIFIED"); assert.equal(prior.calls.filter(c => c.method === "tx_status").length, 1);
     assert.equal(result.identity?.transaction.nonce, (BigInt(previous.identity!.transaction.nonce) + 1n).toString());
@@ -203,10 +206,37 @@ test("competing exact confirmations for two distinct requests/key get only one b
   const run = (f: typeof t.f) => runRestrictedTestnetPurchase(t.confirm(f), t.key.handle, {
     reader: { ...currentRunReader(f).reader, readPurchaseReview: async () => { if (++entered === 2) release!(); await barrier; return f.review; } },
     transport: async (_url, init) => { sends++; const r = JSON.parse(String(init?.body));
-      return Response.json({ jsonrpc: "2.0", id: r.id, result: r.id.replace("runlatch-local-broadcast-", "") }); }, testNowNs: () => BigInt(f.review.reviewed_at_ns) });
+      return Response.json({ jsonrpc: "2.0", id: r.id, result: { final_execution_status: "FINAL",
+        transaction: { hash: r.id.replace("runlatch-local-broadcast-", "") }, status: { SuccessValue: "" } } }); }, testNowNs: () => BigInt(f.review.reviewed_at_ns) });
   const results = await Promise.all([run(t.f), run(other)]);
   assert.deepEqual(results.map(r => r.status).sort(), ["RETURNED_UNVERIFIED", "STOPPED_BEFORE_INVOCATION"]); assert.equal(sends, 1);
   disposeRestrictedProcessKey(t.key.handle);
+});
+
+test("final-wait send exposes validation errors and outcomes once, never as settlement", async () => {
+  const cases = [
+    { name: "validation", status: "SEND_ERROR_OBSERVED", outcome: null as string | null, kind: null as string | null,
+      reply: (id: string) => ({ jsonrpc: "2.0", id, error: { code: -32000, name: "HANDLER_ERROR",
+        cause: { name: "INVALID_TRANSACTION", info: { error_type: "NotEnoughAllowance", error_message: "PRIVATE_CANARY" } } } }) },
+    { name: "success", status: "FINAL_OUTCOME_OBSERVED", outcome: "SUCCESS_VALUE", kind: null,
+      reply: (id: string, hash: string) => ({ jsonrpc: "2.0", id, result: { final_execution_status: "FINAL", transaction: { hash }, status: { SuccessValue: "" } } }) },
+    { name: "failure", status: "FINAL_OUTCOME_OBSERVED", outcome: "FAILURE", kind: "ActionError.kind.FunctionCallError",
+      reply: (id: string, hash: string) => ({ jsonrpc: "2.0", id, result: { final_execution_status: "FINAL", transaction: { hash },
+        status: { Failure: { ActionError: { kind: { FunctionCallError: { ExecutionError: "PRIVATE_CANARY" } } } } } } }) }];
+  for (const item of cases) {
+    const t = await testnetRunFixture(); let calls = 0;
+    const transport: typeof fetch = async (_url, init) => { calls++; const r = JSON.parse(String(init?.body));
+      assert.equal(r.method, "send_tx"); assert.equal(r.params.wait_until, "FINAL");
+      return Response.json(item.reply(r.id, r.id.replace("runlatch-local-broadcast-", ""))); };
+    const result = await runRestrictedTestnetPurchase(t.confirm(), t.key.handle, { ...t.ports, transport });
+    const broadcast = result.broadcast as Record<string, unknown> | null;
+    assert.equal(broadcast?.status, item.status); assert.equal(broadcast?.outcome ?? null, item.outcome);
+    assert.equal(broadcast?.failure_kind ?? null, item.kind);
+    assert.equal(broadcast?.payment_evidence, "NOT_OBSERVED"); assert.equal(result.payment_evidence, "NOT_OBSERVED");
+    assert.equal(broadcast?.public_execution, "NOT_PROVEN"); assert.equal(calls, 1);
+    assert.ok(!JSON.stringify(result).includes("PRIVATE_CANARY"));
+    disposeRestrictedProcessKey(t.key.handle);
+  }
 });
 
 test("public next nonce must itself be safely readable; existing exact codec support does not repair unsafe RPC", async () => {

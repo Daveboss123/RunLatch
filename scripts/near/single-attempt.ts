@@ -57,8 +57,9 @@ export async function runSingleAttempt(review: PurchaseReview, confirmation: unk
   eligible(review, admission);
   const source = admission ? "RESTRICTED_TESTNET_SINGLE_ATTEMPT" as const : "LOCAL_SINGLE_ATTEMPT_EXERCISE" as const;
   const publicExecution = admission ? "NOT_PROVEN" as const : false as const;
-  const timeout = ports.invocationTimeoutMs ?? 15_000;
-  if (!Number.isSafeInteger(timeout) || timeout < 1 || timeout > 15_000) return fail("INVALID_INVOCATION_TIMEOUT");
+  // LOCAL stays at 15s. The admitted testnet path allows one bounded final-wait send.
+  const limit = admission ? 60_000 : 15_000, timeout = ports.invocationTimeoutMs ?? (admission ? 45_000 : 15_000);
+  if (!Number.isSafeInteger(timeout) || timeout < 1 || timeout > limit) return fail("INVALID_INVOCATION_TIMEOUT");
   if (ports.signal?.aborted) return fail("ATTEMPT_CANCELLED_BEFORE_INVOCATION");
   let fresh: PurchaseReview;
   try { fresh = await limited(ports.freshReview, timeout, ports.signal); }
